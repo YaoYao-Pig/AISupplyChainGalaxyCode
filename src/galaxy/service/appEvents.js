@@ -95,5 +95,7 @@ export default eventMirror([
    'focusOnArea',
    'focusNextInChain',
    'cameraMoved',
+   'showLicenseReport',
+'highlightLicenseConflicts',
 ], appEvents);
 

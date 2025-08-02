@@ -17,6 +17,7 @@ import createNativeRenderer from './native/renderer.js';
 import createKeyboardBindings from './native/sceneKeyboardBinding.js';
 import appEvents from './service/appEvents.js';
 import Minimap from './Minimap.jsx';
+import LicenseReportViewModel from './windows/LicenseReportViewModel.js'; // <--- 新增
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 
@@ -69,6 +70,7 @@ function scene(x) {
 
     detailModel.on('changed', updateSidebar);
     appEvents.activeTagChanged.on(updateActiveTag); // 监听激活标签的变化
+    appEvents.showLicenseReport.on(showLicenseReportWindow);
   };
 
   x.componentWillUnmount = function() {
@@ -78,6 +80,7 @@ function scene(x) {
     
     detailModel.off('changed', updateSidebar);
     appEvents.activeTagChanged.off(updateActiveTag); // 取消监听
+    appEvents.showLicenseReport.off(showLicenseReportWindow); 
   };
 
   // 更新 activeTag state 的函数
@@ -86,7 +89,10 @@ function scene(x) {
           activeTag: searchBoxModel.getActiveTag()
       });
   }
-
+  function showLicenseReportWindow() {
+    const viewModel = new LicenseReportViewModel();
+    appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
+}
   function updateSidebar() {
       x.setState({
           sidebarData: detailModel.getSidebarData()

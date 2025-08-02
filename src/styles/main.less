@@ -617,3 +617,109 @@ a.media {
 .minimap-container svg {
   display: block;
 }
+
+/* 在 main.less 或等效的CSS文件末尾添加 */
+
+/* 侧边栏继承链的状态图标 */
+.license-and-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-icon {
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.status-icon.incompatible {
+  filter: grayscale(100%) contrast(3); /* 让红色叉号更醒目 */
+}
+
+/* 分析按钮 */
+.analysis-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: #3a5a75;
+  color: #d0eaff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.analysis-btn:hover {
+  background-color: #4a7294;
+  color: white;
+}
+
+/* 许可证报告窗口 */
+.license-report-window {
+  width: 650px;
+  padding: 15px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.window-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.window-header h4 {
+    margin: 0;
+    color: white;
+}
+
+.highlight-btn-small {
+    padding: 4px 8px;
+    font-size: 12px;
+    background-color: #c0392b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.report-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.report-list table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.report-list th, .report-list td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.report-list th {
+    color: #ccc;
+}
+
+.report-list .license-cell.incompatible {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.no-conflicts {
+    padding: 20px;
+    text-align: center;
+    font-style: italic;
+}
+
+.branch-separator {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.2);
+  margin: 8px 0;
+  list-style-type: none;
+}

@@ -50,6 +50,7 @@ function sceneRenderer(container) {
   appEvents.cls.on(cls);
   appConfig.on('camera', moveCamera);
   appConfig.on('showLinks', toggleLinks);
+  appEvents.highlightLicenseConflicts.on(highlightConflictNodes);
 
   var api = {
     destroy: destroy
@@ -57,7 +58,19 @@ function sceneRenderer(container) {
 
   eventify(api);
   return api;
+  function highlightConflictNodes(nodeIds) {
+    if (!renderer || !nodeIds) return;
+    const view = renderer.getParticleView();
+    const colors = view.colors();
 
+    // 先清除之前的高亮 (可选，或者与现有cls逻辑结合)
+    cls(); 
+
+    nodeIds.forEach(nodeId => {
+        colorNode(nodeId * 3, colors, highlightNodeColor); // 使用已有的红色
+    });
+    view.colors(colors);
+}
   function accelarate(isPrecise) {
     var input = renderer.input();
     if (isPrecise) {

@@ -3,9 +3,8 @@
 import getGraphSpecificInfo from './graphSepcific/graphSpecificInfo.js';
 import scene from './sceneStore.js';
 import formatNumber from '../utils/formatNumber.js';
-
+import complianceStore from './licenseComplianceStore.js'; 
 export default getBaseNodeViewModel;
-
 function getBaseNodeViewModel(nodeId) {
     var graphName = scene.getGraphName();
     var graphSpecificInfo = getGraphSpecificInfo(graphName);
@@ -25,35 +24,33 @@ function getBaseNodeViewModel(nodeId) {
         arxiv: 'arxiv:'
     };
 
-    // --- 核心修改: 构建包含当前节点的完整继承链 ---
     const inheritanceChain = [];
     const visitedModels = new Set();
     
-    // 1. 先将当前选中的节点作为第0层加入链条
     const licenseTag = (nodeData.tags || []).find(t => typeof t === 'string' && t.startsWith(prefixes.license));
     const licenseFromTag = licenseTag ? licenseTag.substring(prefixes.license.length) : null;
+    
     inheritanceChain.push({
         model: nodeInfo.name,
         license: licenseFromTag || nodeData.license || 'N/A',
-        level: 0, // 当前节点是第0层
-        isRoot: false // 它不是根
+        level: 0,
+        isRoot: false
     });
     visitedModels.add(nodeInfo.name);
 
-    // 2. 递归构建父节点链条
-    function buildChain(currentModelId, level) {
+    function buildChain(currentModelId, level, parentLicenseForComparison) {
         if (!currentModelId || visitedModels.has(currentModelId)) return;
         visitedModels.add(currentModelId);
 
         const parentNodeId = scene.getNodeIdByModelId(currentModelId);
         if (parentNodeId === undefined) {
-            inheritanceChain.push({ model: currentModelId, license: 'Unknown', level: level, isRoot: true });
+            inheritanceChain.push({ model: currentModelId, license: 'Unknown', level: level, isRoot: true, isCompatible: complianceStore.isLicenseCompatible('Unknown', parentLicenseForComparison) });
             return;
         }
       
         const parentData = graphModel.getNodeData(parentNodeId);
         if (!parentData) {
-            inheritanceChain.push({ model: currentModelId, license: 'Unknown', level: level, isRoot: true });
+            inheritanceChain.push({ model: currentModelId, license: 'Unknown', level: level, isRoot: true, isCompatible: complianceStore.isLicenseCompatible('Unknown', parentLicenseForComparison) });
             return;
         }
       
@@ -65,21 +62,25 @@ function getBaseNodeViewModel(nodeId) {
             model: currentModelId,
             license: parentLicense,
             level: level,
-            isRoot: grandParentTags.length === 0
+            isRoot: grandParentTags.length === 0,
+            isCompatible: complianceStore.isLicenseCompatible(parentLicense, parentLicenseForComparison)
         });
       
         grandParentTags.forEach(tag => {
             const grandParentModelId = tag.substring(prefixes.base_model.length);
-            buildChain(grandParentModelId, level + 1);
+            buildChain(grandParentModelId, level + 1, parentLicense);
         });
     }
 
     const baseModelTags = (nodeData.tags || []).filter(t => t.startsWith(prefixes.base_model));
+    
+    // --- 这是上次被遗漏的关键代码行 ---
+    const currentLicenseForComparison = licenseFromTag || nodeData.license || 'N/A';
+    
     baseModelTags.forEach(tag => {
         const baseModelId = tag.substring(prefixes.base_model.length);
-        buildChain(baseModelId, 1); // 父节点从第1层开始
+        buildChain(baseModelId, 1, currentLicenseForComparison);
     });
-    // --- 修改结束 ---
 
     const generalTags = (nodeData.tags || []).filter(t => !Object.values(prefixes).some(p => typeof t ==='string' && t.startsWith(p)));
     const regions = (nodeData.tags || []).filter(t => typeof t === 'string' && t.startsWith(prefixes.region)).map(t => t.substring(prefixes.region.length));
@@ -97,6 +98,6 @@ function getBaseNodeViewModel(nodeId) {
         tags: generalTags,
         regions: regions,
         arxivs: arxivs,
-        inheritanceChain: inheritanceChain // 传递新的、完整的继承链数据
+        inheritanceChain: inheritanceChain
     };
 }

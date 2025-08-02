@@ -1,4 +1,4 @@
-// src/galaxy/SidebarView.jsx (最终修正版 - 修复 handleHighlightChain 引用错误)
+// src/galaxy/SidebarView.jsx
 
 import React from 'react';
 import appEvents from './service/appEvents.js';
@@ -84,7 +84,7 @@ function renderNodeList(title, nodes) {
     );
 }
 
-// --- 核心修正: 在 renderInheritanceChain 中接收 onHighlightClick ---
+// --- 核心修改：恢复了包含按钮的 Header ---
 function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
     if (!Array.isArray(chain) || chain.length === 0) {
         return null;
@@ -99,26 +99,61 @@ function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
                 </div>
             </div>
             <ul className="inheritance-list">
-                {chain.map((item, index) => {
-                    let itemClass = "chain-item";
-                    if (item.level === 0) itemClass += " current";
-                    if (item.isRoot) itemClass += " root";
+                {
+                    // --- 核心修改：使用 .flatMap 或 reduce 来代替 .map + React.Fragment ---
+                    // 这里我们用 reduce 来构建一个扁平的 JSX 元素数组
+                    chain.reduce((acc, item, index) => {
+                        const isNewBranch = index > 0 && item.level === 1;
+                        if (isNewBranch) {
+                            // 如果是新分支，先向数组中推入一个分隔符
+                            acc.push(<li key={`sep-${index}`} className="branch-separator"></li>);
+                        }
 
-                    return (
-                        <li key={index} className={itemClass}>
-                            {item.level > 0 ? 
-                                <span className="level-indicator" style={{ paddingLeft: `${(item.level - 1) * 15}px` }}>L{item.level}</span> :
-                                <span className="level-indicator self">Current</span>
-                            }
-                            <span className="model-name">{item.model}</span>
-                            <span className="license-badge">{item.license}</span>
-                        </li>
-                    );
-                })}
+                        let itemClass = "chain-item";
+                        if (item.level === 0) itemClass += " current";
+                        if (item.isRoot) itemClass += " root";
+
+                        // 然后推入当前的列表项
+                        acc.push(
+                            <li key={`item-${index}`} className={itemClass}>
+                                {item.level > 0 ? 
+                                    <span className="level-indicator" style={{ paddingLeft: `${(item.level - 1) * 15}px` }}>L{item.level}</span> :
+                                    <span className="level-indicator self">Current</span>
+                                }
+                                <span className="model-name">{item.model}</span>
+                                <div className="license-and-status">
+                                    {item.level > 0 && (
+                                        <span className={`status-icon ${item.isCompatible ? 'compatible' : 'incompatible'}`}>
+                                            {item.isCompatible ? '✅' : '❌'}
+                                        </span>
+                                    )}
+                                    <span className="license-badge">{item.license}</span>
+                                </div>
+                            </li>
+                        );
+                        return acc;
+                    }, [])
+                }
             </ul>
         </div>
     );
 }
+// --- 新增的分析区域渲染函数 ---
+function renderAnalysisSection() {
+    const handleShowReport = () => {
+        appEvents.showLicenseReport.fire();
+    };
+
+    return (
+        <div className="sidebar-list-section">
+            <h4>Analysis</h4>
+            <button onClick={handleShowReport} className="analysis-btn">
+                Show License Compliance Report
+            </button>
+        </div>
+    );
+}
+
 
 // --- 主侧边栏组件 ---
 module.exports = require('maco')((x) => {
@@ -136,7 +171,6 @@ module.exports = require('maco')((x) => {
 
         const { selectedNode, incoming, outgoing } = data;
 
-        // --- 核心修正: 在这里定义 handleHighlightChain 和 handleNextClick ---
         const handleHighlightChain = () => {
             if (selectedNode && selectedNode.inheritanceChain) {
                 appEvents.highlightChain.fire(selectedNode.inheritanceChain);
@@ -146,7 +180,6 @@ module.exports = require('maco')((x) => {
         const handleNextClick = () => {
             appEvents.focusNextInChain.fire();
         };
-        // --- 修正结束 ---
 
         return (
             <div className={containerClass}>
@@ -174,6 +207,8 @@ module.exports = require('maco')((x) => {
                     
                     {renderNodeList("Incoming Connections", incoming)}
                     {renderNodeList("Outgoing Connections", outgoing)}
+                    <hr />
+                    {renderAnalysisSection()}
                 </div>
             </div>
         );
