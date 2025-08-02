@@ -1,0 +1,600 @@
+// todo: remove duplication, refactor
+@import "~bootstrap/less/bootstrap";
+@import "./variables.less";
+@import "./steering.less";
+@import "./nodeDetails.less";
+@import "./search.less";
+
+body {
+  background-color: @background;
+  font-family: 'Roboto', sans-serif;
+}
+
+#app {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.graph-full-size {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  overflow: hidden;
+}
+
+h1, h2 {
+  color: #efefef;
+}
+
+h4 {
+  font-family: 'PT Sans', sans-serif;
+}
+
+.window-container {
+  background-color: rgba(0,0,0, 0.8);
+  color: #7F7F7F;
+  position: absolute;
+}
+
+.window-list-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 200px;
+}
+
+.node-focus {
+  cursor: pointer;
+}
+
+.search-results-window {
+  left: 16px;
+  top: 47px;
+  padding: 10px;
+  width: 395px;
+}
+
+.degree-results-window {
+  left: 16px;
+  bottom: 87px;
+  padding: 10px;
+  width: 395px;
+}
+
+.no-overflow {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: @screen-sm-min) {
+  .degree-results-window {
+    display: none;
+  }
+}
+
+.window-title {
+  strong {
+    color: @foreground;
+    font-weight: normal;
+    font-size: 1.2em;
+  }
+  .node-name {
+    color: @foreground;
+  }
+}
+
+.label {
+  color: @foreground;
+  background: @background;
+  position: absolute;
+  z-index: 1;
+}
+
+.loading {
+  padding: 10px;
+  left: 10px;
+  top: 48px;
+}
+
+.about {
+  padding: 10px;
+  right: 10px;
+  top: 0px;
+}
+
+@media (max-width: @screen-sm-min) {
+  .about {
+    padding: 10px;
+    right: 13px;
+    bottom: 22px;
+    top: inherit;
+  }
+}
+
+.node-hover-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: @foreground;
+  padding: 4px 10px;;
+  pointer-events: none;
+  min-width: 200px;
+  border: 1px solid @border-color;
+
+  span {
+    margin: 0 5px;
+  }
+}
+
+.in-degree {
+  color: #90EE90;
+  cursor: pointer;
+}
+
+.window-indegree {
+  color: #90EE90;
+}
+
+.window-outdegree {
+  color: #F08080;
+}
+
+.out-degree {
+  color: #F08080;
+  cursor: pointer;
+}
+
+.node-hover-list {
+  position: absolute;
+  background: @background;
+  right: -20px;
+  bottom: 10px;
+  height: 150px;
+  color: @foreground;
+  padding: 4px;
+  pointer-events: none;
+  width: 220px;
+  overflow-y: scroll;
+  ul {
+    padding: 0;
+  }
+  li {
+    list-style-type: none;
+  }
+}
+
+.vcenter {
+    display: inline-block;
+    vertical-align: middle;
+    float: none;
+}
+
+a.reset-color,
+a.reset-color:hover,
+a.reset-color:focus {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.media:hover, a.media:focus {
+  text-decoration: none;
+  color: #FF008C;
+  border: none;
+}
+
+a.media {
+  color: @foreground;
+  background-color: black;
+  border: none;
+}
+
+.error {
+  color: pink;
+}
+
+.error-details {
+  color: wheat;
+}
+
+.navigation-help {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.55);
+  padding: 7px;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Roboto', sans-serif;
+  pointer-events: none;
+  h3 {
+    color: @foreground;
+    border-bottom: 1px solid white;
+    padding-bottom: 6px;
+    margin-top: 2px;
+  }
+  code {
+    font-family: 'PT Sans', sans-serif;
+    font-size: 100%;
+    color: @foreground;
+    background-color: inherit;
+  }
+  code.important-key {
+    color: #90EE90;
+  }
+  td {
+    color: #999;
+    text-align: right;
+  }
+  td:nth-child(even) {
+    text-align: left;
+
+  }
+  tr.spacer-row {
+    border-bottom: 10px solid transparent;
+  }
+}
+/* 添加到 main.less 或等效的CSS文件中 */
+
+.ego-graph-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  z-index: 10; /* 确保它在其他UI元素之上 */
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+.ego-graph-header {
+  color: white;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: 'Roboto', 'PT Sans', sans-serif;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sidebar-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100vh;
+  background-color: rgba(20, 20, 25, 0.9);
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  color: #eee;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+  font-family: 'Roboto', 'PT Sans', sans-serif;
+
+  /* --- 新增: 控制显示和隐藏 --- */
+  transform: translateX(100%); /* 默认将侧边栏移出屏幕右侧 */
+  transition: transform 0.4s ease-in-out; /* 添加平滑的过渡动画 */
+  visibility: hidden; /* 隐藏时不可交互 */
+}
+
+.sidebar-container.open {
+  transform: translateX(0); /* 当有 'open' 类时，移回屏幕内 */
+  visibility: visible;
+}
+
+
+.sidebar-header {
+  padding: 15px 20px;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-header .close-btn {
+  background: none;
+  border: none;
+  color: #ccc;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 0 5px;
+  line-height: 1;
+}
+.sidebar-header .close-btn:hover {
+  color: white;
+}
+
+.sidebar-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+.sidebar-metadata {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.sidebar-metadata .meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-metadata .meta-item span {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.sidebar-metadata .meta-item strong {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.sidebar-content hr {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-list-section h4 {
+  font-size: 14px;
+  color: #aaa;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 5px;
+}
+
+.sidebar-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px; /* 给列表一个最大高度，超出部分可滚动 */
+  overflow-y: auto;
+}
+
+.sidebar-list li a {
+  display: block;
+  padding: 6px 0;
+  color: #a7d4ff;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+
+.sidebar-list li a:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.sidebar-list .no-connections {
+    color: #666;
+    font-style: italic;
+    font-size: 14px;
+}
+
+/* 调整元数据区域的样式以容纳更多项 */
+.sidebar-metadata.detailed {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  text-align: left;
+}
+
+.sidebar-metadata.detailed .meta-item {
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.sidebar-metadata.detailed .meta-item span {
+  font-size: 11px;
+}
+.sidebar-metadata.detailed .meta-item strong {
+  font-size: 16px;
+}
+
+/* 标签列表样式 */
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-item {
+  background-color: #3a5a75;
+  color: #d0eaff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tag-item:hover {
+  background-color: #4a7294;
+  color: white;
+}
+
+.sidebar-list.simple li {
+  font-size: 14px;
+  color: #ddd;
+  padding: 4px 0;
+}
+
+.tag-item.active {
+  background-color: #e04141; /* 使用醒目的红色作为激活颜色 */
+  color: white;
+  box-shadow: 0 0 8px rgba(255, 65, 65, 0.7);
+}
+
+.ego-graph-wrapper {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin-top: 10px;
+  background-color: rgba(0,0,0,0.2);
+}
+
+/* 确保 vis-network 的 canvas 行为正常 */
+.ego-graph-wrapper .vis-network canvas {
+  width: 100% !important;
+}
+
+/* 添加到 main.less 或等效的CSS文件中 */
+
+/* ... 您之前的侧边栏样式 ... */
+
+.inheritance-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.inheritance-list li {
+  padding: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 13px;
+}
+
+.inheritance-list li:last-child {
+  border-bottom: none;
+}
+
+.inheritance-list .model-name {
+  color: #ddd;
+  word-break: break-all; /* 防止长名称溢出 */
+}
+
+.inheritance-list .license-badge {
+  background-color: #555;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  margin-left: 10px;
+}
+
+/* 在 main.less 或等效的CSS文件中 */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 5px;
+}
+.section-header h4 {
+  margin: 0;
+}
+.highlight-btn {
+  background-color: #3a5a75;
+  color: #d0eaff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.highlight-btn:hover {
+  background-color: #4a7294;
+  color: white;
+}
+.chain-item {
+  position: relative;
+}
+.chain-item.root .model-name {
+  font-weight: bold;
+}
+.level-indicator {
+  display: inline-block;
+  font-size: 10px;
+  color: #888;
+  margin-right: 8px;
+  width: 20px;
+}
+/* 添加到 main.less 或等效的CSS文件中 */
+.button-group {
+  display: flex;
+  gap: 8px; /* 按钮之间的间距 */
+}
+
+.next-btn {
+  background-color: #2a6a9e; /* 换个颜色以区分 */
+  color: #d0eaff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.next-btn:hover {
+  background-color: #3a82c4;
+  color: white;
+}
+
+.chain-item.current .model-name {
+  color: #a7d4ff; /* 当前节点用不同的颜色突出 */
+}
+.level-indicator.self {
+  display: inline-block;
+  font-size: 10px;
+  color: #a7d4ff;
+  font-weight: bold;
+  margin-right: 8px;
+  width: 45px; /* 调整宽度以容纳 "Current" */
+}
+
+/* 在 main.less 或等效的CSS文件中 */
+.window-view.license-window {
+  width: 500px;
+  height: 400px;
+}
+.license-treemap-container {
+  padding: 10px;
+  background: #222;
+}
+.treemap-leaf {
+  transition: opacity 0.3s;
+}
+.treemap-leaf:hover {
+  opacity: 0.8;
+}
+.treemap-label {
+  font-size: 10px;
+  pointer-events: none;
+}
+.treemap-value {
+  font-size: 12px;
+  font-weight: bold;
+}
+.loading-message {
+  padding: 20px;
+  color: #ccc;
+  text-align: center;
+}
