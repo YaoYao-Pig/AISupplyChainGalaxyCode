@@ -1,5 +1,5 @@
 import appEvents from '../service/appEvents.js';
-import scene from '../store/scene.js';
+import scene from '../store/sceneStore.js';
 
 export default showLinks;
 

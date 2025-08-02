@@ -16,7 +16,7 @@ import WindowCollection from './windows/windowCollectionView.jsx';
 import createNativeRenderer from './native/renderer.js';
 import createKeyboardBindings from './native/sceneKeyboardBinding.js';
 import appEvents from './service/appEvents.js';
-
+import Minimap from './Minimap.jsx';
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 
@@ -51,6 +51,7 @@ function scene(x) {
 
         <SteeringIndicator />
         <SearchBox />
+        <Minimap />
         <WindowCollection />
         <Help />
         <About />

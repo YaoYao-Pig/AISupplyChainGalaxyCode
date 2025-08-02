@@ -1,6 +1,6 @@
 
 import appEvents from '../service/appEvents.js';
-import scene from '../store/scene.js';
+import scene from '../store/sceneStore.js';
 import DegreeWindowViewModel from './degreeWindowViewModel.js';
 import getBaseNodeViewModel from '../store/baseNodeViewModel.js';
 import eventify from 'ngraph.events';

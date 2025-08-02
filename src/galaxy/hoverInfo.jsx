@@ -1,4 +1,4 @@
-import scene from './store/scene.js';
+import scene from './store/sceneStore.js';
 import React from 'react';
 import hoverModel from './store/hover.js';
 

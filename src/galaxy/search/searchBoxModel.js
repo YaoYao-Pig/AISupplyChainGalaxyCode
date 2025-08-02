@@ -1,7 +1,7 @@
 // src/galaxy/search/searchBoxModel.js (清理版)
 
 import appEvents from '../service/appEvents.js';
-import scene from '../store/scene.js';
+import scene from '../store/sceneStore.js';
 import clientRuntime from '../runtime/clientRuntime.js';
 import SearchResultWindowViewModel from './SearchResultWindowViewModel.js';
 

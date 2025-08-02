@@ -1,4 +1,4 @@
-import scene from '../store/scene.js';
+import scene from '../store/sceneStore.js';
 
 export default search;
 

@@ -5,7 +5,7 @@ window.THREE = unrender.THREE;
 
 import eventify from 'ngraph.events';
 import appEvents from '../service/appEvents.js';
-import scene from '../store/scene.js';
+import scene from '../store/sceneStore.js';
 import getNearestIndex from './getNearestIndex.js';
 import createTouchControl from './touchControl.js';
 import createLineView from './lineView.js';
@@ -73,6 +73,7 @@ function sceneRenderer(container) {
     if (!renderer) return;
     var camera = renderer.camera();
     appConfig.setCameraConfig(camera.position, camera.quaternion);
+    appEvents.cameraMoved.fire(camera);
   }
 
   function toggleSteering() {

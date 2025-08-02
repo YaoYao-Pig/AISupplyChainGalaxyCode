@@ -1,4 +1,4 @@
-import scene from '../store/scene.js';
+import scene from '../store/sceneStore.js';
 import formatNumber from '../utils/formatNumber.js';
 
 export default DegreeWindowViewModel;

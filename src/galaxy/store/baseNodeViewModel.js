@@ -1,7 +1,7 @@
 // src/galaxy/store/baseNodeViewModel.js (最终版 - 包含子节点的完整继承链)
 
 import getGraphSpecificInfo from './graphSepcific/graphSpecificInfo.js';
-import scene from './scene.js';
+import scene from './sceneStore.js';
 import formatNumber from '../utils/formatNumber.js';
 
 export default getBaseNodeViewModel;

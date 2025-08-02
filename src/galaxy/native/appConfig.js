@@ -1,6 +1,6 @@
 import appEvents from '../service/appEvents.js';
 import eventify from 'ngraph.events';
-import scene from '../store/scene.js';
+import scene from '../store/sceneStore.js';
 import qs from 'qs';
 
 

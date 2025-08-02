@@ -94,5 +94,6 @@ export default eventMirror([
    'highlightChainWithData',
    'focusOnArea',
    'focusNextInChain',
+   'cameraMoved',
 ], appEvents);
 

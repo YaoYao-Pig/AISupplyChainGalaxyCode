@@ -3,7 +3,7 @@
 import React from 'react';
 import detailModel from './nodeDetailsStore.js';
 import specialNodeDetails from './templates/all.js';
-import scene from '../store/scene.js';
+import scene from '../store/sceneStore.js';
 
 module.exports = require('maco')(detailedNodeView, React);
 

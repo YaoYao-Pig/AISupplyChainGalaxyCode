@@ -1,5 +1,5 @@
 import React from 'react';
-import scene from './store/scene.js';
+import scene from './store/sceneStore.js';
 
 module.exports = require('maco')(loadingIndicator, React);
 

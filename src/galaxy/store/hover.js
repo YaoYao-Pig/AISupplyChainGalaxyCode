@@ -2,7 +2,7 @@ import React from 'react';
 import eventify from 'ngraph.events';
 
 import appEvents from '../service/appEvents.js';
-import scene from './scene.js';
+import scene from './sceneStore.js';
 import getBaseNodeViewModel from './baseNodeViewModel.js';
 
 export default hoverStore();
