@@ -17,6 +17,8 @@ import createNativeRenderer from './native/renderer.js';
 import createKeyboardBindings from './native/sceneKeyboardBinding.js';
 import appEvents from './service/appEvents.js';
 import Minimap from './Minimap.jsx';
+import ComplianceGraphViewModel from './windows/ComplianceGraphViewModel.js';
+import complianceStore from './store/licenseComplianceStore.js';
 import LicenseReportViewModel from './windows/LicenseReportViewModel.js'; // <--- 新增
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
@@ -90,9 +92,13 @@ function scene(x) {
       });
   }
   function showLicenseReportWindow() {
-    const viewModel = new LicenseReportViewModel();
+    // 从 complianceStore 中获取已经计算好的图表数据
+    const graphData = complianceStore.getGraphData();
+    // 使用图表数据创建正确的 ViewModel
+    const viewModel = new ComplianceGraphViewModel(graphData);
+    // 触发事件，显示窗口
     appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
-}
+  }
   function updateSidebar() {
       x.setState({
           sidebarData: detailModel.getSidebarData()
