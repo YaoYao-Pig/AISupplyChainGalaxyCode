@@ -34,9 +34,17 @@ function ensureBuildExists() {
     fs.mkdirSync(buildDir);
   }
 
-  var source = path.join(__dirname, 'src', 'index.html');
-  var dest = path.join(__dirname, 'build', 'index.html');
+  // --- 核心修改：定义一个可复用的文件复制函数 ---
+  function copyFile(source, dest) {
+    console.log('Copying ' + source + ' to ' + dest);
+    fs.createReadStream(source).pipe(fs.createWriteStream(dest));
+  }
 
-  console.log('Copying ' + source + ' to ' + dest);
-  fs.createReadStream(source).pipe(fs.createWriteStream(dest));
+  // 复制 index.html
+  copyFile(path.join(__dirname, 'src', 'index.html'), path.join(buildDir, 'index.html'));
+
+  // --- 新增：复制我们下载的 sigma 库文件 ---
+  var vendorSrcDir = path.join(__dirname, 'src', 'vendor');
+  copyFile(path.join(vendorSrcDir, 'sigma.min.js'), path.join(buildDir, 'sigma.min.js'));
+  copyFile(path.join(vendorSrcDir, 'sigma.layout.forceAtlas2.min.js'), path.join(buildDir, 'sigma.layout.forceAtlas2.min.js'));
 }

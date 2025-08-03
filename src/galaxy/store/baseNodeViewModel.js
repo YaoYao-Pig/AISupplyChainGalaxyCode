@@ -3,8 +3,9 @@
 import getGraphSpecificInfo from './graphSepcific/graphSpecificInfo.js';
 import scene from './sceneStore.js';
 import formatNumber from '../utils/formatNumber.js';
-import complianceStore from './licenseComplianceStore.js'; 
+import { isLicenseCompatible } from './licenseUtils.js';
 export default getBaseNodeViewModel;
+
 function getBaseNodeViewModel(nodeId) {
     var graphName = scene.getGraphName();
     var graphSpecificInfo = getGraphSpecificInfo(graphName);
@@ -44,13 +45,13 @@ function getBaseNodeViewModel(nodeId) {
 
         const parentNodeId = scene.getNodeIdByModelId(currentModelId);
         if (parentNodeId === undefined) {
-            inheritanceChain.push({ model: currentModelId, license: 'Unknown', level: level, isRoot: true, isCompatible: complianceStore.isLicenseCompatible('Unknown', parentLicenseForComparison) });
+            inheritanceChain.push({ model: currentModelId, license: 'Unknown', level: level, isRoot: true, isCompatible: isLicenseCompatible('Unknown', parentLicenseForComparison) });
             return;
         }
       
         const parentData = graphModel.getNodeData(parentNodeId);
         if (!parentData) {
-            inheritanceChain.push({ model: currentModelId, license: 'Unknown', level: level, isRoot: true, isCompatible: complianceStore.isLicenseCompatible('Unknown', parentLicenseForComparison) });
+            inheritanceChain.push({ model: currentModelId, license: 'Unknown', level: level, isRoot: true, isCompatible: isLicenseCompatible('Unknown', parentLicenseForComparison) });
             return;
         }
       
@@ -63,7 +64,7 @@ function getBaseNodeViewModel(nodeId) {
             license: parentLicense,
             level: level,
             isRoot: grandParentTags.length === 0,
-            isCompatible: complianceStore.isLicenseCompatible(parentLicense, parentLicenseForComparison)
+            isCompatible: isLicenseCompatible(parentLicense, parentLicenseForComparison)
         });
       
         grandParentTags.forEach(tag => {
