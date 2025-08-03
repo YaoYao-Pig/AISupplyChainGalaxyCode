@@ -91,14 +91,85 @@ function scene(x) {
           activeTag: searchBoxModel.getActiveTag()
       });
   }
-  function showLicenseReportWindow() {
-    // 从 complianceStore 中获取已经计算好的图表数据
-    const graphData = complianceStore.getGraphData();
-    // 使用图表数据创建正确的 ViewModel
-    const viewModel = new ComplianceGraphViewModel(graphData);
-    // 触发事件，显示窗口
+
+
+function showLicenseReportWindow() {
+    // 1. 获取当前侧边栏的数据，里面包含了选中的节点信息
+    const sidebarData = detailModel.getSidebarData();
+    if (!sidebarData || !sidebarData.selectedNode) {
+        console.warn('No node selected. Cannot build local graph.');
+        return;
+    }
+
+    const { selectedNode, outgoing } = sidebarData;
+    const addedNodeIds = new Set();
+    const nodes = [];
+    const edges = [];
+    let edgeCounter = 0;
+
+    // 辅助函数：添加节点，同时避免重复
+    const addNode = (node) => {
+        if (!addedNodeIds.has(node.id)) {
+            nodes.push(node);
+            addedNodeIds.add(node.id);
+        }
+    };
+    
+    // 2. 处理继承链（祖先节点）
+    if (selectedNode.inheritanceChain && selectedNode.inheritanceChain.length > 0) {
+        const chain = selectedNode.inheritanceChain;
+        
+        // 添加链上的所有节点
+        chain.forEach(item => {
+            addNode({
+                id: item.model,
+                label: item.model,
+                // 根据级别和是否为根节点来设定不同颜色
+                color: item.level === 0 ? '#4CAF50' : (item.isRoot ? '#f44336' : '#2196F3')
+            });
+        });
+
+        // 建立链上的连接关系 (从子指向父)
+        for (let i = 0; i < chain.length - 1; i++) {
+            edges.push({
+                id: `e${edgeCounter++}`,
+                source: chain[i].model,
+                target: chain[i+1].model,
+                type: 'arrow' // 使用箭头线
+            });
+        }
+    }
+
+    // 3. 处理直接子节点 (outgoing)
+    if (outgoing && outgoing.length > 0) {
+        outgoing.forEach(childNode => {
+            // 添加子节点
+            addNode({
+                id: childNode.name,
+                label: childNode.name,
+                color: '#FF9800' // 为子节点设置不同颜色（橙色）
+            });
+            
+            // 建立从当前节点到子节点的连接
+            edges.push({
+                id: `e${edgeCounter++}`,
+                source: selectedNode.name,
+                target: childNode.name,
+                type: 'arrow'
+            });
+        });
+    }
+
+    // 4. 构建图数据并创建视图模型
+    const localGraphData = { nodes, edges };
+    const viewModel = new ComplianceGraphViewModel(localGraphData);
+    
+    // 5. 触发事件显示窗口
     appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
-  }
+}
+
+
+
   function updateSidebar() {
       x.setState({
           sidebarData: detailModel.getSidebarData()

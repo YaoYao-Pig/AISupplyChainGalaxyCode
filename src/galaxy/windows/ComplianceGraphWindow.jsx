@@ -18,42 +18,35 @@ module.exports = require('maco')((x) => {
 
     };
 
-    function createSigmaGraph(graphData) {
+function createSigmaGraph(graphData) {
+    const sGraph = { nodes: [], edges: [] };
 
-        const sGraph = { nodes: [], edges: [] };
+    // 正确处理节点数据
+    graphData.nodes.forEach(node => {
+        sGraph.nodes.push({
+            id: node.id,
+            label: node.label,
+            x: Math.random(),
+            y: Math.random(),
+            size: 10, // 给一个默认尺寸
+            color: node.color || '#3498db' // 使用我们动态传入的颜色
+        });
+    });
 
-        graphData.nodes.forEach(node => {
+    // 正确处理边数据
+    graphData.edges.forEach((edge, i) => {
+        sGraph.edges.push({
+            id: edge.id || `e${i}`,
+            source: edge.source, // 修复: 从 edge.from 改为 edge.source
+            target: edge.target, // 修复: 从 edge.to 改为 edge.target
+            color: '#ccc',       // 统一设置边的颜色
+            size: 1,
+            type: edge.type || 'curve' // 使用我们动态传入的类型（'arrow'）
+        });
+    });
 
-            sGraph.nodes.push({
-
-                id: node.id, label: node.label, x: Math.random(), y: Math.random(),
-
-                size: Math.log(node.value + 1) * 3 + 1, color: '#3498db'
-
-            });
-
-        });
-
-        graphData.edges.forEach((edge, i) => {
-
-            sGraph.edges.push({
-
-                id: `e${i}`, source: edge.from, target: edge.to,
-
-                color: edge.dashes ? '#a0a0a0' : '#e74c3c',
-
-                size: edge.size,
-
-                type: 'curve'
-
-            });
-
-        });
-
-        return sGraph;
-
-    }
-
+    return sGraph;
+}
 
 
     x.componentDidMount = function() {
