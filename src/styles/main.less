@@ -733,3 +733,27 @@ a.media {
   position: absolute; top: 10px; right: 15px;
 }
 .window-close-btn:hover { color: white; }
+
+.compliance-graph-window {
+  width: 80vw; /* 窗口宽度为视口的80% */
+  height: 80vh; /* 窗口高度为视口的80% */
+  max-width: 900px; /* 最大宽度不超过900px */
+  max-height: 700px; /* 最大高度不超过700px */
+  
+  /* 关键的居中样式 */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  
+  /* 其他样式调整 */
+  padding: 15px;
+  display: flex; /* 使用flex布局方便内容管理 */
+  flex-direction: column;
+}
+
+.compliance-graph-window .graph-content {
+  flex-grow: 1; /* 让图表容器填满剩余空间 */
+  background-color: #111; /* 给图表一个深色背景 */
+  border-radius: 4px;
+  overflow: hidden; /* 确保sigma画布不会溢出 */
+}

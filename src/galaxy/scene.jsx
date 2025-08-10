@@ -1,4 +1,4 @@
-// src/galaxy/scene.jsx (最终修正版 - 修复 activeTag 引用错误)
+// src/galaxy/scene.jsx (最终修正版 - 修复 activeTag 和 import 引用错误)
 
 import React from 'react';
 import {findDOMNode} from 'react-dom';
@@ -6,7 +6,7 @@ import HoverInfo from './hoverInfo.jsx';
 import NodeDetails from './nodeDetails/nodeDetailsView.jsx';
 import SidebarView from './SidebarView.jsx';
 import detailModel from './nodeDetails/nodeDetailsStore.js';
-import searchBoxModel from './search/searchBoxModel.js'; // 确认已导入
+import searchBoxModel from './search/searchBoxModel.js';
 import SteeringIndicator from './steeringIndicator.jsx';
 import SearchBox from './search/searchBoxView.jsx';
 import NoWebGL from './noWebgl.jsx';
@@ -19,7 +19,10 @@ import appEvents from './service/appEvents.js';
 import Minimap from './Minimap.jsx';
 import ComplianceGraphViewModel from './windows/ComplianceGraphViewModel.js';
 import complianceStore from './store/licenseComplianceStore.js';
-import LicenseReportViewModel from './windows/LicenseReportViewModel.js'; // <--- 新增
+import { isLicenseCompatible } from './store/licenseUtils.js';
+// --- 修复：添加缺失的 import ---
+import getBaseNodeViewModel from './store/baseNodeViewModel.js';
+
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 
@@ -37,7 +40,6 @@ function scene(x) {
       return <NoWebGL />;
     }
     
-    // --- 核心修正: 确保在这里解构 activeTag ---
     const { sidebarData, activeTag } = x.state;
 
     return (
@@ -49,7 +51,7 @@ function scene(x) {
         <SidebarView 
             data={sidebarData} 
             isOpen={!!sidebarData} 
-            activeTag={activeTag} // 将 activeTag 作为 prop 传递下去
+            activeTag={activeTag}
         />
 
         <SteeringIndicator />
@@ -71,7 +73,7 @@ function scene(x) {
     delegateClickHandler.addEventListener('click', handleDelegateClick);
 
     detailModel.on('changed', updateSidebar);
-    appEvents.activeTagChanged.on(updateActiveTag); // 监听激活标签的变化
+    appEvents.activeTagChanged.on(updateActiveTag);
     appEvents.showLicenseReport.on(showLicenseReportWindow);
   };
 
@@ -81,7 +83,7 @@ function scene(x) {
     if (delegateClickHandler) delegateClickHandler.removeEventListener('click', handleDelegateClick);
     
     detailModel.off('changed', updateSidebar);
-    appEvents.activeTagChanged.off(updateActiveTag); // 取消监听
+    appEvents.activeTagChanged.off(updateActiveTag);
     appEvents.showLicenseReport.off(showLicenseReportWindow); 
   };
 
@@ -92,9 +94,7 @@ function scene(x) {
       });
   }
 
-
-function showLicenseReportWindow() {
-    // 1. 获取当前侧边栏的数据，里面包含了选中的节点信息
+  function showLicenseReportWindow() {
     const sidebarData = detailModel.getSidebarData();
     if (!sidebarData || !sidebarData.selectedNode) {
         console.warn('No node selected. Cannot build local graph.');
@@ -107,7 +107,6 @@ function showLicenseReportWindow() {
     const edges = [];
     let edgeCounter = 0;
 
-    // 辅助函数：添加节点，同时避免重复
     const addNode = (node) => {
         if (!addedNodeIds.has(node.id)) {
             nodes.push(node);
@@ -115,60 +114,60 @@ function showLicenseReportWindow() {
         }
     };
     
-    // 2. 处理继承链（祖先节点）
     if (selectedNode.inheritanceChain && selectedNode.inheritanceChain.length > 0) {
         const chain = selectedNode.inheritanceChain;
         
-        // 添加链上的所有节点
         chain.forEach(item => {
             addNode({
                 id: item.model,
                 label: item.model,
-                // 根据级别和是否为根节点来设定不同颜色
                 color: item.level === 0 ? '#4CAF50' : (item.isRoot ? '#f44336' : '#2196F3')
             });
         });
 
-        // 建立链上的连接关系 (从子指向父)
         for (let i = 0; i < chain.length - 1; i++) {
+            const child = chain[i];
+            const parent = chain[i + 1];
+            
             edges.push({
                 id: `e${edgeCounter++}`,
-                source: chain[i].model,
-                target: chain[i+1].model,
-                type: 'arrow' // 使用箭头线
+                source: child.model,
+                target: parent.model,
+                type: 'arrow',
+                fromLicense: child.license,
+                toLicense: parent.license,
+                isValue: isLicenseCompatible(child.license, parent.license)
             });
         }
     }
 
-    // 3. 处理直接子节点 (outgoing)
     if (outgoing && outgoing.length > 0) {
-        outgoing.forEach(childNode => {
-            // 添加子节点
+        outgoing.forEach(childNodeInfo => {
+            const childViewModel = getBaseNodeViewModel(childNodeInfo.id);
+
             addNode({
-                id: childNode.name,
-                label: childNode.name,
-                color: '#FF9800' // 为子节点设置不同颜色（橙色）
+                id: childViewModel.name,
+                label: childViewModel.name,
+                color: '#FF9800'
             });
             
-            // 建立从当前节点到子节点的连接 
             edges.push({
                 id: `e${edgeCounter++}`,
                 source: selectedNode.name,
-                target: childNode.name,
-                type: 'arrow'
+                target: childViewModel.name,
+                type: 'arrow',
+                fromLicense: selectedNode.license,
+                toLicense: childViewModel.license,
+                isValue: isLicenseCompatible(childViewModel.license, selectedNode.license)
             });
         });
     }
 
-    // 4. 构建图数据并创建视图模型
     const localGraphData = { nodes, edges };
     const viewModel = new ComplianceGraphViewModel(localGraphData);
     
-    // 5. 触发事件显示窗口
     appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
-}
-
-
+  }
 
   function updateSidebar() {
       x.setState({
