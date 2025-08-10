@@ -150,7 +150,7 @@ function showLicenseReportWindow() {
                 color: '#FF9800' // 为子节点设置不同颜色（橙色）
             });
             
-            // 建立从当前节点到子节点的连接
+            // 建立从当前节点到子节点的连接 
             edges.push({
                 id: `e${edgeCounter++}`,
                 source: selectedNode.name,
