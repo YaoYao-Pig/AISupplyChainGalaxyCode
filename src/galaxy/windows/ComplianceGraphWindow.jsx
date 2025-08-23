@@ -1,38 +1,32 @@
+// src/galaxy/windows/ComplianceGraphWindow.jsx
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import appEvents from '../service/appEvents.js';
 
 module.exports = require('maco')((x) => {
     let sigmaInstance = null;
-    let tooltip = null; // 用一个变量来存储 tooltip 的状态
+    let tooltip = null; 
 
-    // 一个辅助函数，用来更新 tooltip 状态并强制组件重新渲染
     const updateTooltip = (newTooltip) => {
         tooltip = newTooltip;
         x.forceUpdate();
     };
 
-    const handleClose = () => {
-        // 复用现有的 hideNodeListWindow 事件，并传递当前窗口的唯一ID
-        appEvents.hideNodeListWindow.fire('compliance-graph');
-    };
-
     function createSigmaGraph(graphData) {
         const sGraph = { nodes: [], edges: [] };
 
-        // 正确处理节点数据
         graphData.nodes.forEach(node => {
             sGraph.nodes.push({
                 id: node.id,
                 label: node.label,
                 x: Math.random(),
                 y: Math.random(),
-                size: 10, // 给一个默认尺寸
-                color: node.color || '#3498db' // 使用我们动态传入的颜色
+                size: 10,
+                color: node.color || '#3498db'
             });
         });
 
-        // 正确处理边数据，并附加额外信息
         graphData.edges.forEach((edge, i) => {
             sGraph.edges.push({
                 id: edge.id || `e${i}`,
@@ -41,7 +35,6 @@ module.exports = require('maco')((x) => {
                 color: '#ccc',
                 size: 1,
                 type: edge.type || 'curve',
-                // 将我们准备好的额外数据也传递给 sigma 的边对象
                 fromLicense: edge.fromLicense,
                 toLicense: edge.toLicense,
                 isValue: edge.isValue
@@ -66,10 +59,8 @@ module.exports = require('maco')((x) => {
                 graph: graphData,
                 renderer: { container: container, type: 'canvas' },
                 settings: {
-                    // --- 新增: 启用边的悬停事件 ---
                     enableEdgeHovering: true,
-                    edgeHoverPrecision: 5, // 悬停的感应范围
-                    // --- 保留其他设置 ---
+                    edgeHoverPrecision: 5,
                     defaultNodeColor: '#ec5148',
                     edgeColor: 'default',
                     defaultEdgeColor: '#ccc',
@@ -79,7 +70,6 @@ module.exports = require('maco')((x) => {
                 }
             });
 
-            // --- 新增：绑定事件处理器 ---
             const handleOverEdge = (e) => {
                 const edge = e.data.edge;
                 const captor = e.data.captor;
@@ -89,19 +79,18 @@ module.exports = require('maco')((x) => {
                     from: edge.fromLicense,
                     to: edge.toLicense,
                     isCompatible: edge.isValue,
-                    x: captor.clientX, // 使用事件的屏幕坐标
+                    x: captor.clientX,
                     y: captor.clientY
                 });
             };
 
             const handleOutEdge = (e) => {
-                updateTooltip(null); // 鼠标移开时清除 tooltip
+                updateTooltip(null);
             };
 
             sigmaInstance.bind('overEdge', handleOverEdge);
             sigmaInstance.bind('outEdge', handleOutEdge);
 
-            // --- 保留布局算法相关的代码 ---
             if (typeof sigmaInstance.startForceAtlas2 === 'function') {
                 sigmaInstance.startForceAtlas2({
                     worker: true,
@@ -116,7 +105,7 @@ module.exports = require('maco')((x) => {
                     if (sigmaInstance && typeof sigmaInstance.stopForceAtlas2 === 'function') {
                         sigmaInstance.stopForceAtlas2();
                     }
-                }, 5000); // 运行5秒，让布局更稳定
+                }, 5000);
             } else {
                 console.warn('ForceAtlas2 plugin method not found on sigma instance. Layout will not be applied.');
                 sigmaInstance.refresh();
@@ -129,7 +118,6 @@ module.exports = require('maco')((x) => {
 
     x.componentWillUnmount = function() {
         if (sigmaInstance) {
-            // --- 新增：解绑事件 ---
             sigmaInstance.unbind('overEdge');
             sigmaInstance.unbind('outEdge');
             if (typeof sigmaInstance.stopForceAtlas2 === 'function') sigmaInstance.stopForceAtlas2();
@@ -139,9 +127,7 @@ module.exports = require('maco')((x) => {
     };
 
     x.render = function() {
-        const { viewModel } = x.props;
-
-        // 动态计算 tooltip 的样式
+        // --- 核心修改：只返回渲染图形所需的内容 ---
         const tooltipStyle = tooltip ? {
             position: 'fixed',
             left: tooltip.x + 10,
@@ -157,19 +143,11 @@ module.exports = require('maco')((x) => {
             zIndex: 999,
             transition: 'opacity 0.2s'
         } : { display: 'none' };
-
+        
+        // 返回一个根<div>，其中包含图形容器和tooltip
         return (
-            // 用一个 div 包裹，因为不能返回多个顶级元素
-            <div className='compliance-graph-wrapper'>
-                <div className={'window-container ' + viewModel.class}>
-                    <div className="window-header">
-                        <h4>{viewModel.title}</h4>
-                        <button onClick={handleClose} className="window-close-btn" title="Close">&times;</button>
-                    </div>
-                    <div ref="sigmaContainer" className="graph-content" style={{ height: "calc(100% - 40px)" }}></div>
-                </div>
-
-                {/* --- 新增：渲染 tooltip --- */}
+            <div>
+                <div ref="sigmaContainer" className="graph-content" style={{ width: "100%", height: "480px" }}></div>
                 {tooltip && (
                     <div style={tooltipStyle}>
                         <div><strong>From:</strong> {tooltip.from}</div>
