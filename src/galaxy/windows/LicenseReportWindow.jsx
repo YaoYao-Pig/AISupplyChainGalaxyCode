@@ -1,15 +1,10 @@
 // src/galaxy/windows/LicenseReportWindow.jsx
 
 import React from 'react';
-import appEvents from '../service/appEvents.js';
-import complianceStore from '../store/licenseComplianceStore.js';
 
+import complianceStore from '../store/licenseComplianceStore.js';
+import appEvents from '../service/appEvents.js';
 module.exports = require('maco')((x) => {
-    const handleHighlightClick = () => {
-        const conflictNodeIds = complianceStore.getConflictList().map(c => c.nodeId);
-        appEvents.highlightLicenseConflicts.fire(conflictNodeIds);
-    };
-    
     const handleClose = () => {
         appEvents.hideNodeListWindow.fire('license-report-global');
     };
@@ -32,11 +27,7 @@ module.exports = require('maco')((x) => {
                     <button onClick={handleClose} className="window-close-btn" title="Close">&times;</button>
                 </div>
                  <div className="window-list-content report-list">
-                    {conflictList.length > 0 && (
-                         <button onClick={handleHighlightClick} className="highlight-btn-small" style={{marginBottom: '10px'}}>
-                            Highlight All Conflicts in 3D View
-                        </button>
-                    )}
+                    {/* --- 高亮按钮已从此文件移除 --- */}
                     {conflictList.length > 0 ? (
                         <table>
                             <thead>

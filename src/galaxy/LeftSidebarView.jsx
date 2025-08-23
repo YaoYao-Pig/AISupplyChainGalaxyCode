@@ -1,12 +1,29 @@
 // src/galaxy/LeftSidebarView.jsx
 
 import React from 'react';
+// --- 核心修正：修复 appEvents 和 complianceStore 的导入路径 ---
 import appEvents from './service/appEvents.js';
+import complianceStore from './store/licenseComplianceStore.js';
 
 module.exports = require('maco')((x) => {
-    // 使用组件的 state 来控制侧边栏的显示和隐藏
     x.state = {
-        isOpen: false
+        isOpen: false,
+        conflictCount: 0
+    };
+
+    x.componentDidMount = function() {
+        complianceStore.on('changed', updateConflictCount);
+        updateConflictCount();
+    };
+
+    x.componentWillUnmount = function() {
+        complianceStore.off('changed', updateConflictCount);
+    };
+    
+    const updateConflictCount = () => {
+        x.setState({
+            conflictCount: complianceStore.getConflictList().length
+        });
     };
 
     const handleMouseEnter = () => {
@@ -29,9 +46,13 @@ module.exports = require('maco')((x) => {
         appEvents.showGlobalComplianceStats.fire();
     };
 
+    const handleHighlightClick = () => {
+        const conflictNodeIds = complianceStore.getConflictList().map(c => c.nodeId);
+        appEvents.highlightLicenseConflicts.fire(conflictNodeIds);
+    };
+
     x.render = function() {
-        const { isOpen } = x.state;
-        // 根据 isOpen 状态切换 CSS 类名，以觸发动画
+        const { isOpen, conflictCount } = x.state;
         const containerClass = isOpen ? "left-sidebar-container open" : "left-sidebar-container";
 
         return (
@@ -50,6 +71,13 @@ module.exports = require('maco')((x) => {
                     </button>
                     <button onClick={handleGlobalComplianceStats} className="analysis-btn">
                         Compliance Stats
+                    </button>
+                    <button 
+                        onClick={handleHighlightClick} 
+                        className="analysis-btn highlight" 
+                        disabled={conflictCount === 0}
+                    >
+                        Highlight Conflicts ({conflictCount})
                     </button>
                 </div>
             </div>

@@ -839,3 +839,27 @@ a.media {
   background-color: #4a7294;
   color: white;
 }
+
+
+// src/styles/main.less (在 .left-sidebar-container .analysis-btn:hover 规则后添加)
+
+.left-sidebar-container .analysis-btn:hover {
+  background-color: #4a7294;
+  color: white;
+}
+
+/* --- 新增：为高亮按钮添加特殊样式 --- */
+.left-sidebar-container .analysis-btn.highlight {
+  background-color: #c0392b; /* 使用醒目的红色 */
+  color: white;
+}
+
+.left-sidebar-container .analysis-btn.highlight:hover {
+  background-color: #e74c3c; /* 鼠标悬停时颜色变亮 */
+}
+
+.left-sidebar-container .analysis-btn:disabled {
+  background-color: #555;
+  color: #999;
+  cursor: not-allowed;
+}
