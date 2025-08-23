@@ -5,6 +5,7 @@ import {findDOMNode} from 'react-dom';
 import HoverInfo from './hoverInfo.jsx';
 import NodeDetails from './nodeDetails/nodeDetailsView.jsx';
 import SidebarView from './SidebarView.jsx';
+import LeftSidebarView from './LeftSidebarView.jsx'; // 引入新的左侧栏组件
 import detailModel from './nodeDetails/nodeDetailsStore.js';
 import searchBoxModel from './search/searchBoxModel.js';
 import SteeringIndicator from './steeringIndicator.jsx';
@@ -47,6 +48,7 @@ function scene(x) {
     return (
       <div>
         <div ref='graphContainer' className='graph-full-size'/>
+        <LeftSidebarView />
         <HoverInfo />
         <NodeDetails />
         
@@ -102,13 +104,11 @@ function scene(x) {
   }
 
   function showGlobalLicenseReport() {
-    // --- 核心修正：传递第二个参数 viewModel.id ---
     const viewModel = new LicenseReportViewModel();
     appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
   }
 
   function showGlobalComplianceStats() {
-    // --- 核心修正：传递第二个参数 viewModel.id ---
     const viewModel = new ComplianceStatsViewModel();
     appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
   }

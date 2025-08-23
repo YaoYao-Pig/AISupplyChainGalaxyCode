@@ -136,25 +136,12 @@ function renderAnalysisSection() {
         appEvents.showLicenseReport.fire();
     };
 
-    const handleGlobalStats = () => {
-        appEvents.showGlobalLicenseStats.fire();
-    };
-
-    const handleGlobalReport = () => {
-        appEvents.showGlobalLicenseReport.fire();
-    };
-
-    const handleGlobalComplianceStats = () => {
-        appEvents.showGlobalComplianceStats.fire();
-    };
-
     return (
         <div className="sidebar-list-section">
             <h4>Analysis</h4>
-            <button onClick={handleShowReport} className="analysis-btn">Show Local Compliance Graph</button>
-            <button onClick={handleGlobalStats} className="analysis-btn" style={{marginTop: '10px'}}>Show Global License Stats</button>
-            <button onClick={handleGlobalReport} className="analysis-btn" style={{marginTop: '10px'}}>Show Global Compliance Report</button>
-            <button onClick={handleGlobalComplianceStats} className="analysis-btn" style={{marginTop: '10px'}}>Show Global Compliance Stats</button>
+            <button onClick={handleShowReport} className="analysis-btn">
+                Show Local Compliance Graph
+            </button>
         </div>
     );
 }
