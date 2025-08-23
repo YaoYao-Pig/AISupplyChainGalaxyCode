@@ -8,7 +8,8 @@ const complianceStore = (function() {
   let conflictList = [];
 
   const api = eventify({
-    getConflictList: () => conflictList
+    getConflictList: () => conflictList,
+    getConflictStats: getConflictStats 
   });
 
   appEvents.graphDownloaded.on(calculateConflictList);
@@ -55,6 +56,22 @@ const complianceStore = (function() {
     conflictList = allConflicts;
     console.log(`Found ${conflictList.length} global license conflicts.`);
     api.fire('changed');
+  }
+
+  function getConflictStats() {
+    if (!conflictList || conflictList.length === 0) {
+      return [];
+    }
+
+    const stats = new Map();
+    conflictList.forEach(conflict => {
+      const license = conflict.childLicense;
+      stats.set(license, (stats.get(license) || 0) + 1);
+    });
+
+    return Array.from(stats.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   }
 
   return api;

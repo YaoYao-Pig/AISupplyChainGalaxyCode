@@ -99,5 +99,6 @@ export default eventMirror([
 'highlightLicenseConflicts',
   'showGlobalLicenseReport',
   'showGlobalLicenseStats',
+  'showGlobalComplianceStats',
 ], appEvents);
 

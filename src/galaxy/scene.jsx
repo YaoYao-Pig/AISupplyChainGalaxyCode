@@ -1,4 +1,4 @@
-// src/galaxy/scene.jsx (最终修正版 - 修复 activeTag 和 import 引用错误)
+// src/galaxy/scene.jsx
 
 import React from 'react';
 import {findDOMNode} from 'react-dom';
@@ -15,26 +15,26 @@ import About from './about.jsx';
 import WindowCollection from './windows/windowCollectionView.jsx';
 import createNativeRenderer from './native/renderer.js';
 import createKeyboardBindings from './native/sceneKeyboardBinding.js';
+import licenseStore from './store/licenseStore.js';
+import LicenseWindowViewModel from './windows/LicenseWindowViewModel.js';
+import LicenseReportViewModel from './windows/LicenseReportViewModel.js';
+import ComplianceStatsViewModel from './windows/ComplianceStatsViewModel.js';
 import appEvents from './service/appEvents.js';
 import Minimap from './Minimap.jsx';
 import ComplianceGraphViewModel from './windows/ComplianceGraphViewModel.js';
 import complianceStore from './store/licenseComplianceStore.js';
 import { isLicenseCompatible } from './store/licenseUtils.js';
-// --- 修复：添加缺失的 import ---
 import getBaseNodeViewModel from './store/baseNodeViewModel.js';
-import licenseStore from './store/licenseStore.js';
-import LicenseWindowViewModel from './windows/LicenseWindowViewModel.js';
-import LicenseReportViewModel from './windows/LicenseReportViewModel.js';
+
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 
 function scene(x) {
   var nativeRenderer, keyboard, delegateClickHandler;
 
-  // 在构造函数或顶层作用域初始化 state
   x.state = {
     sidebarData: null,
-    activeTag: null // 确保 activeTag 在 state 中初始化
+    activeTag: null 
   };
 
   x.render = function() {
@@ -78,6 +78,7 @@ function scene(x) {
     appEvents.activeTagChanged.on(updateActiveTag);
     appEvents.showLicenseReport.on(showLicenseReportWindow);
     appEvents.showGlobalLicenseStats.on(showGlobalLicenseStats);
+    appEvents.showGlobalComplianceStats.on(showGlobalComplianceStats);
     appEvents.showGlobalLicenseReport.on(showGlobalLicenseReport);
   };
 
@@ -89,12 +90,12 @@ function scene(x) {
     detailModel.off('changed', updateSidebar);
     appEvents.activeTagChanged.off(updateActiveTag);
     appEvents.showLicenseReport.off(showLicenseReportWindow); 
-
     appEvents.showGlobalLicenseStats.off(showGlobalLicenseStats);
+    appEvents.showGlobalComplianceStats.off(showGlobalComplianceStats);
     appEvents.showGlobalLicenseReport.off(showGlobalLicenseReport);
   };
 
-function showGlobalLicenseStats() {
+  function showGlobalLicenseStats() {
     const licenseData = licenseStore.getLicenseData();
     const viewModel = new LicenseWindowViewModel(licenseData);
     appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
@@ -104,7 +105,10 @@ function showGlobalLicenseStats() {
     appEvents.showNodeListWindow.fire(new LicenseReportViewModel());
   }
 
-  // 更新 activeTag state 的函数
+  function showGlobalComplianceStats() {
+    appEvents.showNodeListWindow.fire(new ComplianceStatsViewModel());
+  }
+
   function updateActiveTag() {
       x.setState({
           activeTag: searchBoxModel.getActiveTag()

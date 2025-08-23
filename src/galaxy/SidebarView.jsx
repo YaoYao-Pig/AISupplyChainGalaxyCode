@@ -5,8 +5,6 @@ import appEvents from './service/appEvents.js';
 
 const maco = require('maco');
 
-// --- 辅助渲染函数定义 ---
-
 function renderMetaDataItem(label, value) {
     if (value === null || value === undefined || value === '') return null;
     return (
@@ -84,7 +82,6 @@ function renderNodeList(title, nodes) {
     );
 }
 
-// --- 核心修改：恢复了包含按钮的 Header ---
 function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
     if (!Array.isArray(chain) || chain.length === 0) {
         return null;
@@ -100,12 +97,9 @@ function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
             </div>
             <ul className="inheritance-list">
                 {
-                    // --- 核心修改：使用 .flatMap 或 reduce 来代替 .map + React.Fragment ---
-                    // 这里我们用 reduce 来构建一个扁平的 JSX 元素数组
                     chain.reduce((acc, item, index) => {
                         const isNewBranch = index > 0 && item.level === 1;
                         if (isNewBranch) {
-                            // 如果是新分支，先向数组中推入一个分隔符
                             acc.push(<li key={`sep-${index}`} className="branch-separator"></li>);
                         }
 
@@ -113,7 +107,6 @@ function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
                         if (item.level === 0) itemClass += " current";
                         if (item.isRoot) itemClass += " root";
 
-                        // 然后推入当前的列表项
                         acc.push(
                             <li key={`item-${index}`} className={itemClass}>
                                 {item.level > 0 ? 
@@ -138,29 +131,35 @@ function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
         </div>
     );
 }
-// --- 新增的分析区域渲染函数 ---
 function renderAnalysisSection() {
     const handleShowReport = () => {
         appEvents.showLicenseReport.fire();
     };
+
     const handleGlobalStats = () => {
         appEvents.showGlobalLicenseStats.fire();
-        };
+    };
+
     const handleGlobalReport = () => {
         appEvents.showGlobalLicenseReport.fire();
-        };
+    };
+
+    const handleGlobalComplianceStats = () => {
+        appEvents.showGlobalComplianceStats.fire();
+    };
+
     return (
         <div className="sidebar-list-section">
             <h4>Analysis</h4>
             <button onClick={handleShowReport} className="analysis-btn">Show Local Compliance Graph</button>
             <button onClick={handleGlobalStats} className="analysis-btn" style={{marginTop: '10px'}}>Show Global License Stats</button>
             <button onClick={handleGlobalReport} className="analysis-btn" style={{marginTop: '10px'}}>Show Global Compliance Report</button>
+            <button onClick={handleGlobalComplianceStats} className="analysis-btn" style={{marginTop: '10px'}}>Show Global Compliance Stats</button>
         </div>
     );
 }
 
 
-// --- 主侧边栏组件 ---
 module.exports = require('maco')((x) => {
     const handleClose = () => {
         appEvents.selectNode.fire(undefined);
@@ -201,7 +200,6 @@ module.exports = require('maco')((x) => {
                     </div>
                     <hr />
                     
-                    {/* 调用时传入 handleHighlightChain 和 handleNextClick */}
                     {renderInheritanceChain(selectedNode.inheritanceChain, handleHighlightChain, handleNextClick)}
                     
                     {renderInfoList("Region", selectedNode.regions)}
