@@ -22,7 +22,9 @@ import complianceStore from './store/licenseComplianceStore.js';
 import { isLicenseCompatible } from './store/licenseUtils.js';
 // --- 修复：添加缺失的 import ---
 import getBaseNodeViewModel from './store/baseNodeViewModel.js';
-
+import licenseStore from './store/licenseStore.js';
+import LicenseWindowViewModel from './windows/LicenseWindowViewModel.js';
+import LicenseReportViewModel from './windows/LicenseReportViewModel.js';
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 
@@ -75,6 +77,8 @@ function scene(x) {
     detailModel.on('changed', updateSidebar);
     appEvents.activeTagChanged.on(updateActiveTag);
     appEvents.showLicenseReport.on(showLicenseReportWindow);
+    appEvents.showGlobalLicenseStats.on(showGlobalLicenseStats);
+    appEvents.showGlobalLicenseReport.on(showGlobalLicenseReport);
   };
 
   x.componentWillUnmount = function() {
@@ -85,7 +89,20 @@ function scene(x) {
     detailModel.off('changed', updateSidebar);
     appEvents.activeTagChanged.off(updateActiveTag);
     appEvents.showLicenseReport.off(showLicenseReportWindow); 
+
+    appEvents.showGlobalLicenseStats.off(showGlobalLicenseStats);
+    appEvents.showGlobalLicenseReport.off(showGlobalLicenseReport);
   };
+
+function showGlobalLicenseStats() {
+    const licenseData = licenseStore.getLicenseData();
+    const viewModel = new LicenseWindowViewModel(licenseData);
+    appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
+  }
+
+  function showGlobalLicenseReport() {
+    appEvents.showNodeListWindow.fire(new LicenseReportViewModel());
+  }
 
   // 更新 activeTag state 的函数
   function updateActiveTag() {

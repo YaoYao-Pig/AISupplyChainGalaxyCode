@@ -9,9 +9,12 @@ module.exports = require('maco')((x) => {
         const conflictNodeIds = complianceStore.getConflictList().map(c => c.nodeId);
         appEvents.highlightLicenseConflicts.fire(conflictNodeIds);
     };
+    
+    const handleClose = () => {
+        appEvents.hideNodeListWindow.fire('license-report-global');
+    };
 
     x.componentDidMount = function() {
-        // 当数据变化时，强制组件重新渲染以获取最新列表
         complianceStore.on('changed', x.forceUpdate);
     };
 
@@ -25,14 +28,15 @@ module.exports = require('maco')((x) => {
         return (
             <div className='window-container license-report-window'>
                 <div className="window-header">
-                    <h4>License Compliance Report ({conflictList.length} conflicts found)</h4>
+                    <h4>Global License Compliance Report ({conflictList.length} conflicts found)</h4>
+                    <button onClick={handleClose} className="window-close-btn" title="Close">&times;</button>
+                </div>
+                 <div className="window-list-content report-list">
                     {conflictList.length > 0 && (
-                         <button onClick={handleHighlightClick} className="highlight-btn-small">
+                         <button onClick={handleHighlightClick} className="highlight-btn-small" style={{marginBottom: '10px'}}>
                             Highlight All Conflicts in 3D View
                         </button>
                     )}
-                </div>
-                <div className="window-list-content report-list">
                     {conflictList.length > 0 ? (
                         <table>
                             <thead>

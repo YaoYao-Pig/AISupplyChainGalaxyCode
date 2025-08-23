@@ -58,16 +58,13 @@ function sceneRenderer(container) {
 
   eventify(api);
   return api;
-  function highlightConflictNodes(nodeIds) {
+function highlightConflictNodes(nodeIds) {
     if (!renderer || !nodeIds) return;
     const view = renderer.getParticleView();
     const colors = view.colors();
-
-    // 先清除之前的高亮 (可选，或者与现有cls逻辑结合)
     cls(); 
-
     nodeIds.forEach(nodeId => {
-        colorNode(nodeId * 3, colors, highlightNodeColor); // 使用已有的红色
+        colorNode(nodeId * 3, colors, highlightNodeColor); 
     });
     view.colors(colors);
 }

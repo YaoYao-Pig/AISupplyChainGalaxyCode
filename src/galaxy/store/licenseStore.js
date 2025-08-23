@@ -2,13 +2,13 @@
 
 import eventify from 'ngraph.events';
 import appEvents from '../service/appEvents.js';
-import scene from './scene.js';
+import scene from './sceneStore.js';
 
 const licenseStore = createLicenseStore();
 export default licenseStore;
 
 function createLicenseStore() {
-  let licenseData = null;
+  let licenseData = []; 
 
   appEvents.graphDownloaded.on(processGraphData);
 
@@ -23,12 +23,12 @@ function createLicenseStore() {
     console.log("Processing license distribution data...");
     const graphModel = scene.getGraph();
     if (!graphModel || !graphModel.getRawData) {
-      licenseData = null;
+      licenseData = [];
       return;
     }
     const rawData = graphModel.getRawData();
     if (!rawData || !rawData.nodeData) {
-      licenseData = null;
+      licenseData = [];
       return;
     }
 
@@ -36,18 +36,14 @@ function createLicenseStore() {
     rawData.nodeData.forEach(node => {
       if (node) {
         const license = getLicenseFromNode(node);
-        // 将 'N/A', 'None', 'Unknown' 等统一归类
         const cleanLicense = (!license || license.toLowerCase() === 'none' || license.toLowerCase() === 'unknown') ? 'N/A' : license;
         licenseCounts.set(cleanLicense, (licenseCounts.get(cleanLicense) || 0) + 1);
       }
     });
 
-    // 转换为 D3 treemap 需要的层级结构
-    const children = Array.from(licenseCounts.entries()).map(([name, value]) => ({ name, value }));
-    licenseData = {
-        name: "root",
-        children: children
-    };
+    licenseData = Array.from(licenseCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value); 
     
     console.log("License distribution data ready.");
     api.fire('changed', licenseData);

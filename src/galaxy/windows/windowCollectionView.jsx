@@ -5,7 +5,8 @@ import NodeListView from './nodeListView.jsx';
 // --- 新增：引入我们新的图表窗口组件 ---
 import ComplianceGraphWindow from './ComplianceGraphWindow.jsx';
 import windowCollectionModel from './windowCollectionModel.js';
-
+import LicenseListView from './LicenseListView.jsx';
+import LicenseReportWindow from './LicenseReportWindow.jsx';
 module.exports = require('maco')(windowCollectionView, React);
 
 function windowCollectionView(x) {
@@ -30,7 +31,13 @@ function windowCollectionView(x) {
     if (windowViewModel.id === 'compliance-graph') {
       return <ComplianceGraphWindow viewModel={windowViewModel} key={idx} />;
     }
+    if (windowViewModel.id === 'license-distribution') {
+      return <LicenseListView viewModel={windowViewModel} key={idx} />;
+    }
 
+    if (windowViewModel.id === 'license-report-global') {
+      return <LicenseReportWindow viewModel={windowViewModel} key={idx} />;
+    }
     // 否则，渲染默认的列表窗口
     return <NodeListView viewModel={windowViewModel} key={idx} />;
   }

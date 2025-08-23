@@ -97,5 +97,7 @@ export default eventMirror([
    'cameraMoved',
    'showLicenseReport',
 'highlightLicenseConflicts',
+  'showGlobalLicenseReport',
+  'showGlobalLicenseStats',
 ], appEvents);
 

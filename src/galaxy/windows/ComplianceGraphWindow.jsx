@@ -160,21 +160,22 @@ module.exports = require('maco')((x) => {
 
         return (
             // 用一个 div 包裹，因为不能返回多个顶级元素
-            <div>
+            <div className='compliance-graph-wrapper'>
                 <div className={'window-container ' + viewModel.class}>
                     <div className="window-header">
                         <h4>{viewModel.title}</h4>
                         <button onClick={handleClose} className="window-close-btn" title="Close">&times;</button>
                     </div>
-                    <div ref="sigmaContainer" className="graph-content" style={{ height: "480px" }}></div>
+                    <div ref="sigmaContainer" className="graph-content" style={{ height: "calc(100% - 40px)" }}></div>
                 </div>
 
                 {/* --- 新增：渲染 tooltip --- */}
                 {tooltip && (
                     <div style={tooltipStyle}>
-                        <div><strong style={{color: '#aaa'}}>From:</strong> {tooltip.from}</div>
-                        <div><strong style={{color: '#aaa'}}>To:</strong> {tooltip.to}</div>
-                        <div><strong style={{color: '#aaa'}}>Compatible:</strong> {tooltip.isCompatible ? '✅' : '❌'}</div>
+                        <div><strong>From:</strong> {tooltip.from}</div>
+                        <div><strong>To:</strong> {tooltip.to}</div>
+                        <hr style={{margin: '4px 0', borderColor: 'rgba(255,255,255,0.2)'}}/>
+                        <div><strong>Compatible:</strong> {tooltip.isCompatible ? '✅ Yes' : '❌ No'}</div>
                     </div>
                 )}
             </div>
