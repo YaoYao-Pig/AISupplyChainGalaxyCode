@@ -38,6 +38,11 @@ h4 {
   background-color: rgba(0,0,0, 0.8);
   color: #7F7F7F;
   position: absolute;
+  /* --- 核心修改：使用 transform 实现完美居中 --- */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100; /* 确保窗口在最顶层 */
 }
 
 .window-list-content {

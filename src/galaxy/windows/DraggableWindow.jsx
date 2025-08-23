@@ -1,33 +1,35 @@
 // src/galaxy/windows/DraggableWindow.jsx
 
 import React from 'react';
+import { findDOMNode } from 'react-dom';
 import appEvents from '../service/appEvents.js';
 
 module.exports = require('maco')((x) => {
-    // --- 核心修正：将初始位置的计算逻辑移到这里 ---
-    // 这样每次创建新窗口实例时，都会重新计算位置
-    const windowWidth = 450; // 窗口的大致宽度
-    const initialTop = 60 + Math.random() * 150;
-    
-    // 计算一个安全的左侧位置，确保窗口不会超出屏幕边界
-    let initialLeft = (window.innerWidth / 2) - (windowWidth / 2) + (Math.random() * 200 - 100);
-    if (initialLeft < 0) initialLeft = 10; // 防止窗口移出左侧屏幕
-    if (initialLeft + windowWidth > window.innerWidth) initialLeft = window.innerWidth - windowWidth - 10; // 防止窗口移出右侧屏幕
-
     x.state = {
         isDragging: false,
-        position: { top: initialTop, left: initialLeft },
-        relative: null 
+        // position: null 表示位置由 CSS 控制
+        position: null, 
+        relative: null
     };
 
     const onMouseDown = (e) => {
         if (e.button !== 0) return;
-        var pos = { top: e.pageY, left: e.pageX };
+        
+        const domNode = findDOMNode(x);
+        // 获取当前由 CSS 定位的窗口的实际屏幕位置
+        const rect = domNode.getBoundingClientRect();
+
         x.setState({
             isDragging: true,
+            // 将 CSS 的定位结果 "固化" 到 state 中
+            position: {
+                top: rect.top,
+                left: rect.left
+            },
+            // 计算鼠标在标题栏内的相对位置，以确保拖拽平滑
             relative: {
-                top: pos.top - x.state.position.top,
-                left: pos.left - x.state.position.left
+                top: e.pageY - rect.top,
+                left: e.pageX - rect.left
             }
         });
         e.stopPropagation();
@@ -42,6 +44,7 @@ module.exports = require('maco')((x) => {
 
     const onMouseMove = (e) => {
         if (!x.state.isDragging) return;
+
         x.setState({
             position: {
                 top: e.pageY - x.state.relative.top,
@@ -71,18 +74,20 @@ module.exports = require('maco')((x) => {
         const { viewModel, children } = x.props;
         const { position } = x.state;
 
-        const style = {
-            position: 'absolute',
-            top: position.top + 'px',
-            left: position.left + 'px',
-            // 移除 transform, 因为它会干扰拖拽的位置计算
-        };
+        let style = {}; // 默认无内联样式
 
-        // 从 viewModel 中移除 transform 样式
-        const containerClass = (viewModel.class || '').replace('license-report-window', '');
+        // 仅当 state.position 有值时（即拖拽开始后），才用 JS 控制位置
+        if (position) {
+            style = {
+                top: position.top + 'px',
+                left: position.left + 'px',
+                // 关键：禁用 CSS 的 transform，将定位权完全交给 top/left
+                transform: 'none' 
+            };
+        }
 
         return (
-            <div className={'window-container ' + containerClass} style={style}>
+            <div className={'window-container ' + (viewModel.class || '')} style={style}>
                 <div className="window-header" onMouseDown={onMouseDown}>
                     <h4>{viewModel.title}</h4>
                     <button onClick={handleClose} className="window-close-btn" title="Close">&times;</button>
