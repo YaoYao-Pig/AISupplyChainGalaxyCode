@@ -1,3 +1,5 @@
+// src/galaxy/windows/windowCollectionModel.js
+
 import appEvents from '../service/appEvents.js';
 import eventify from 'ngraph.events';
 
@@ -8,39 +10,34 @@ function windowCollectionModel() {
   appEvents.showNodeListWindow.on(showWindow);
   appEvents.hideNodeListWindow.on(hideWindow);
 
+  var windows = Object.create(null);
+
   var api = {
     getWindows: getWindows
   };
-
-  var registeredWindows = Object.create(null);
-  var allWindows = [];
 
   eventify(api);
 
   return api;
 
   function getWindows() {
-    return allWindows;
+    // 将存储的对象转换为数组，供UI层使用
+    return Object.keys(windows).map(function(key) {
+      return windows[key];
+    });
   }
 
   function showWindow(viewModel, windowId) {
-    var windowIndex = registeredWindows[windowId];
-    if (windowIndex === undefined) {
-      allWindows.push(viewModel);
-      windowIndex = registeredWindows[windowId] = allWindows.length - 1;
-    } else {
-      allWindows[windowIndex] = viewModel;
-    }
+    // 直接通过 ID 添加或更新窗口
+    windows[windowId] = viewModel;
     api.fire('changed');
   }
 
   function hideWindow(windowId) {
-    var windowIndex = registeredWindows[windowId];
-    if (windowIndex !== undefined) {
-      delete registeredWindows[windowId];
-      allWindows.splice(windowIndex, 1);
-
-      api.fire('changed', windowIndex);
+    // 检查窗口是否存在，然后通过 ID 删除
+    if (windows[windowId]) {
+      delete windows[windowId];
+      api.fire('changed');
     }
   }
 }

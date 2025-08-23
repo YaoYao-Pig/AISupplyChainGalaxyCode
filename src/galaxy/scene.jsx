@@ -102,11 +102,15 @@ function scene(x) {
   }
 
   function showGlobalLicenseReport() {
-    appEvents.showNodeListWindow.fire(new LicenseReportViewModel());
+    // --- 核心修正：传递第二个参数 viewModel.id ---
+    const viewModel = new LicenseReportViewModel();
+    appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
   }
 
   function showGlobalComplianceStats() {
-    appEvents.showNodeListWindow.fire(new ComplianceStatsViewModel());
+    // --- 核心修正：传递第二个参数 viewModel.id ---
+    const viewModel = new ComplianceStatsViewModel();
+    appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
   }
 
   function updateActiveTag() {
