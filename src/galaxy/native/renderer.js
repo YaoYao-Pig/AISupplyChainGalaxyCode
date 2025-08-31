@@ -25,7 +25,10 @@ var chainRootNodeColor = 0x00ff00ff; // <--- 新增: 继承链根节点 (绿色)
 let licenseLabels = [];
 let chainLine = null;
 let originalNodeSizes = new Map(); // <--- 新增: 用于存储节点的原始大小
-// --- 修正结束 ---
+
+// --- 新增: 用于存储星系团标签 ---
+let clusterLabels = []; 
+// --- 新增结束 ---
 
 function sceneRenderer(container) {
   var renderer, positions, graphModel, touchControl;
@@ -51,6 +54,11 @@ function sceneRenderer(container) {
   appConfig.on('camera', moveCamera);
   appConfig.on('showLinks', toggleLinks);
   appEvents.highlightLicenseConflicts.on(highlightConflictNodes);
+
+  // --- 新增: 监听图谱下载完成事件以创建标签 ---
+  appEvents.graphDownloaded.on(createClusterLabels);
+  // --- 新增结束 ---
+
 
   var api = {
     destroy: destroy
@@ -123,6 +131,9 @@ function highlightConflictNodes(nodeIds) {
     focusScene();
     if (!renderer) {
       renderer = unrender(container);
+      // --- 新增: 注册渲染循环回调 ---
+      renderer.onFrame(updateLabelsInRenderLoop);
+      // --- 新增结束 ---
       touchControl = createTouchControl(renderer);
       moveCameraInternal();
       var input = renderer.input();
@@ -329,7 +340,7 @@ if (!renderer || !nodesToHighlight || nodesToHighlight.length === 0) return;
         const pos = positions[node.id * 3];
         const posY = positions[node.id * 3 + 1];
         const posZ = positions[node.id * 3 + 2];
-        labelSprite.position.set(pos, posY + 20, posZ);
+        labelSprite.position.set(pos, posY + 100, posZ);
         renderer.scene().add(labelSprite);
         licenseLabels.push(labelSprite);
       }
@@ -358,7 +369,7 @@ if (!renderer || !nodesToHighlight || nodesToHighlight.length === 0) return;
 
   function createTextSprite(message) {
       const fontface = "Arial";
-      const fontsize = 24;
+      const fontsize = 48;
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
       context.font = "Bold " + fontsize + "px " + fontface;
@@ -375,7 +386,7 @@ if (!renderer || !nodesToHighlight || nodesToHighlight.length === 0) return;
       texture.minFilter = THREE.LinearFilter;
       const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
       const sprite = new THREE.Sprite(spriteMaterial);
-      sprite.scale.set(100, 50, 1.0);
+      sprite.scale.set(2000, 50, 1.0);
       return sprite;
   }
 
@@ -394,6 +405,78 @@ if (!renderer || !nodesToHighlight || nodesToHighlight.length === 0) return;
       ctx.fill();
       ctx.stroke();
   }
+
+  // --- 新增: 创建星系团标签的函数 ---
+  function createClusterLabels() {
+    if (!renderer) return;
+
+    // 清理可能存在的旧标签
+    clusterLabels.forEach(label => renderer.scene().remove(label.sprite));
+    clusterLabels = [];
+
+    // 获取最重要的20个模型作为星系团中心
+    const coreNodes = scene.getTopNModelsByInDegree(20); 
+    
+    coreNodes.forEach(node => {
+      const sprite = createTextSprite(node.name);
+      sprite.visible = false; // 默认隐藏
+
+      // 定位 Sprite 到节点的位置
+      const x = positions[node.id * 3];
+      const y = positions[node.id * 3 + 1];
+      const z = positions[node.id * 3 + 2];
+      sprite.position.set(x, y, z);
+      
+      renderer.scene().add(sprite);
+
+      clusterLabels.push({
+        nodeId: node.id,
+        sprite: sprite
+      });
+    });
+  }
+  // --- 新增结束 ---
+
+  // --- 新增: 在渲染循环中更新标签状态的函数 ---
+  function updateLabelsInRenderLoop() {
+    if (!renderer || clusterLabels.length === 0) return;
+
+    const camera = renderer.camera();
+    const minDistance = 10000; // 开始显示标签的最小距离
+    const maxDistance = 200000; // 标签完全可见的最大距离
+    const baseScale = 500; // 基础缩放大小
+
+    clusterLabels.forEach(labelInfo => {
+      const nodePosition = new THREE.Vector3(
+        positions[labelInfo.nodeId * 3],
+        positions[labelInfo.nodeId * 3 + 1],
+        positions[labelInfo.nodeId * 3 + 2]
+      );
+
+      const distance = camera.position.distanceTo(nodePosition);
+
+      if (distance > minDistance && distance < maxDistance) {
+        labelInfo.sprite.visible = true;
+
+        // 距离越远，标签越大
+        const scale = baseScale * (distance / minDistance);
+        labelInfo.sprite.scale.set(scale, scale * 0.5, 1.0);
+
+        // 透明度渐变 (可选)
+        let opacity = 1.0;
+        if (distance < minDistance + 2000) {
+           opacity = (distance - minDistance) / 2000;
+        } else if (distance > maxDistance - 10000) {
+           opacity = 1.0 - (distance - (maxDistance - 10000)) / 10000;
+        }
+        labelInfo.sprite.material.opacity = opacity;
+
+      } else {
+        labelInfo.sprite.visible = false;
+      }
+    });
+  }
+  // --- 新增结束 ---
 
   function highlightQuery(query, color, scale) {
     if (!renderer) return;
@@ -463,6 +546,9 @@ if (!renderer || !nodesToHighlight || nodesToHighlight.length === 0) return;
     if (renderer) renderer.destroy();
     appEvents.positionsDownloaded.off(setPositions);
     appEvents.linksDownloaded.off(setLinks);
+    // --- 新增: 移除事件监听 ---
+    appEvents.graphDownloaded.off(createClusterLabels);
+    // --- 新增结束 ---
     if (touchControl) touchControl.destroy();
     renderer = null;
     clearInterval(queryUpdateId);

@@ -29,6 +29,26 @@ function sceneStore() {
     find: find,
     findByTag: (tag) => graph ? graph.findByTag(tag) : [],
     getNodeIdByModelId: (modelId) => modelIdToNodeIdMap.get(modelId),
+    getTopNModelsByInDegree: (n) => {
+      if (!graph) return [];
+      
+      const allNodes = [];
+      const labels = graph.getRawData ? graph.getRawData().labels : [];
+      if (labels.length === 0) return [];
+
+      for(let i = 0; i < labels.length; i++) {
+        const nodeInfo = graph.getNodeInfo(i);
+        if(nodeInfo) {
+          allNodes.push({
+            id: i,
+            name: nodeInfo.name,
+            inDegree: nodeInfo.in || 0
+          });
+        }
+      }
+
+      return allNodes.sort((a, b) => b.inDegree - a.inDegree).slice(0, n);
+    },
   };
 
   appEvents.downloadGraphRequested.on(downloadGraph);
