@@ -51,6 +51,9 @@ function sceneKeyboardBinding(container) {
             e.stopPropagation();
         }
     }
+    else if (e.which === Key.T) { // <-- 在这里添加新的代码块
+      events.toggleClusterLabels.fire();
+    }
 
     if (e.shiftKey && !lastShiftKey) {
       lastShiftKey = true;

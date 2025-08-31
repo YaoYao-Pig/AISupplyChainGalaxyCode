@@ -100,5 +100,6 @@ export default eventMirror([
   'showGlobalLicenseReport',
   'showGlobalLicenseStats',
   'showGlobalComplianceStats',
+  'toggleClusterLabels',
 ], appEvents);
 

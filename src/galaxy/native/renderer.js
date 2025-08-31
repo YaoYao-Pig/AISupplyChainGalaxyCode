@@ -28,6 +28,7 @@ let originalNodeSizes = new Map(); // <--- 新增: 用于存储节点的原始�
 
 // --- 新增: 用于存储星系团标签 ---
 let clusterLabels = []; 
+let clusterLabelsVisible = true;
 // --- 新增结束 ---
 
 function sceneRenderer(container) {
@@ -42,6 +43,7 @@ function sceneRenderer(container) {
   appEvents.positionsDownloaded.on(setPositions);
   appEvents.linksDownloaded.on(setLinks);
   appEvents.toggleSteering.on(toggleSteering);
+  appEvents.toggleClusterLabels.on(toggleClusterLabels); // <-- 在这里添加新的一行
   appEvents.focusOnNode.on(focusOnNode);
   appEvents.around.on(around);
   appEvents.highlightQuery.on(highlightQuery);
@@ -119,6 +121,16 @@ function highlightConflictNodes(nodeIds) {
 
     // 根据 shouldSelectAfterFocus 的值，决定是否在动画后触发选择事件
     renderer.lookAt(nodeId * 3, shouldSelectAfterFocus ? highlightFocused : null);
+  }
+
+  function toggleClusterLabels() {
+    clusterLabelsVisible = !clusterLabelsVisible;
+    // 如果是关闭标签，立即隐藏所有当前显示的标签
+    if (!clusterLabelsVisible) {
+      clusterLabels.forEach(labelInfo => {
+        labelInfo.sprite.visible = false;
+      });
+    }
   }
 
   function around(r, x, y, z) {
@@ -439,7 +451,9 @@ if (!renderer || !nodesToHighlight || nodesToHighlight.length === 0) return;
 
   // --- 新增: 在渲染循环中更新标签状态的函数 ---
   function updateLabelsInRenderLoop() {
-    if (!renderer || clusterLabels.length === 0) return;
+    if (!renderer || clusterLabels.length === 0 || !positions || !clusterLabelsVisible) {
+      return; 
+    }
 
     const camera = renderer.camera();
     const minDistance = 10000; // 开始显示标签的最小距离

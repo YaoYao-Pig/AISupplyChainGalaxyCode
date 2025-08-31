@@ -4,6 +4,7 @@ export default {
   H: 72,
   L: 76,
   G: 71,
+  T: 84,
   Space: 32,
   '/': 191
 };
