@@ -1,0 +1,53 @@
+# .github/workflows/deploy.yml
+
+# 工作流名称
+name: Build and Deploy to Cloud Server
+
+# 触发条件：当有代码 push 到 main 分支时
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    # 运行此 job 的虚拟机环境
+    runs-on: ubuntu-latest
+
+    steps:
+      # 第 1 步：检出代码
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 第 2 步：设置 Node.js 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # 第 3 步：安装项目依赖
+      - name: Install Dependencies
+        run: npm install
+
+      # 第 4 步：修改配置文件以适应生产环境
+      - name: Configure for Production
+        run: |
+          sed -i "s|http://localhost:9090/|${{ secrets.PROD_DATA_URL }}|g" src/config.js
+          echo "config.js updated for production."
+          
+      # 第 5 步：构建项目
+      - name: Build Project
+        run: npm run build
+
+      # 第 6 步：【已定制】使用密码部署到您的服务器
+      - name: Deploy to Server with Password
+        uses: appleboy/scp-action@master
+        with:
+          host: '8.159.137.183'
+          username: 'root'
+          password: ${{ secrets.SSH_PASSWORD }} # 从 Secrets 读取您的服务器密码
+          port: 22
+          source: "build/*"
+          target: "/var/www/my-galaxy-app/"
+          strip_components: 1
