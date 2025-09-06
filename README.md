@@ -1,3 +1,7 @@
+npm run build
+
+
+
 # Software Galaxies
 
 This repository combines visualizations of major software package managers.

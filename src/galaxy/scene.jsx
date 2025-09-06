@@ -90,8 +90,7 @@ function scene(x) {
     appEvents.showGlobalComplianceStats.on(showGlobalComplianceStats);
     appEvents.showGlobalLicenseReport.on(showGlobalLicenseReport);
 
-    const helpToastShown = localStorage.getItem('helpToastShown');
-    if (!helpToastShown) {
+
     // 等待3秒，确保用户已经看到主界面
       setTimeout(() => {
         x.setState({ showHelpToast: true });
@@ -101,7 +100,7 @@ function scene(x) {
         }, 7000);
         localStorage.setItem('helpToastShown', 'true');
       }, 3000);
-    }
+
   };
 
   x.componentWillUnmount = function() {
