@@ -1,4 +1,4 @@
-// src/galaxy/search/searchBoxModel.js (清理版)
+// src/galaxy/search/searchBoxModel.js (最终修复版)
 
 import appEvents from '../service/appEvents.js';
 import scene from '../store/sceneStore.js';
@@ -19,12 +19,8 @@ function searchBoxModel() {
   };
   
   appEvents.searchByTag.on(searchByTag);
-  // --- 我们不再需要监听 selectNode 事件了 ---
 
   return api;
-
-  // 这个函数不再需要了，因为逻辑已经移到 nodeDetailsStore 中
-  // function handleNodeSelection(nodeId) { ... }
 
   function searchByTag(tag) {
     if (!tag) return;
@@ -65,10 +61,16 @@ function searchBoxModel() {
     }
   }
 
+  // --- 核心修复 2：确保 submit 函数能处理普通搜索 ---
   function submit(command) {
-    if (!command || command[0] !== ':') return;
-    command = 'with (ctx) { ' + command.substr(1) + ' }';
-    var dynamicFunction = new Function('ctx', command);
-    dynamicFunction(clientRuntime);
+    if (command && command[0] === ':') {
+      // 如果以 ":" 开头，视为命令
+      command = 'with (ctx) { ' + command.substr(1) + ' }';
+      var dynamicFunction = new Function('ctx', command);
+      dynamicFunction(clientRuntime);
+    } else {
+      // 否则，视为普通搜索，直接调用 search 函数
+      search(command);
+    }
   }
 }

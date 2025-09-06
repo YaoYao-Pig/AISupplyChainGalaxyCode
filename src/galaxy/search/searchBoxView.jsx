@@ -1,4 +1,4 @@
-// src/galaxy/search/searchBoxView.jsx (修正版)
+// src/galaxy/search/searchBoxView.jsx (最终修复版)
 
 import React from 'react';
 import searchBoxModel from './searchBoxModel.js';
@@ -13,11 +13,13 @@ function searchBar(x) {
           <form className='search-form' role='search' onSubmit={runSubmit}>
             <div className='input-group'>
               <input type='text'
-                ref='searchText' // ref 保持不变
+                ref='searchText'
                 className='form-control no-shadow' placeholder='enter a search term'
-                onChange={runSearch}/>
+                onChange={runSearch}
+                onFocus={handleFocus} /* <-- 核心修复 3：添加 onFocus 事件 */
+                />
                 <span className='input-group-btn'>
-                  <button className='btn' tabIndex='-1' type='button'>
+                  <button className='btn' tabIndex='-1' type='button' onClick={runSubmit}> {/* <-- 建议：为按钮也添加 onClick */}
                     <span className='glyphicon glyphicon-search'></span>
                   </button>
                 </span>
@@ -32,13 +34,16 @@ function searchBar(x) {
     searchBoxModel.search(e.target.value);
   }
 
+  function handleFocus(e) {
+    // 当用户点击输入框时，如果框内无内容，则触发一次空搜索以显示预选列表
+    if (!e.target.value) {
+      searchBoxModel.search('');
+    }
+  }
+
   function runSubmit(e) {
     e.preventDefault();
-    // --- 核心修正: 使用 x.refs 来访问DOM节点 ---
-    // maco 组件实例 `x` 上挂载了 refs 对象
     var searchText = x.refs.searchText.value;
-    // 之前的 React.findDOMNode(x.refs.searchText) 在新版React中已不推荐
-    // --- 修正结束 ---
     searchBoxModel.submit(searchText);
   }
 }
