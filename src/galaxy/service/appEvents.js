@@ -101,5 +101,8 @@ export default eventMirror([
   'showGlobalLicenseStats',
   'showGlobalComplianceStats',
   'toggleClusterLabels',
+  'showRippleAnimation',
+  'highlightRippleLevel',
+  'highlightSpecialRippleNodes',
 ], appEvents);
 

@@ -26,7 +26,7 @@ import ComplianceGraphViewModel from './windows/ComplianceGraphViewModel.js';
 import complianceStore from './store/licenseComplianceStore.js';
 import { isLicenseCompatible } from './store/licenseUtils.js';
 import getBaseNodeViewModel from './store/baseNodeViewModel.js';
-
+import './store/rippleAnimationStore.js'
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 

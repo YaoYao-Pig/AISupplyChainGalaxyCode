@@ -21,6 +21,11 @@ var chainHighlightColor = 0xffff00ff;
 var chainEndNodeColor = 0xffaa00ff;
 var chainRootNodeColor = 0x00ff00ff;
 
+var rippleRootColor = 0xff00ff;     // 紫色 (根)
+var rippleBranchColor = 0xffa500;   // 橙色 (分支)
+var rippleLeafColor = 0x00ffff;     // 青色 (叶子)
+var rippleDefaultColor = 0x00ff7f;  // 春绿色 (普通)
+
 // --- 模块作用域变量 ---
 let licenseLabels = [];
 let chainLine = null;
@@ -46,6 +51,7 @@ function sceneRenderer(container) {
   appEvents.around.on(around);
   appEvents.highlightQuery.on(highlightQuery);
   appEvents.highlightChainWithData.on(highlightChainHandler);
+  appEvents.highlightRippleLevel.on(highlightRippleLevelHandler);
   appEvents.highlightLinks.on(highlightLinks);
   appEvents.highlightNeighbors.on(highlightNeighborsHandler);
   appEvents.accelerateNavigation.on(accelarate);
@@ -303,7 +309,6 @@ function sceneRenderer(container) {
     view.sizes(sizes);
   }
 
-  // --- 修复: 恢复创建许可证标签的逻辑 ---
   function highlightChainHandler(nodesToHighlight) {
     if (!renderer || !nodesToHighlight || nodesToHighlight.length === 0) return;
     
@@ -335,18 +340,16 @@ function sceneRenderer(container) {
     view.colors(colors);
     view.sizes(sizes);
     
-    // 清理旧的许可证标签
     licenseLabels.forEach(label => renderer.scene().remove(label));
     licenseLabels = [];
 
-    // 重新创建许可证标签
     nodesToHighlight.forEach(node => {
       if (node.license && node.license !== 'N/A' && node.license !== 'Unknown') {
-        const labelSprite = createTextSprite(node.license, false); // 使用 false 参数创建小标签
+        const labelSprite = createTextSprite(node.license, false);
         const pos = positions[node.id * 3];
         const posY = positions[node.id * 3 + 1];
         const posZ = positions[node.id * 3 + 2];
-        labelSprite.position.set(pos, posY + (sizes[node.id] || 30) * 1.5, posZ); // 调整位置
+        labelSprite.position.set(pos, posY + (sizes[node.id] || 30) * 1.5, posZ);
         renderer.scene().add(labelSprite);
         licenseLabels.push(labelSprite);
       }
@@ -374,7 +377,41 @@ function sceneRenderer(container) {
       renderer.scene().add(chainLine);
     }
   }
-  // --- 修复结束 ---
+
+  // --- 修复: 恢复创建许可证标签的逻辑 ---
+  function highlightRippleLevelHandler(nodes) {
+    if (!renderer || !nodes || nodes.length === 0) return;
+
+    const view = renderer.getParticleView();
+    const colors = view.colors();
+    const sizes = view.sizes();
+    const baseSize = 30;
+
+    nodes.forEach(nodeInfo => {
+      let color = rippleDefaultColor;
+      if (nodeInfo.isRoot) color = rippleRootColor;
+      else if (nodeInfo.isLeaf) color = rippleLeafColor;
+      else if (nodeInfo.isBranch) color = rippleBranchColor;
+
+      colorNode(nodeInfo.id * 3, colors, color);
+
+      // --- 核心修复：从 originalNodeSizes Map 中获取或存储真实的原始尺寸 ---
+      if (!originalNodeSizes.has(nodeInfo.id)) {
+        originalNodeSizes.set(nodeInfo.id, sizes[nodeInfo.id] || baseSize);
+      }
+      const trueOriginalSize = originalNodeSizes.get(nodeInfo.id);
+      // --- 修复结束 ---
+
+      sizes[nodeInfo.id] = trueOriginalSize * 3.5; // 基于真实原始尺寸放大
+      setTimeout(() => {
+        sizes[nodeInfo.id] = trueOriginalSize * 1.8; // 基于真实原始尺寸恢复
+        view.sizes(sizes);
+      }, 350);
+    });
+
+    view.colors(colors);
+    view.sizes(sizes);
+  }
 
   function createTextSprite(message, isClusterLabel = false) {
       const fontface = "Arial";
@@ -479,9 +516,9 @@ function sceneRenderer(container) {
 
     const camera = renderer.camera();
     const minDistance = 8000;
-    const maxDistance = 50000;
+    const maxDistance = 200000;
     
-    const maxScaleMultiplier = 20.0; 
+    const maxScaleMultiplier = 4.0; 
 
     clusterLabels.forEach(labelInfo => {
       const nodePosition = new THREE.Vector3(
@@ -495,7 +532,7 @@ function sceneRenderer(container) {
       if (distance > minDistance && distance < maxDistance) {
         labelInfo.sprite.visible = true;
 
-        let scale = (distance / minDistance) * 10;
+        let scale = (distance / minDistance);
         scale = Math.log2(scale + 1);
         scale = Math.min(scale, maxScaleMultiplier);
 

@@ -146,6 +146,22 @@ function renderAnalysisSection() {
     );
 }
 
+function renderRippleSection(selectedNode) {
+    const handleShowRipple = () => {
+        if (selectedNode && selectedNode.id !== undefined) {
+            appEvents.showRippleAnimation.fire(selectedNode.id);
+        }
+    };
+
+    return (
+        <div className="sidebar-list-section">
+            <h4>Inheritance Explorer</h4>
+            <button onClick={handleShowRipple} className="analysis-btn">
+                Show Inheritance Ripple
+            </button>
+        </div>
+    );
+}
 
 module.exports = require('maco')((x) => {
     const handleClose = () => {
@@ -199,6 +215,7 @@ module.exports = require('maco')((x) => {
                     {renderNodeList("Outgoing Connections", outgoing)}
                     <hr />
                     {renderAnalysisSection()}
+                    {renderRippleSection(selectedNode)}
                 </div>
             </div>
         );
