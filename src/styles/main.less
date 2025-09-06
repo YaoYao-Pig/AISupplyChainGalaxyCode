@@ -868,3 +868,38 @@ a.media {
   color: #999;
   cursor: not-allowed;
 }
+
+.toast-notification {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background-color: rgba(0, 200, 255, 0.85); /* 使用醒目的蓝色背景 */
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  z-index: 1001; /* 确保在最顶层 */
+  font-size: 16px;
+  pointer-events: none; /* 让鼠标可以穿透提示 */
+  animation: fade-in-out 10s ease-in-out forwards;
+}
+
+.toast-notification kbd {
+  display: inline-block;
+  padding: 3px 6px;
+  font-size: 14px;
+  color: #333;
+  background-color: #f7f7f7;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2),inset 0 0 0 2px #ffffff;
+  margin: 0 4px;
+}
+
+@keyframes fade-in-out {
+  0% { opacity: 0; transform: translate(-50%, 20px); }
+  10% { opacity: 1; transform: translate(-50%, 0); }
+  90% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 20px); }
+}

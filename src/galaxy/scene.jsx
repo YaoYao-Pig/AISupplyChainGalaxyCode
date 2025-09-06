@@ -35,7 +35,8 @@ function scene(x) {
 
   x.state = {
     sidebarData: null,
-    activeTag: null 
+    activeTag: null,
+    showHelpToast: false
   };
 
   x.render = function() {
@@ -64,6 +65,12 @@ function scene(x) {
         <WindowCollection />
         <Help />
         <About />
+
+        { x.state.showHelpToast && (
+         <div className='toast-notification'>
+           Press <kbd>H</kbd> for help
+         </div>
+         )}
       </div>
     );
   };
@@ -82,6 +89,19 @@ function scene(x) {
     appEvents.showGlobalLicenseStats.on(showGlobalLicenseStats);
     appEvents.showGlobalComplianceStats.on(showGlobalComplianceStats);
     appEvents.showGlobalLicenseReport.on(showGlobalLicenseReport);
+
+    const helpToastShown = localStorage.getItem('helpToastShown');
+    if (!helpToastShown) {
+    // 等待3秒，确保用户已经看到主界面
+      setTimeout(() => {
+        x.setState({ showHelpToast: true });
+      // 再过7秒后自动隐藏
+        setTimeout(() => {
+          x.setState({ showHelpToast: false });
+        }, 7000);
+        localStorage.setItem('helpToastShown', 'true');
+      }, 3000);
+    }
   };
 
   x.componentWillUnmount = function() {
