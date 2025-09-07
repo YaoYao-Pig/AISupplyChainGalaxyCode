@@ -23,8 +23,13 @@ var chainRootNodeColor = 0x00ff00ff;
 
 var rippleRootColor = 0xff00ff;     // 紫色 (根)
 var rippleBranchColor = 0xffa500;   // 橙色 (分支)
-var rippleLeafColor = 0x00ffff;     // 青色 (叶子)
+var rippleLeafColor = 0xffffed;     // 青色 (叶子)
 var rippleDefaultColor = 0x00ff7f;  // 春绿色 (普通)
+
+var specialStartColor = 0xff0000; // 红色 (Start)
+var specialBranchColor = 0xffa500; // 橙色 (Branch)
+var specialFarthestColor = 0xffff00; // 黄色 (Farthest)
+var specialClosestColor = 0x00ffff; // 青色 (Closest)
 
 // --- 模块作用域变量 ---
 let licenseLabels = [];
