@@ -80,12 +80,15 @@ function nodeDetailsStore() {
         appEvents.highlightNeighbors.fire(lastSelectedNodeId, false);
         appEvents.activeTagChanged.fire(null);
         appEvents.cls.fire();
-        appEvents.hideNodeListWindow.fire(searchResultsWindowId);
     }
 
     if (nodeId === undefined || nodeId === null) {
       sidebarData = null;
     } else {
+      // --- 核心修复：在这里添加相机聚焦事件 ---
+      // 告诉相机移动过去，但不要再次触发 selectNode 事件 (第二个参数为 false)，以避免无限循环
+      appEvents.focusOnNode.fire(nodeId, false);
+
       if (nodeId !== lastSelectedNodeId) {
          appEvents.highlightNeighbors.fire(nodeId, true);
       }
@@ -101,6 +104,8 @@ function nodeDetailsStore() {
     
     lastSelectedNodeId = nodeId;
     currentNodeId = nodeId;
+    // 注意：这里的 updateDegreeDetails 逻辑是导致第一个报错的原因
+    // 我们在第一处修改中已经修复了它
     updateDegreeDetails(currentNodeId, currentConnectionType);
     api.fire('changed');
   }
