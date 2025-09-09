@@ -36,11 +36,11 @@ function graph(rawGraphLoaderData) {
     return results;
   }
 
+
   function find(query) {
     var result = [];
     if (!labels) return result;
 
-    // --- 核心修复 1：处理空字符串查询以显示预选列表 ---
     if (typeof query === 'string' && query === '') {
         const previewSize = Math.min(100, labels.length);
         for (let i = 0; i < previewSize; ++i) {

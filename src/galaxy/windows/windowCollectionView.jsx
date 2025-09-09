@@ -12,7 +12,9 @@ import windowCollectionModel from './windowCollectionModel.js';
 // 将组件类型映射到一个对象中，方便查找
 const windowContentMap = {
   'degree': NodeListView,
-  'search-results': NodeListView,
+  // --- 核心修复：添加下面这一行 ---
+  'degree-results-window': NodeListView,
+  'search-results-window': NodeListView, 
   'compliance-graph': ComplianceGraphWindow,
   'license-distribution': LicenseListView,
   'license-report-global': LicenseReportWindow,
@@ -38,11 +40,12 @@ function windowCollectionView(x) {
   };
 
   function toWindowView(viewModel, idx) {
-    // 从映射中找到对应的 内容组件
-    const ContentComponent = windowContentMap[viewModel.id] || windowContentMap[viewModel.className];
+    // 逻辑修正：优先使用 className 进行查找
+    const ContentComponent = windowContentMap[viewModel.className] || windowContentMap[viewModel.id];
 
     if (!ContentComponent) {
-      return null; // 如果找不到对应的组件，则不渲染
+      console.error('No content component found for viewModel:', viewModel); // 添加错误日志
+      return null; 
     }
 
     // 所有窗口都由 DraggableWindow 包裹

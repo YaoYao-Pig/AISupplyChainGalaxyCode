@@ -60,13 +60,15 @@ h4 {
   top: 47px;
   padding: 10px;
   width: 395px;
+  transform: none; /* 覆盖掉居中样式 */
 }
-
 .degree-results-window {
   left: 16px;
   bottom: 87px;
+  top: auto; /* 覆盖掉居中样式 */
   padding: 10px;
   width: 395px;
+  transform: none; /* 覆盖掉居中样式 */
 }
 
 .no-overflow {
@@ -902,4 +904,82 @@ a.media {
   10% { opacity: 1; transform: translate(-50%, 0); }
   90% { opacity: 1; transform: translate(-50%, 0); }
   100% { opacity: 0; transform: translate(-50%, 20px); }
+}
+
+// src/styles/main.less
+
+// ... (保留现有样式)
+
+.search {
+  // 确保搜索框容器是相对定位，这样下拉结果才能绝对定位在其下方
+  position: relative; 
+  z-index: 1000; // 确保搜索结果在其他内容之上
+}
+
+.search-results-dropdown {
+  position: absolute; // 绝对定位在搜索框下方
+  top: 100%; // 紧贴在父元素底部
+  left: 0;
+  right: 0; // 宽度与搜索框父元素相同
+
+  background-color: #222; // 背景色
+  border: 1px solid #444; // 边框
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4); // 阴影效果
+  max-height: 300px; // 最大高度，超过则滚动
+  // overflow: hidden; // 确保内容不会溢出
+  // padding: 5px; // 整体内边距 (可选，看情况调整)
+}
+
+.search-results-title {
+  color: #ccc;
+  font-size: 14px;
+  padding: 8px 10px; // 标题的内边距
+  margin: 0; // 移除默认的 margin
+  border-bottom: 1px solid #333; // 标题和列表之间加个分割线
+}
+
+.search-results-list-container {
+  max-height: 250px; // 为实际列表项设置一个最大高度，留出标题的空间
+  overflow-y: auto; // 垂直滚动条
+  padding: 5px 0; // 列表容器的内边距，左右为0，上下为5px
+}
+
+// 调整 NodeInfoRow 的样式，使其更适合下拉列表
+// (这个样式可能已经在 nodeInfoRow.less 中定义了，这里只是示例)
+.node-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 10px; // 行的内边距
+  border-bottom: 1px solid #282828; // 行之间的分割线
+  color: #eee; // 默认文字颜色
+  cursor: pointer; // 鼠标悬停显示手型
+
+  &:last-child {
+    border-bottom: none; // 最后一行不要底边框
+  }
+
+  &:hover {
+    background-color: #3a3a3a; // 鼠标悬停时的背景色
+  }
+
+  .node-name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; // 超出部分显示省略号
+  }
+
+  .node-metrics {
+    display: flex;
+    gap: 10px; // 指标之间的间距
+    font-size: 0.9em;
+    color: #999;
+  }
+  // 如果需要，可以单独调整 green 和 red 的颜色
+  .green {
+      color: #6c8; // 绿色指标
+  }
+  .red {
+      color: #e66; // 红色指标
+  }
 }

@@ -28,13 +28,13 @@ function windowCollectionModel() {
   }
 
   function showWindow(viewModel, windowId) {
-    // 直接通过 ID 添加或更新窗口
+    console.log('LOG: windowCollectionModel.js - showWindow() called for ID:', windowId); // <-- 添加日志
     windows[windowId] = viewModel;
     api.fire('changed');
   }
 
   function hideWindow(windowId) {
-    // 检查窗口是否存在，然后通过 ID 删除
+    console.log('LOG: windowCollectionModel.js - hideWindow() called for ID:', windowId); // <-- 添加日志
     if (windows[windowId]) {
       delete windows[windowId];
       api.fire('changed');

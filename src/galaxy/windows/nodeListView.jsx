@@ -1,11 +1,7 @@
-/**
- * This component renders list of packages in single window.
- * There can be multiple lists opened at any time. The list is currently
- * managed by windowCollectionView
- */
+// src/galaxy/windows/nodeListView.jsx
+
 import React from 'react';
 import ReactList from 'react-list';
-import WindowTitle from './windowTitle.jsx';
 import NodeInfoRow from './nodeInfoRow.jsx';
 
 module.exports = require('maco')(nodeListView, React);
@@ -16,21 +12,13 @@ function nodeListView(x) {
 
   x.render = function () {
     var windowViewModel = x.props.viewModel;
-    var className = 'window-container';
-
-    if (windowViewModel.className) {
-      className += ' ' + windowViewModel.className;
-    }
-
     var items = windowViewModel.list;
-    var id = windowId + windowViewModel.className + items.length;
+    var id = windowId + (windowViewModel.className || '') + items.length;
 
+    // 这个组件只渲染列表内容
     return (
-      <div className={className}>
-        <WindowTitle viewModel={windowViewModel} />
-        <div className='window-list-content'>
-          {content(items)}
-        </div>
+      <div className='window-list-content'>
+        {content(items)}
       </div>
     );
 
@@ -40,7 +28,6 @@ function nodeListView(x) {
     }
 
     function getHeight() {
-      // FIXME: Hardcoding is not good.
       return 20;
     }
 
