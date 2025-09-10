@@ -12,7 +12,10 @@ import createLineView from './lineView.js';
 import appConfig from './appConfig.js';
 
 export default sceneRenderer;
-
+var pathLine = null;
+var pathHighlightColor = 0xffd700ff; // 金色
+var pathStartColor = 0x00ff00ff; // 绿色
+var pathEndColor = 0xff0000ff; // 红色
 // --- 定义颜色 ---
 var defaultNodeColor = 0xffffffff;
 var highlightNodeColor = 0xff0000ff;
@@ -67,13 +70,74 @@ function sceneRenderer(container) {
   appEvents.highlightLicenseConflicts.on(highlightConflictNodes);
   appEvents.graphDownloaded.on(createClusterLabels);
 
+  appEvents.pathFound.on(highlightPath);
+  appEvents.clearPath.on(clearPathHighlight);
+
   var api = {
     destroy: destroy
   };
 
   eventify(api);
   return api;
+  function highlightPath(nodeIds) {
+    if (!renderer || !nodeIds || nodeIds.length === 0) return;
+    cls();
 
+    const view = renderer.getParticleView();
+    const colors = view.colors();
+    const sizes = view.sizes();
+
+    for (let i = 0; i < colors.length / 4; i++) {
+        colors[i * 4 + 3] = 50;
+    }
+
+    nodeIds.forEach((nodeId, index) => {
+        let color = pathHighlightColor;
+        if (index === 0) color = pathStartColor;
+        if (index === nodeIds.length - 1) color = pathEndColor;
+        
+        colorNode(nodeId * 3, colors, color);
+        sizes[nodeId] *= 1.5;
+    });
+    
+    view.colors(colors);
+    view.sizes(sizes);
+
+    const points = nodeIds.map(id => new THREE.Vector3(
+        positions[id * 3],
+        positions[id * 3 + 1],
+        positions[id * 3 + 2]
+    ));
+
+    if (points.length > 1) {
+        clearPathHighlight();
+
+        // --- 核心修复：使用旧版的 API 来创建线条 ---
+        const geometry = new THREE.Geometry();
+        geometry.vertices = points; // 直接将点赋值给 vertices 属性
+
+        const material = new THREE.LineBasicMaterial({
+            color: pathHighlightColor,
+            linewidth: 3,
+            transparent: true,
+            opacity: 0.9
+        });
+        pathLine = new THREE.Line(geometry, material);
+        renderer.scene().add(pathLine);
+    }
+
+    appEvents.focusOnArea.fire(nodeIds);
+}
+
+function clearPathHighlight() {
+    cls(); // cls会重置颜色和大小
+    if (pathLine) {
+        renderer.scene().remove(pathLine);
+        if (pathLine.geometry) pathLine.geometry.dispose();
+        if (pathLine.material) pathLine.material.dispose();
+        pathLine = null;
+    }
+}
   function highlightConflictNodes(nodeIds) {
     if (!renderer || !nodeIds) return;
     const view = renderer.getParticleView();

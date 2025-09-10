@@ -7,11 +7,42 @@ function graph(rawGraphLoaderData) {
   const {labels, outLinks, inLinks, positions, nodeData} = rawGraphLoaderData;
   const empty = [];
 
+
+
   function findLinks(from, to) {
     return linkFinder(from, to, outLinks, inLinks, labels);
   }
 
+
+  function findShortestPath(startNodeId, endNodeId) {
+    if (startNodeId === endNodeId) return [startNodeId];
+
+    const queue = [[startNodeId]]; // 队列中存储的是路径
+    const visited = new Set([startNodeId]);
+
+    while (queue.length > 0) {
+      const path = queue.shift();
+      const lastNode = path[path.length - 1];
+
+      const neighbors = outLinks[lastNode] || [];
+      for (const neighborId of neighbors) {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          const newPath = [...path, neighborId];
+
+          if (neighborId === endNodeId) {
+            return newPath; // 找到路径，返回
+          }
+          queue.push(newPath);
+        }
+      }
+    }
+
+    return null; // 遍历完成，未找到路径
+  }
+
   const api = {
+    findShortestPath: findShortestPath, 
     getNodeInfo: getNodeInfo,
     getConnected: getConnected,
     find: find,

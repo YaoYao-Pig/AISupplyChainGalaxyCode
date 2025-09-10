@@ -26,6 +26,10 @@ module.exports = require('maco')((x) => {
         });
     };
 
+    const handlePathfinder = () => {
+        appEvents.showPathfindingWindow.fire(); // <--- 触发新事件
+    };
+
     const handleMouseEnter = () => {
         x.setState({ isOpen: true });
     };
@@ -62,6 +66,10 @@ module.exports = require('maco')((x) => {
                 onMouseLeave={handleMouseLeave}
             >
                 <div className="left-sidebar-content">
+                    <h4>Global Analysis</h4>
+                    <button onClick={handlePathfinder} className="analysis-btn">
+                        Connection Explorer
+                    </button>
                     <h4>Global Analysis</h4>
                     <button onClick={handleGlobalStats} className="analysis-btn">
                         License Stats
