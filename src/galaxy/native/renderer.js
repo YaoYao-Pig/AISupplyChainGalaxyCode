@@ -10,9 +10,12 @@ import getNearestIndex from './getNearestIndex.js';
 import createTouchControl from './touchControl.js';
 import createLineView from './lineView.js';
 import appConfig from './appConfig.js';
+import { canBeUsedBy } from '../store/licenseUtils.js';
 
 export default sceneRenderer;
 var pathLine = null;
+var incompatibleNodeColor = 0x80808033; // 半透明灰色
+
 var pathHighlightColor = 0xffd700ff; // 金色
 var pathStartColor = 0x00ff00ff; // 绿色
 var pathEndColor = 0xff0000ff; // 红色
@@ -76,6 +79,7 @@ function sceneRenderer(container) {
   appEvents.clearPath.on(clearPathHighlight);
 
   appEvents.showLicenseContamination.on(showLicenseContaminationHandler);
+  appEvents.runLicenseSimulation.on(runLicenseSimulationHandler);
 
   var api = {
     destroy: destroy
@@ -133,6 +137,130 @@ function sceneRenderer(container) {
     appEvents.focusOnArea.fire(nodeIds);
 }
 
+function runLicenseSimulationHandler(targetLicense) {
+  if (!renderer) return;
+  
+  // 通知UI模拟开始
+  appEvents.simulationStatusUpdate.fire({ running: true, progress: 0 });
+
+  const graph = scene.getGraph();
+  // 如果没有选择目标许可证 (即用户点击了 'Reset View')，则清除高亮并立即结束
+  if (!graph || !targetLicense) {
+    if (!targetLicense) {
+      console.log('[Renderer] Resetting view because targetLicense is null.');
+      cls();
+    }
+    appEvents.simulationStatusUpdate.fire({ running: false, progress: 100 });
+    return;
+  }
+
+  const view = renderer.getParticleView();
+  const colors = view.colors();
+  const nodeCount = graph.getRawData().labels.length;
+  const compatibilityCache = new Map();
+  const chunkSize = 500; // 每次处理500个节点以避免浏览器卡顿
+  let currentIndex = 0;
+
+  console.log(`[Renderer] Starting simulation for ${nodeCount} nodes with target license: ${targetLicense}`);
+
+  function processChunk() {
+    const start = currentIndex;
+    const end = Math.min(currentIndex + chunkSize, nodeCount);
+
+    for (let i = start; i < end; i++) {
+      // 对于每个根节点的检查，都传入一个全新的 Set 作为递归路径的起点
+      const isCompatible = isChainCompatible(i, targetLicense, graph, compatibilityCache, new Set());
+      const color = isCompatible ? defaultNodeColor : incompatibleNodeColor;
+      colorNode(i * 3, colors, color);
+    }
+
+    currentIndex = end;
+    const progress = (currentIndex / nodeCount) * 100;
+
+    // 更新UI进度
+    appEvents.simulationStatusUpdate.fire({ running: true, progress: progress });
+
+    if (currentIndex < nodeCount) {
+      // 如果还有节点未处理，请求下一帧继续处理
+      requestAnimationFrame(processChunk);
+    } else {
+      // 所有节点处理完毕
+      console.log(`[Renderer] Simulation finished.`);
+      view.colors(colors);
+      // 通知UI模拟结束
+      appEvents.simulationStatusUpdate.fire({ running: false, progress: 100 });
+    }
+  }
+
+  // 启动第一个处理块
+  requestAnimationFrame(processChunk);
+}
+
+// --- 这是需要完整替换的函数 ---
+function isChainCompatible(nodeId, targetLicense, graph, cache, path) {
+  // 缓存依然有效，优先从缓存读取结果
+  if (cache.has(nodeId)) {
+    return cache.get(nodeId);
+  }
+
+  // --- 关键修复：检测循环依赖 ---
+  // path 集合跟踪当前递归调用链上的节点
+  if (path.has(nodeId)) {
+    // 如果在当前调用链上再次遇到同一个节点，说明存在循环，这是一个风险。
+    // 我们将这种情况标记为不兼容，并中断递归。
+    cache.set(nodeId, false);
+    return false;
+  }
+  // 将当前节点加入到路径中
+  path.add(nodeId);
+  // --- 修复结束 ---
+
+  const nodeData = graph.getNodeData(nodeId);
+  if (!nodeData) {
+    path.delete(nodeId); // 在返回前，从路径中移除当前节点
+    cache.set(nodeId, true); // 无法获取数据，默认视为兼容
+    return true;
+  }
+  
+  const licenseTag = (nodeData.tags || []).find(t => typeof t === 'string' && t.startsWith('license:'));
+  const currentLicense = licenseTag ? licenseTag.substring(8) : (nodeData.license || 'N/A');
+
+  if (!canBeUsedBy(currentLicense, targetLicense)) {
+    path.delete(nodeId);
+    cache.set(nodeId, false);
+    return false;
+  }
+
+  const baseModelTags = (nodeData.tags || []).filter(t => t.startsWith('base_model:'));
+  if (baseModelTags.length === 0) {
+    path.delete(nodeId);
+    cache.set(nodeId, true); 
+    return true;
+  }
+
+  for (const tag of baseModelTags) {
+    const baseModelId = tag.substring(11);
+    const parentNodeId = scene.getNodeIdByModelId(baseModelId);
+    
+    if (parentNodeId === undefined) {
+      path.delete(nodeId);
+      cache.set(nodeId, false);
+      return false;
+    }
+
+    // 递归调用时，将当前的路径集合传递下去
+    if (!isChainCompatible(parentNodeId, targetLicense, graph, cache, path)) {
+      path.delete(nodeId);
+      cache.set(nodeId, false);
+      return false;
+    }
+  }
+  
+  // 在当前节点的所有分支都成功返回后，从路径中移除它
+  path.delete(nodeId);
+  cache.set(nodeId, true);
+  return true;
+}
 function showLicenseContaminationHandler(startModelName) {
   if (!renderer) return;
 

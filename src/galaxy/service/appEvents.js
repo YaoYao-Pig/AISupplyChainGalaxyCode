@@ -111,5 +111,7 @@ export default eventMirror([
   'move',
   'rotate',
   'showLicenseContamination',
+  'runLicenseSimulation',
+  'simulationStatusUpdate',
 ], appEvents);
 

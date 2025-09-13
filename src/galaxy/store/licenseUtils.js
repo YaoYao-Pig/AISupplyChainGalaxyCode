@@ -1,35 +1,46 @@
-// A simple list of common copyleft licenses.
-// This is not exhaustive and should be expanded based on specific project needs.
+// src/galaxy/store/licenseUtils.js
+
 const copyleftLicenses = [
-  'GPL-2.0', 'GPL-3.0', 'AGPL-3.0', 'LGPL-2.1', 'LGPL-3.0', 'MPL-2.0', 'EUPL-1.2'
+  'GPL', 'AGPL', 'LGPL', 'MPL', 'EUPL'
 ];
 
-/**
- * Checks if a given license is considered copyleft.
- * @param {string} license The license string to check.
- * @returns {boolean} True if the license is in the copyleft list.
- */
+// 一个更清晰的兼容性矩阵。Key是项目许可证的大写形式。
+// Value是一个数组，包含其可以兼容使用的模型许可证（同样为大写）。
+const compatibilityMatrix = {
+  'MIT': ['MIT', 'APACHE-2.0', 'BSD-3-CLAUSE', 'ISC'],
+  'APACHE-2.0': ['MIT', 'APACHE-2.0', 'BSD-3-CLAUSE', 'ISC'],
+  'GPL-3.0': ['MIT', 'APACHE-2.0', 'BSD-3-CLAUSE', 'ISC', 'GPL-2.0', 'GPL-3.0', 'LGPL-3.0'],
+  'AGPL-3.0': ['MIT', 'APACHE-2.0', 'BSD-3-CLAUSE', 'ISC', 'GPL-3.0', 'AGPL-3.0']
+};
+
 export function isCopyleft(license) {
   if (!license) return false;
-  // Use .some() for a more robust check, e.g., "GPL-2.0-only" should match "GPL-2.0"
-  return copyleftLicenses.some(cl => license.startsWith(cl));
+  const upperLicense = license.toUpperCase();
+  return copyleftLicenses.some(cl => upperLicense.includes(cl));
 }
 
-// ------------------------------------------------------------------
-// ⚠️ 核心业务逻辑：许可证兼容性判断函数 (占位符实现)
-// 您需要根据真实的许可证规则来完善这里的逻辑。
-// 当前的规则是：只有两个许可证完全相同时才算兼容。
-// ------------------------------------------------------------------
-export function isLicenseCompatible(childLicense, parentLicense) {
-    if (!childLicense || !parentLicense) return true;
-    if (parentLicense === 'N/A' || parentLicense === 'Unknown') return true;
-
-    // A simplistic check. A real implementation would need a full compatibility matrix.
-    // For now, let's assume strong copyleft licenses are not compatible with anything but themselves.
-    if (isCopyleft(parentLicense) && childLicense !== parentLicense) {
-      // This is a simplification. For example, MIT is compatible with GPL, but not vice-versa in the same way.
-      // return false; 
+export function canBeUsedBy(modelLicense, projectLicense) {
+    if (!modelLicense || !projectLicense || modelLicense === 'N/A' || modelLicense === 'Unknown') {
+        return true; 
     }
 
-    return childLicense === parentLicense;
-  }
+    const upperProjectLicense = projectLicense.toUpperCase();
+    const upperModelLicense = modelLicense.toUpperCase();
+
+    const allowed = compatibilityMatrix[upperProjectLicense];
+    if (allowed) {
+      return allowed.some(l => upperModelLicense.startsWith(l));
+    }
+
+    // 备用逻辑：如果项目许可证不在矩阵中，则采用严格的同类协议兼容规则
+    if (isCopyleft(upperProjectLicense)) {
+      return isCopyleft(upperModelLicense) && upperModelLicense.includes(upperProjectLicense.split('-')[0]);
+    }
+    
+    // 默认宽松许可证只能使用宽松许可证
+    return !isCopyleft(upperModelLicense);
+}
+
+export function isLicenseCompatible(childLicense, parentLicense) {
+    return canBeUsedBy(parentLicense, childLicense);
+}
