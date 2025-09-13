@@ -34,6 +34,8 @@ var specialBranchColor = 0xffa500; // 橙色 (Branch)
 var specialFarthestColor = 0xffff00; // 黄色 (Farthest)
 var specialClosestColor = 0x00ffff; // 青色 (Closest)
 
+var contaminatedNodeColor = 0xff4500ff; 
+
 // --- 模块作用域变量 ---
 let licenseLabels = [];
 let chainLine = null;
@@ -72,6 +74,8 @@ function sceneRenderer(container) {
 
   appEvents.pathFound.on(highlightPath);
   appEvents.clearPath.on(clearPathHighlight);
+
+  appEvents.showLicenseContamination.on(showLicenseContaminationHandler);
 
   var api = {
     destroy: destroy
@@ -127,6 +131,44 @@ function sceneRenderer(container) {
     }
 
     appEvents.focusOnArea.fire(nodeIds);
+}
+
+function showLicenseContaminationHandler(startModelName) {
+  if (!renderer) return;
+
+  const startNodeId = scene.getNodeIdByModelId(startModelName);
+  if (startNodeId === undefined) return;
+  
+  cls(); // 清除之前的所有高亮
+
+  const view = renderer.getParticleView();
+  const colors = view.colors();
+  const contaminatedSet = new Set();
+  const queue = [startNodeId];
+  
+  contaminatedSet.add(startNodeId);
+
+  // 使用广度优先搜索 (BFS) 遍历所有下游节点
+  while (queue.length > 0) {
+    const currentNodeId = queue.shift();
+    const neighbors = scene.getConnected(currentNodeId, 'out'); // 获取所有出度邻居
+
+    neighbors.forEach(neighbor => {
+      if (!contaminatedSet.has(neighbor.id)) {
+        contaminatedSet.add(neighbor.id);
+        queue.push(neighbor.id);
+      }
+    });
+  }
+
+  // 为所有受影响的节点上色
+  contaminatedSet.forEach(nodeId => {
+    // 中心节点用更亮的颜色突出
+    const color = (nodeId === startNodeId) ? highlightNodeColor : contaminatedNodeColor;
+    colorNode(nodeId * 3, colors, color);
+  });
+
+  view.colors(colors);
 }
 
 function clearPathHighlight() {

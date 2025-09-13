@@ -110,5 +110,6 @@ export default eventMirror([
   'toggleMobileControls',
   'move',
   'rotate',
+  'showLicenseContamination',
 ], appEvents);
 

@@ -4,6 +4,7 @@ import React from 'react';
 import appEvents from './service/appEvents.js';
 
 const maco = require('maco');
+import { isCopyleft } from './store/licenseUtils.js';
 
 function renderMetaDataItem(label, value) {
     if (value === null || value === undefined || value === '') return null;
@@ -86,6 +87,15 @@ function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
     if (!Array.isArray(chain) || chain.length === 0) {
         return null;
     }
+
+    const handleContaminationClick = (modelName) => {
+        // 这里的逻辑保持不变
+        const modelNode = chain.find(item => item.model === modelName);
+        if (modelNode) {
+          appEvents.showLicenseContamination.fire(modelNode.model);
+        }
+    };
+
     return (
         <div className="sidebar-list-section">
             <div className="section-header">
@@ -103,9 +113,13 @@ function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
                             acc.push(<li key={`sep-${index}`} className="branch-separator"></li>);
                         }
 
+                        // --- 这是新增的修复代码 ---
                         let itemClass = "chain-item";
                         if (item.level === 0) itemClass += " current";
                         if (item.isRoot) itemClass += " root";
+                        // --- 修复代码结束 ---
+
+                        const isContagious = isCopyleft(item.license);
 
                         acc.push(
                             <li key={`item-${index}`} className={itemClass}>
@@ -120,6 +134,19 @@ function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
                                             {item.isCompatible ? '✅' : '❌'}
                                         </span>
                                     )}
+
+                                    {isContagious && (
+                                        <div className="contagious-license-container">
+                                            <span className="contagious-icon" title="This is a copyleft (viral) license.">⚠️</span>
+                                            <button 
+                                                onClick={() => handleContaminationClick(item.model)} 
+                                                className="analysis-btn-small"
+                                                title={`Analyze downstream impact of ${item.license}`}>
+                                                Analyze Impact
+                                            </button>
+                                        </div>
+                                    )}
+
                                     <span className="license-badge">{item.license}</span>
                                 </div>
                             </li>
@@ -131,6 +158,7 @@ function renderInheritanceChain(chain, onHighlightClick, onNextClick) {
         </div>
     );
 }
+
 function renderAnalysisSection() {
     const handleShowReport = () => {
         appEvents.showLicenseReport.fire();
