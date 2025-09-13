@@ -80,6 +80,7 @@ function sceneRenderer(container) {
 
   appEvents.showLicenseContamination.on(showLicenseContaminationHandler);
   appEvents.runLicenseSimulation.on(runLicenseSimulationHandler);
+  appEvents.timelineChanged.on(handleTimelineChange);
 
   var api = {
     destroy: destroy
@@ -137,6 +138,62 @@ function sceneRenderer(container) {
     appEvents.focusOnArea.fire(nodeIds);
 }
 
+function handleTimelineChange(selectedDate) {
+  // 日志1: 确认事件被接收
+  console.log(`[Renderer] Event 'timelineChanged' received. Filtering nodes up to date: ${selectedDate.toISOString()}`);
+
+  // --- 关键修复：使用 scene.getGraph() 来获取图谱数据 ---
+  const graph = scene.getGraph(); 
+  if (!renderer || !graph) {
+    console.warn('[Renderer] Timeline update stopped: Renderer or graph not ready.');
+    return;
+  }
+
+  const view = renderer.getParticleView();
+  const colors = view.colors();
+  const sizes = view.sizes();
+  const nodeData = graph.getRawData().nodeData;
+
+  if (!nodeData) {
+      console.error('[Renderer] Node data is not available on the graph object.');
+      return;
+  }
+
+  let visibleCount = 0;
+  for (let i = 0; i < nodeData.length; i++) {
+      const node = nodeData[i];
+      let isVisible = false;
+      if (node && node.createdAt) {
+          const nodeDate = new Date(node.createdAt);
+          // 确保日期有效后再比较
+          if (!isNaN(nodeDate.getTime()) && nodeDate <= selectedDate) {
+              isVisible = true;
+              visibleCount++;
+          }
+      }
+
+      // 通过控制alpha透明度和大小来显示/隐藏节点
+      const colorOffset = i * 4;
+      colors[colorOffset + 3] = isVisible ? 255 : 0; // Alpha channel
+    
+      // 保存或恢复节点的原始大小
+      if (!originalNodeSizes.has(i)) {
+          originalNodeSizes.set(i, sizes[i] || 30);
+      }
+      sizes[i] = isVisible ? originalNodeSizes.get(i) : 0;
+  }
+
+  // 日志2: 报告处理结果
+  console.log(`[Renderer] Update complete. Total visible nodes: ${visibleCount}`);
+
+  view.colors(colors);
+  view.sizes(sizes);
+  
+  // 重新渲染链接以匹配可见的节点（这是一个简化处理，性能开销不大）
+  if (lineView && lineView.linksVisible()) {
+      lineView.render(links, positions);
+  }
+}
 function runLicenseSimulationHandler(targetLicense) {
   if (!renderer) return;
   

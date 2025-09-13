@@ -113,5 +113,6 @@ export default eventMirror([
   'showLicenseContamination',
   'runLicenseSimulation',
   'simulationStatusUpdate',
+  'timelineChanged',
 ], appEvents);
 

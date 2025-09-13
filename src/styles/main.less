@@ -1152,3 +1152,56 @@ a.media {
 .simulator-controls .analysis-btn {
   margin-top: 5px;
 }
+
+.timeline-container {
+  position: absolute;
+  bottom: 20px;
+  left: 20%;
+  right: 20%;
+  background: rgba(0,0,0,0.7);
+  padding: 10px 20px;
+  border-radius: 8px;
+  z-index: 50;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.4);
+}
+
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #ccc;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.timeline-labels .current-date {
+  color: white;
+  font-weight: bold;
+}
+
+.timeline-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  background: #444;
+  border-radius: 4px;
+  outline: none;
+}
+
+.timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #3a82c4;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.timeline-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #3a82c4;
+  border-radius: 50%;
+  cursor: pointer;
+}
