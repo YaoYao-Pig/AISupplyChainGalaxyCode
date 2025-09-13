@@ -24,10 +24,10 @@ var chainHighlightColor = 0xffff00ff;
 var chainEndNodeColor = 0xffaa00ff;
 var chainRootNodeColor = 0x00ff00ff;
 
-var rippleRootColor = 0xff00ff;     // 紫色 (根)
-var rippleBranchColor = 0xffa500;   // 橙色 (分支)
+var rippleRootColor = 0xffffed;     // 紫色 (根)
+var rippleBranchColor = 0xffffed;   // 橙色 (分支)
 var rippleLeafColor = 0xffffed;     // 纯黄色
-var rippleDefaultColor = 0xffff00;  // 纯黄色
+var rippleDefaultColor = 0xffffed ;  // 纯黄色
 
 var specialStartColor = 0xff0000; // 红色 (Start)
 var specialBranchColor = 0xffa500; // 橙色 (Branch)

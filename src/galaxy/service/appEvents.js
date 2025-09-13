@@ -106,6 +106,9 @@ export default eventMirror([
   'highlightSpecialRippleNodes',
   'showPathfindingWindow', // 打开路径查找窗口
   'pathFound',             // 找到了路径，并传递路径数据
-  'clearPath'              // 清除路径高亮
+  'clearPath',              // 清除路径高亮
+  'toggleMobileControls',
+  'move',
+  'rotate',
 ], appEvents);
 

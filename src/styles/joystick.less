@@ -1,0 +1,57 @@
+// 只在最大宽度为 768px 的设备上显示摇杆
+@media (max-width: 768px) {
+    .joystick-container {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 100;
+    }
+  
+    .joystick {
+      width: 120px;
+      height: 120px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      position: relative;
+      pointer-events: all;
+    }
+  
+    .joystick-thumb {
+      width: 50px;
+      height: 50px;
+      background-color: rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      position: absolute;
+      top: 35px;
+      left: 35px;
+      transform: translate(0, 0);
+      transition: transform 0.1s ease-out;
+    }
+  }
+  
+  .mobile-controls-toggle {
+      display: none; // 默认在桌面上隐藏
+  }
+  
+  // 只在移动设备上显示切换按钮
+  @media (max-width: 768px) {
+      .mobile-controls-toggle {
+          display: block; // 在移动端显示
+          position: absolute;
+          top: 70px;
+          left: 20px;
+          z-index: 101;
+          background: rgba(0,0,0,0.7);
+          color: white;
+          border: 1px solid white;
+          padding: 10px 15px;
+          cursor: pointer;
+          font-size: 14px;
+          border-radius: 5px;
+      }
+  }

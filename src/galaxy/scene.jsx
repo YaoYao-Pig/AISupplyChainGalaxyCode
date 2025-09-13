@@ -49,6 +49,15 @@ function scene(x) {
     return (
       <div>
         <div ref='graphContainer' className='graph-full-size'/>
+        { window.orientation !== undefined &&
+          <button className='mobile-controls-toggle' onClick={this.toggleMobileControls}>
+            Switch Controls
+          </button>
+        }
+        <div className="joystick-container">
+            <div ref="leftJoystick" className="joystick left"></div>
+            <div ref="rightJoystick" className="joystick right"></div>
+        </div>
         <LeftSidebarView />
         <HoverInfo />
         <NodeDetails />
@@ -74,7 +83,9 @@ function scene(x) {
       </div>
     );
   };
-
+  x.toggleMobileControls = function() {
+    appEvents.toggleMobileControls.fire();
+  };
   x.componentDidMount = function() {
     if (!webglEnabled) return;
     var container = findDOMNode(x.refs.graphContainer);
