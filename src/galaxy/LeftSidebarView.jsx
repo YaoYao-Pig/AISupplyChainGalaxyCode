@@ -76,7 +76,9 @@ module.exports = require('maco')((x) => {
     const handleLicenseChange = (e) => {
         x.setState({ selectedLicense: e.target.value });
     };
-
+    const handleToggleTimeline = () => {
+        appEvents.toggleTimeline.fire();
+    };
     x.render = function() {
         // --- 这是修复问题的关键一行 ---
         const { isOpen, conflictCount, selectedLicense, isSimulating, simulationProgress } = x.state;
@@ -107,7 +109,9 @@ module.exports = require('maco')((x) => {
                     >
                         Highlight Conflicts ({conflictCount})
                     </button>
-
+                    <button onClick={handleToggleTimeline} className="analysis-btn">
+                        Toggle Timeline
+                    </button>
                     {/* 许可证模拟器 */}
                     <div className="simulator-controls">
                         <h4>License Simulator</h4>

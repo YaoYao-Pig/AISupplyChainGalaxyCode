@@ -3,11 +3,11 @@ import appEvents from '../service/appEvents.js';
 import scene from './sceneStore.js';
 
 function createTimelineStore() {
-    let debounceTimer = null; // 用于存放我们的计时器
-    const DEBOUNCE_DELAY = 100; // 100毫秒的延迟
+    let debounceTimer = null;
+    const DEBOUNCE_DELAY = 100;
 
     let state = {
-        enabled: false,
+        enabled: false, // <-- 默认关闭
         minDate: '',
         maxDate: '',
         currentDate: '',
@@ -17,21 +17,21 @@ function createTimelineStore() {
     };
 
     appEvents.graphDownloaded.on(initialize);
+    // --- 新增监听器 ---
+    appEvents.toggleTimeline.on(toggleTimeline);
+    appEvents.selectNode.on(hideTimeline);
 
     const api = {
         getState: () => state,
         setCurrentIndex: (index) => {
             if (index === state.currentIndex) return;
             
-            // 步骤1: 立即更新UI状态，让滑块本身可以平滑移动
             state.currentIndex = index;
             state.currentDate = formatDate(state.allDates[index]);
-            api.fire('changed'); // 通知React组件重绘滑块和日期
+            api.fire('changed'); 
 
-            // 步骤2: 使用防抖来触发昂贵的3D场景重绘
-            clearTimeout(debounceTimer); // 清除上一个还没来得及执行的计时器
+            clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-                // 只有当用户停止滑动100毫秒后，这个事件才会被触发
                 appEvents.timelineChanged.fire(state.allDates[index]); 
             }, DEBOUNCE_DELAY);
         }
@@ -51,7 +51,7 @@ function createTimelineStore() {
         if (dates.length < 2) {
             state.enabled = false;
         } else {
-            state.enabled = true;
+            // enabled 保持为 false，但数据先准备好
             state.allDates = dates;
             state.minDate = formatDate(dates[0]);
             state.maxDate = formatDate(dates[dates.length - 1]);
@@ -60,6 +60,31 @@ function createTimelineStore() {
             state.currentDate = state.maxDate;
         }
         api.fire('changed');
+    }
+    
+    // --- 新增函数 ---
+    function toggleTimeline() {
+        state.enabled = !state.enabled;
+        
+        // 如果是关闭时间线，则重置视图到显示所有节点的状态
+        if (!state.enabled) {
+            appEvents.timelineChanged.fire(null); // 传递 null 来重置
+        } else {
+            // 如果是打开，则根据当前滑块位置更新视图
+            appEvents.timelineChanged.fire(state.allDates[state.currentIndex]);
+        }
+        
+        api.fire('changed');
+    }
+
+    // --- 新增函数 ---
+    function hideTimeline() {
+        if (state.enabled) {
+            state.enabled = false;
+            // 同样，关闭时重置视图
+            appEvents.timelineChanged.fire(null);
+            api.fire('changed');
+        }
     }
     
     function formatDate(date) {

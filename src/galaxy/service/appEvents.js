@@ -114,5 +114,6 @@ export default eventMirror([
   'runLicenseSimulation',
   'simulationStatusUpdate',
   'timelineChanged',
+  'toggleTimeline',
 ], appEvents);
 
