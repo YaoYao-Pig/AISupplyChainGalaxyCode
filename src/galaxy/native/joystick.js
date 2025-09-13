@@ -1,11 +1,19 @@
 import appEvents from '../service/appEvents.js';
 
 export default function createJoystick(container) {
+  if (window.orientation === undefined) {
+    return { show() {}, hide() {}, destroy() {} };
+  }
+
+  const joystickContainer = document.createElement('div');
+  joystickContainer.className = 'joystick-container';
+
   const leftJoystick = createJoystickElement('left');
   const rightJoystick = createJoystickElement('right');
 
-  container.appendChild(leftJoystick.element);
-  container.appendChild(rightJoystick.element);
+  joystickContainer.appendChild(leftJoystick.element);
+  joystickContainer.appendChild(rightJoystick.element);
+  container.appendChild(joystickContainer);
 
   let leftJoystickState = { x: 0, y: 0 };
   let rightJoystickState = { x: 0, y: 0 };
@@ -45,7 +53,7 @@ export default function createJoystick(container) {
     if (eventName) {
       appEvents[eventName].fire({
         x: state.x / (joystick.element.clientWidth / 2),
-        y: -state.y / (joystick.element.clientHeight / 2) // Invert Y-axis for intuitive controls
+        y: -state.y / (joystick.element.clientHeight / 2) // Invert Y-axis
       });
     }
   };
@@ -69,19 +77,14 @@ export default function createJoystick(container) {
 
   return {
     show() {
-      leftJoystick.element.style.display = 'block';
-      rightJoystick.element.style.display = 'block';
+      joystickContainer.style.display = 'flex';
     },
     hide() {
-      leftJoystick.element.style.display = 'none';
-      rightJoystick.element.style.display = 'none';
+      joystickContainer.style.display = 'none';
     },
     destroy() {
-      if (leftJoystick.element.parentNode) {
-        container.removeChild(leftJoystick.element);
-      }
-      if (rightJoystick.element.parentNode) {
-        container.removeChild(rightJoystick.element);
+      if (joystickContainer.parentNode) {
+        container.removeChild(joystickContainer);
       }
     }
   };

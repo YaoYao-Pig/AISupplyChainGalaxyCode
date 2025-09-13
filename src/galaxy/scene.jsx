@@ -43,21 +43,19 @@ function scene(x) {
     if (!webglEnabled) {
       return <NoWebGL />;
     }
-    
+    const isMobile = window.orientation !== undefined;
     const { sidebarData, activeTag } = x.state;
 
     return (
       <div>
         <div ref='graphContainer' className='graph-full-size'/>
-        { window.orientation !== undefined &&
+        {/* 仅在移动设备上渲染切换按钮 */}
+        { isMobile &&
           <button className='mobile-controls-toggle' onClick={this.toggleMobileControls}>
             Switch Controls
           </button>
         }
-        <div className="joystick-container">
-            <div ref="leftJoystick" className="joystick left"></div>
-            <div ref="rightJoystick" className="joystick right"></div>
-        </div>
+        {/* 摇杆的容器现在由 joystick.js 自己创建和管理 */}
         <LeftSidebarView />
         <HoverInfo />
         <NodeDetails />

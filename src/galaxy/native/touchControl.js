@@ -30,7 +30,7 @@ function createTouchControl(renderer) {
     }
 
     // Joystick controls
-    joystickControls = createJoystick(container.parentNode);
+    joystickControls = createJoystick(container.parentNode); 
     joystickControls.hide();
 
     appEvents.toggleMobileControls.on(toggleControls);
