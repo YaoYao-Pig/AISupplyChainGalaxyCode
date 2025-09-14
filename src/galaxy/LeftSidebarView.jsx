@@ -132,13 +132,13 @@ module.exports = require('maco')((x) => {
                     <button onClick={handleGlobalStats} className="analysis-btn">License Stats</button>
                     <button onClick={handleGlobalReport} className="analysis-btn">Compliance Report</button>
                     <button onClick={handleGlobalComplianceStats} className="analysis-btn">Compliance Stats</button>
-                    <button onClick={handleShowRiskChart} className="analysis-btn">Inheritance Risk</button>
+                    {/* <button onClick={handleShowRiskChart} className="analysis-btn">Inheritance Risk</button> */}
                     
                     <hr className="sidebar-separator" />
 
                     {/* --- 分类 2: 视角切换 --- */}
                     <h4>View Switch</h4>
-                    <button onClick={handleHighlightCore} className="analysis-btn">{coreButtonText}</button>
+                    {/* <button onClick={handleHighlightCore} className="analysis-btn">{coreButtonText}</button>
                     <button onClick={handleShowCommunities} className="analysis-btn">
                         {communityButtonText}
                     </button>
@@ -151,11 +151,11 @@ module.exports = require('maco')((x) => {
                     </button>
                     <button onClick={handleToggleTimeline} className="analysis-btn">Toggle Timeline</button>
 
-                    <hr className="sidebar-separator" />
+                    <hr className="sidebar-separator" /> */}
 
                     {/* --- 分类 3: Other --- */}
                     <h4>Other</h4>
-                    <div className="simulator-controls">
+                    {/* <div className="simulator-controls">
                         <p>License Simulator</p>
                         <select value={selectedLicense} onChange={handleLicenseChange} disabled={isSimulating}>
                             <option value="none">-- Select a License --</option>
@@ -172,7 +172,7 @@ module.exports = require('maco')((x) => {
                                 {selectedLicense === 'none' ? 'Reset View' : 'Simulate'}
                             </button>
                         )}
-                    </div>
+                    </div> */}
                 </div>
             </div>
         );
