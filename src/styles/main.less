@@ -1205,3 +1205,26 @@ a.media {
   border-radius: 50%;
   cursor: pointer;
 }
+
+.inheritance-risk-window {
+  width: 620px;
+  height: 480px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.risk-chart-container {
+  background-color: #222;
+  border-radius: 4px;
+  
+  svg {
+    display: block;
+    
+    circle:hover {
+      stroke: #fff;
+      stroke-width: 1.5px;
+      fill-opacity: 1;
+    }
+  }
+}

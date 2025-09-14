@@ -11,6 +11,7 @@ import windowCollectionModel from './windowCollectionModel.js';
 import PathfindingWindow from './PathfindingWindow.jsx';
 import PathfindingViewModel from './PathfindingViewModel.js';
 import appEvents from '../service/appEvents.js';
+import InheritanceRiskWindow from './InheritanceRiskWindow.jsx';
 
 // 将组件类型映射到一个对象中，方便查找
 const windowContentMap = {
@@ -23,6 +24,7 @@ const windowContentMap = {
   'license-distribution': LicenseListView,
   'license-report-global': LicenseReportWindow,
   'compliance-stats': ComplianceStatsWindow,
+  'inheritance-risk-window': InheritanceRiskWindow, 
 };
 
 module.exports = require('maco')(windowCollectionView, React);
@@ -51,8 +53,9 @@ function windowCollectionView(x) {
     appEvents.showNodeListWindow.fire(new PathfindingViewModel(), 'pathfinder');
   }
   function toWindowView(viewModel, idx) {
-    // 逻辑修正：优先使用 className 进行查找
-    const ContentComponent = windowContentMap[viewModel.className] || windowContentMap[viewModel.id];
+    // 逻辑修正：优先使用 className，如果不存在，则使用 class 进行查找
+    const lookupKey = viewModel.className || viewModel.class;
+    const ContentComponent = windowContentMap[lookupKey] || windowContentMap[viewModel.id];
 
     if (!ContentComponent) {
       console.error('No content component found for viewModel:', viewModel); // 添加错误日志

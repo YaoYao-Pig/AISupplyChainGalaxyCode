@@ -6,6 +6,8 @@ import complianceStore from './store/licenseComplianceStore.js';
 // licenseSimulatorStore 的导入路径需要根据您的项目结构确认，这里假设它在 store 目录下
 // 如果您未创建该文件，请告诉我，我会提供它的代码
 import licenseSimulatorStore from './store/licenseSimulatorStore.js'; 
+const inheritanceRiskStore = require('./store/inheritanceRiskStore.js');
+const InheritanceRiskViewModel = require('./windows/InheritanceRiskViewModel.js');
 
 module.exports = require('maco')((x) => {
     x.state = {
@@ -25,6 +27,17 @@ module.exports = require('maco')((x) => {
         appEvents.simulationStatusUpdate.off(updateSimulationStatus);
     };
     
+    const handleShowRiskChart = () => {
+        appEvents.hideNodeListWindow.fire('inheritance-risk'); // Ensure only one is open
+        const riskData = inheritanceRiskStore.getRiskData();
+        if (riskData) {
+            const viewModel = new InheritanceRiskViewModel(riskData);
+            appEvents.showNodeListWindow.fire(viewModel, 'inheritance-risk');
+        } else {
+            console.warn('Inheritance risk data is not ready yet.');
+        }
+    };
+
     const updateSimulationStatus = (status) => {
         x.setState({
             isSimulating: status.running,
@@ -111,6 +124,9 @@ module.exports = require('maco')((x) => {
                     </button>
                     <button onClick={handleToggleTimeline} className="analysis-btn">
                         Toggle Timeline
+                    </button>
+                    <button onClick={handleShowRiskChart} className="analysis-btn">
+                        Inheritance Risk
                     </button>
                     {/* 许可证模拟器 */}
                     <div className="simulator-controls">
