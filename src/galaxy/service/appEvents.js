@@ -115,5 +115,6 @@ export default eventMirror([
   'simulationStatusUpdate',
   'timelineChanged',
   'toggleTimeline',
+  'highlightCoreModels',
 ], appEvents);
 

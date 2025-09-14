@@ -3,8 +3,6 @@
 import React from 'react';
 import appEvents from './service/appEvents.js';
 import complianceStore from './store/licenseComplianceStore.js';
-// licenseSimulatorStore 的导入路径需要根据您的项目结构确认，这里假设它在 store 目录下
-// 如果您未创建该文件，请告诉我，我会提供它的代码
 import licenseSimulatorStore from './store/licenseSimulatorStore.js'; 
 const inheritanceRiskStore = require('./store/inheritanceRiskStore.js');
 const InheritanceRiskViewModel = require('./windows/InheritanceRiskViewModel.js');
@@ -13,7 +11,10 @@ module.exports = require('maco')((x) => {
     x.state = {
         isOpen: false,
         conflictCount: 0,
-        selectedLicense: 'none' // 初始化 state
+        selectedLicense: 'none',
+        isSimulating: false,
+        simulationProgress: 0,
+        isCoreHighlighted: false
     };
 
     x.componentDidMount = function() {
@@ -28,7 +29,7 @@ module.exports = require('maco')((x) => {
     };
     
     const handleShowRiskChart = () => {
-        appEvents.hideNodeListWindow.fire('inheritance-risk'); // Ensure only one is open
+        appEvents.hideNodeListWindow.fire('inheritance-risk');
         const riskData = inheritanceRiskStore.getRiskData();
         if (riskData) {
             const viewModel = new InheritanceRiskViewModel(riskData);
@@ -51,25 +52,11 @@ module.exports = require('maco')((x) => {
         });
     };
 
-    const handleMouseEnter = () => {
-        x.setState({ isOpen: true });
-    };
-
-    const handleMouseLeave = () => {
-        x.setState({ isOpen: false });
-    };
-
-    const handleGlobalStats = () => {
-        appEvents.showGlobalLicenseStats.fire();
-    };
-
-    const handleGlobalReport = () => {
-        appEvents.showGlobalLicenseReport.fire();
-    };
-
-    const handleGlobalComplianceStats = () => {
-        appEvents.showGlobalComplianceStats.fire();
-    };
+    const handleMouseEnter = () => x.setState({ isOpen: true });
+    const handleMouseLeave = () => x.setState({ isOpen: false });
+    const handleGlobalStats = () => appEvents.showGlobalLicenseStats.fire();
+    const handleGlobalReport = () => appEvents.showGlobalLicenseReport.fire();
+    const handleGlobalComplianceStats = () => appEvents.showGlobalComplianceStats.fire();
 
     const handleHighlightClick = () => {
         const conflictNodeIds = complianceStore.getConflictList().map(c => c.nodeId);
@@ -78,7 +65,6 @@ module.exports = require('maco')((x) => {
 
     const handleSimulate = () => {
         const { selectedLicense } = x.state;
-        console.log(`[LeftSidebarView] Simulate button clicked. Selected license: ${selectedLicense}`);
         if (selectedLicense === 'none') {
             appEvents.runLicenseSimulation.fire(null);
         } else {
@@ -86,17 +72,25 @@ module.exports = require('maco')((x) => {
         }
     };
     
-    const handleLicenseChange = (e) => {
-        x.setState({ selectedLicense: e.target.value });
+    const handleHighlightCore = () => {
+        const currentlyHighlighted = x.state.isCoreHighlighted;
+        if (currentlyHighlighted) {
+            appEvents.cls.fire(); 
+        } else {
+            const topN = 50; 
+            appEvents.highlightCoreModels.fire(topN);
+        }
+        x.setState({ isCoreHighlighted: !currentlyHighlighted });
     };
-    const handleToggleTimeline = () => {
-        appEvents.toggleTimeline.fire();
-    };
+
+    const handleLicenseChange = (e) => x.setState({ selectedLicense: e.target.value });
+    const handleToggleTimeline = () => appEvents.toggleTimeline.fire();
+
     x.render = function() {
-        // --- 这是修复问题的关键一行 ---
-        const { isOpen, conflictCount, selectedLicense, isSimulating, simulationProgress } = x.state;
+        const { isOpen, conflictCount, selectedLicense, isSimulating, simulationProgress, isCoreHighlighted } = x.state;
         const containerClass = isOpen ? "left-sidebar-container open" : "left-sidebar-container";
         const licenses = ['MIT', 'Apache-2.0', 'GPL-3.0', 'AGPL-3.0'];
+        const coreButtonText = isCoreHighlighted ? "Show All Models" : "Highlight Core Models";
 
         return (
             <div 
@@ -105,16 +99,18 @@ module.exports = require('maco')((x) => {
                 onMouseLeave={handleMouseLeave}
             >
                 <div className="left-sidebar-content">
-                    <h4>Global Analysis</h4>
-                    <button onClick={handleGlobalStats} className="analysis-btn">
-                        License Stats
-                    </button>
-                    <button onClick={handleGlobalReport} className="analysis-btn">
-                        Compliance Report
-                    </button>
-                    <button onClick={handleGlobalComplianceStats} className="analysis-btn">
-                        Compliance Stats
-                    </button>
+                    {/* --- 分类 1: 数据洞察 --- */}
+                    <h4>Data Insight</h4>
+                    <button onClick={handleGlobalStats} className="analysis-btn">License Stats</button>
+                    <button onClick={handleGlobalReport} className="analysis-btn">Compliance Report</button>
+                    <button onClick={handleGlobalComplianceStats} className="analysis-btn">Compliance Stats</button>
+                    <button onClick={handleShowRiskChart} className="analysis-btn">Inheritance Risk</button>
+                    
+                    <hr className="sidebar-separator" />
+
+                    {/* --- 分类 2: 视角切换 --- */}
+                    <h4>View Switch</h4>
+                    <button onClick={handleHighlightCore} className="analysis-btn">{coreButtonText}</button>
                     <button 
                         onClick={handleHighlightClick} 
                         className="analysis-btn highlight" 
@@ -122,22 +118,19 @@ module.exports = require('maco')((x) => {
                     >
                         Highlight Conflicts ({conflictCount})
                     </button>
-                    <button onClick={handleToggleTimeline} className="analysis-btn">
-                        Toggle Timeline
-                    </button>
-                    <button onClick={handleShowRiskChart} className="analysis-btn">
-                        Inheritance Risk
-                    </button>
-                    {/* 许可证模拟器 */}
+                    <button onClick={handleToggleTimeline} className="analysis-btn">Toggle Timeline</button>
+
+                    <hr className="sidebar-separator" />
+
+                    {/* --- 分类 3: Other --- */}
+                    <h4>Other</h4>
                     <div className="simulator-controls">
-                        <h4>License Simulator</h4>
-                        <p>If my project uses...</p>
+                        <p>License Simulator</p>
                         <select value={selectedLicense} onChange={handleLicenseChange} disabled={isSimulating}>
                             <option value="none">-- Select a License --</option>
                             {licenses.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                         
-                        {/* 根据 isSimulating 状态显示不同内容 */}
                         {isSimulating ? (
                             <div className="progress-bar-container">
                                 <div className="progress-bar" style={{ width: `${simulationProgress}%` }}></div>

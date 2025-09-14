@@ -29,6 +29,8 @@ function sceneStore() {
     find: find,
     findByTag: (tag) => graph ? graph.findByTag(tag) : [],
     getNodeIdByModelId: (modelId) => modelIdToNodeIdMap.get(modelId),
+
+    // 这是您之前添加的函数，请保留它
     getTopNModelsByInDegree: (n) => {
       if (!graph) return [];
       
@@ -48,6 +50,31 @@ function sceneStore() {
       }
 
       return allNodes.sort((a, b) => b.inDegree - a.inDegree).slice(0, n);
+    },
+
+    // --- 新增：计算并返回核心模型的函数 ---
+    getTopNModelsByCentrality: (n) => {
+      if (!graph) return [];
+      
+      const allNodes = [];
+      const labels = graph.getRawData ? graph.getRawData().labels : [];
+      if (labels.length === 0) return [];
+
+      for (let i = 0; i < labels.length; i++) {
+        const nodeInfo = graph.getNodeInfo(i);
+        if (nodeInfo) {
+          // 中心度 = 入度 + 出度
+          const centrality = (nodeInfo.in || 0) + (nodeInfo.out || 0);
+          allNodes.push({
+            id: i,
+            name: nodeInfo.name,
+            centrality: centrality
+          });
+        }
+      }
+
+      // 按中心度从高到低排序，并返回前 N 个
+      return allNodes.sort((a, b) => b.centrality - a.centrality).slice(0, n);
     },
   };
 

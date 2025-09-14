@@ -39,6 +39,8 @@ var specialClosestColor = 0x00ffff; // 青色 (Closest)
 
 var contaminatedNodeColor = 0xff4500ff; 
 
+var coreModelColor = 0x00ff00ff;
+
 // --- 模块作用域变量 ---
 let licenseLabels = [];
 let chainLine = null;
@@ -81,6 +83,8 @@ function sceneRenderer(container) {
   appEvents.showLicenseContamination.on(showLicenseContaminationHandler);
   appEvents.runLicenseSimulation.on(runLicenseSimulationHandler);
   appEvents.timelineChanged.on(handleTimelineChange);
+  appEvents.highlightCoreModels.on(highlightCoreModelsHandler);
+
 
   var api = {
     destroy: destroy
@@ -913,6 +917,42 @@ function clearPathHighlight() {
     if (nearestIndex !== undefined) {
       return nearestIndex/3;
     }
+  }
+
+  function highlightCoreModelsHandler(topN) {
+    if (!renderer) return;
+    
+    // 1. 先清除所有已有高亮
+    cls();
+
+    // 2. 获取核心模型
+    const coreModels = scene.getTopNModelsByCentrality(topN);
+    const coreModelIds = new Set(coreModels.map(m => m.id));
+
+    const view = renderer.getParticleView();
+    const colors = view.colors();
+    const sizes = view.sizes();
+    const totalNodes = colors.length / 4;
+
+    // 3. 遍历所有节点
+    for (let i = 0; i < totalNodes; i++) {
+      if (coreModelIds.has(i)) {
+        // 如果是核心模型
+        colorNode(i * 3, colors, coreModelColor); // 设置为亮绿色
+        if (!originalNodeSizes.has(i)) {
+          originalNodeSizes.set(i, sizes[i] || 30);
+        }
+        sizes[i] = originalNodeSizes.get(i) * 3; // 尺寸放大3倍
+      } else {
+        // 如果不是核心模型，将其调暗
+        const colorOffset = i * 4;
+        colors[colorOffset + 3] = 40; // Alpha通道设为40（0-255），使其半透明
+      }
+    }
+
+    // 4. 应用更改
+    view.colors(colors);
+    view.sizes(sizes);
   }
 
   function destroy() {
