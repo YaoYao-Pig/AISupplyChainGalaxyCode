@@ -79,8 +79,47 @@ function sceneStore() {
       // 按中心度从高到低排序，并返回前 N 个
       return allNodes.sort((a, b) => b.centrality - a.centrality).slice(0, n);
     },
-    getCommunities: () => communities
+    getCommunities: () => communities,
+    calculateCommunitiesForDate: (limitDate) => {
+      if (!graph) return null;
+      console.log(`Calculating communities for data up to ${limitDate.toISOString()}`);
+
+      const ngraph = createNgraph();
+      const rawData = graph.getRawData();
+      if (!rawData || !rawData.labels || !rawData.outLinks || !rawData.nodeData) {
+        console.error("Cannot run time-scoped community detection: raw data is incomplete.");
+        return null;
+      }
+      
+      const visibleNodeIds = new Set();
+      for (let i = 0; i < rawData.nodeData.length; i++) {
+        const node = rawData.nodeData[i];
+        if (node && node.createdAt && new Date(node.createdAt) <= limitDate) {
+          visibleNodeIds.add(i);
+        }
+      }
+
+      visibleNodeIds.forEach(nodeId => { ngraph.addNode(nodeId); });
+
+      rawData.outLinks.forEach((links, fromId) => {
+        if (links && visibleNodeIds.has(fromId)) {
+          links.forEach(toId => {
+            if (visibleNodeIds.has(toId)) { ngraph.addLink(fromId, toId); }
+          });
+        }
+      });
+      
+      console.log(`Running community detection on a subgraph of ${ngraph.getNodesCount()} nodes and ${ngraph.getLinksCount()} links.`);
+      const timedCommunitiesResult = findCommunities(ngraph);
+      console.log(`Time-scoped community detection complete. Found ${timedCommunitiesResult.count} communities.`);
+      return {
+        result: timedCommunitiesResult,
+        nodeIds: visibleNodeIds 
+      };
+    }
   };
+
+
 
   appEvents.downloadGraphRequested.on(downloadGraph);
 
@@ -146,17 +185,13 @@ function sceneStore() {
     console.log("Graph loaded. Preparing for community detection...");
     
     setTimeout(() => {
-      // --- 核心修复：为社区计算创建一个兼容的 ngraph 实例 ---
       const ngraph = createNgraph();
       const rawData = model.getRawData();
 
       if (rawData && rawData.labels && rawData.outLinks) {
-        // 1. 添加节点
         for (let i = 0; i < rawData.labels.length; i++) {
           ngraph.addNode(i);
         }
-
-        // 2. 添加边
         rawData.outLinks.forEach((links, fromId) => {
           if (links) {
             links.forEach(toId => {
@@ -164,16 +199,25 @@ function sceneStore() {
             });
           }
         });
-
+        
         console.log("Community detection started on compatible graph...");
-        // 3. 在兼容的图上运行算法
-        communities = findCommunities(ngraph); 
-        console.log(`Community detection complete. Found ${communities.count} communities.`);
+        // **核心修复：确保声明的变量名与使用的变量名一致**
+        const communityResult = findCommunities(ngraph); 
+        
+        const allNodeIds = new Set();
+        for (let i = 0; i < rawData.labels.length; i++) {
+          allNodeIds.add(i);
+        }
 
+        communities = {
+          result: communityResult, // 使用这里声明的 `communityResult`
+          nodeIds: allNodeIds
+        };
+
+        console.log(`Community detection complete. Found ${communities.result.count} communities.`);
       } else {
         console.error("Cannot run community detection: raw graph data is missing.");
       }
-      // --- 修复结束 ---
     }, 0);
 
     console.log("Building model_id to nodeId lookup table...");

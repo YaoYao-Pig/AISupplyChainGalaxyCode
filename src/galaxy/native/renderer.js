@@ -1012,13 +1012,15 @@ function getCommunityColor(communityId) {
   return (red << 24) | (green << 16) | (blue << 8) | 0xff; // 包含alpha通道
 }
 
-function showCommunitiesHandler() {
+function showCommunitiesHandler(communityData) {
   if (!renderer) return;
-  const communities = scene.getCommunities();
-  if (!communities) {
-      console.warn('Communities data not available yet.');
+  
+  if (!communityData || !communityData.result || !communityData.nodeIds) {
+      console.warn('Communities data is not available or has incorrect format.');
       return;
   }
+
+  const { result: communities, nodeIds: visibleNodeIds } = communityData;
 
   cls(); // 先清除所有高亮
 
@@ -1027,10 +1029,18 @@ function showCommunitiesHandler() {
   const totalNodes = colors.length / 4;
 
   for (let i = 0; i < totalNodes; i++) {
-      const communityId = communities.getClass(i);
-      if (communityId !== undefined) {
-          const communityColor = getCommunityColor(communityId);
-          colorNode(i * 3, colors, communityColor);
+      // 检查当前节点是否在参与计算的节点列表中
+      if (visibleNodeIds.has(i)) {
+          // 如果在，就安全地获取社区ID并上色
+          const communityId = communities.getClass(i);
+          if (communityId !== undefined) {
+              const communityColor = getCommunityColor(communityId);
+              colorNode(i * 3, colors, communityColor);
+          }
+      } else {
+          // 如果不在（说明被Timeline过滤了），就设为透明
+          const colorOffset = i * 4;
+          colors[colorOffset + 3] = 0; // Alpha通道设为0
       }
   }
 

@@ -6,7 +6,8 @@ import complianceStore from './store/licenseComplianceStore.js';
 import licenseSimulatorStore from './store/licenseSimulatorStore.js'; 
 const inheritanceRiskStore = require('./store/inheritanceRiskStore.js');
 const InheritanceRiskViewModel = require('./windows/InheritanceRiskViewModel.js');
-
+import timelineStore from './store/timelineStore.js';
+const scene = require('./store/sceneStore.js');
 module.exports = require('maco')((x) => {
     x.state = {
         isOpen: false,
@@ -88,10 +89,26 @@ module.exports = require('maco')((x) => {
         const currentlyShowing = x.state.isCommunityView;
         if (currentlyShowing) {
             appEvents.cls.fire();
-        } else {
-            appEvents.showCommunities.fire();
+            x.setState({ isCommunityView: false });
+            return;
         }
-        x.setState({ isCommunityView: !currentlyShowing });
+
+        // --- 核心逻辑：检查 Timeline 状态 ---
+        const timelineState = timelineStore.getState();
+        let communitiesToRender;
+
+        if (timelineState.enabled) {
+            // 如果 Timeline 开启，则根据当前日期动态计算社区
+            const currentDate = timelineState.allDates[timelineState.currentIndex];
+            communitiesToRender = scene.calculateCommunitiesForDate(currentDate);
+        } else {
+            // 如果 Timeline 关闭，则使用全局的、预先计算好的社区
+            communitiesToRender = scene.getCommunities();
+        }
+        
+        // 将计算好的社区数据传递给渲染器
+        appEvents.showCommunities.fire(communitiesToRender);
+        x.setState({ isCommunityView: true });
     };
 
     const handleLicenseChange = (e) => x.setState({ selectedLicense: e.target.value });
