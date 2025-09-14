@@ -45,6 +45,7 @@ var coreModelColor = 0x00ff00ff;
 let licenseLabels = [];
 let chainLine = null;
 let originalNodeSizes = new Map();
+let preHoverColors = new Map(); 
 
 let clusterLabels = []; 
 let clusterLabelsVisible = true;
@@ -585,21 +586,47 @@ function clearPathHighlight() {
 
   function highlightNode(nodeIndex) {
     if (!renderer) return;
+
     const view = renderer.getParticleView();
     const colors = view.colors();
     const sizes = view.sizes();
+    const nodeId = nodeIndex / 3;
+
+    // 恢复上一个高亮的节点
     if (lastHighlight !== undefined) {
-        const lastHighlightId = lastHighlight / 3;
-        const colorToRestore = highlightedNeighbors.has(lastHighlightId) ? neighborHighlightColor : defaultNodeColor;
-        colorNode(lastHighlight, colors, colorToRestore);
-        sizes[lastHighlightId] = lastHighlightSize;
+      const lastNodeId = lastHighlight / 3;
+      // 从 Map 中获取之前保存的颜色
+      const previousColor = preHoverColors.get(lastNodeId);
+      if (previousColor) {
+        // 如果有保存的颜色，就恢复它
+        const colorOffset = lastNodeId * 4;
+        colors[colorOffset + 0] = previousColor.r;
+        colors[colorOffset + 1] = previousColor.g;
+        colors[colorOffset + 2] = previousColor.b;
+        colors[colorOffset + 3] = previousColor.a;
+        preHoverColors.delete(lastNodeId); // 用完后删除
+      }
+      sizes[lastNodeId] = lastHighlightSize;
     }
+
     lastHighlight = nodeIndex;
+
     if (lastHighlight !== undefined) {
+      // 保存当前节点的颜色
+      const colorOffset = nodeId * 4;
+      preHoverColors.set(nodeId, {
+        r: colors[colorOffset + 0],
+        g: colors[colorOffset + 1],
+        b: colors[colorOffset + 2],
+        a: colors[colorOffset + 3]
+      });
+
+      // 设置高亮色
       colorNode(lastHighlight, colors, highlightNodeColor);
-      lastHighlightSize = sizes[lastHighlight/3];
-      sizes[lastHighlight/3] *= 1.5;
+      lastHighlightSize = sizes[nodeId];
+      sizes[nodeId] *= 1.5;
     }
+
     view.colors(colors);
     view.sizes(sizes);
   }
