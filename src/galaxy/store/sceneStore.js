@@ -4,6 +4,8 @@
  */
 import loadGraph from  '../service/graphLoader.js';
 import appEvents from '../service/appEvents.js';
+import findCommunities from 'ngraph.louvain';
+import createNgraph from 'ngraph.graph';
 
 import eventify from 'ngraph.events';
 
@@ -19,6 +21,7 @@ function sceneStore() {
 
   var graph;
   var modelIdToNodeIdMap = new Map();
+  var communities;
 
   var api = {
     isLoading: isLoading,
@@ -76,6 +79,7 @@ function sceneStore() {
       // 按中心度从高到低排序，并返回前 N 个
       return allNodes.sort((a, b) => b.centrality - a.centrality).slice(0, n);
     },
+    getCommunities: () => communities
   };
 
   appEvents.downloadGraphRequested.on(downloadGraph);
@@ -137,25 +141,54 @@ function sceneStore() {
   function loadComplete(model) {
     loadInProgress = false;
     graph = model;
+    
+    communities = null; 
+    console.log("Graph loaded. Preparing for community detection...");
+    
+    setTimeout(() => {
+      // --- 核心修复：为社区计算创建一个兼容的 ngraph 实例 ---
+      const ngraph = createNgraph();
+      const rawData = model.getRawData();
 
-        // --- 新增: 构建名称到ID的映射表 ---
-        console.log("Building model_id to nodeId lookup table...");
-        modelIdToNodeIdMap.clear();
-        const nodeCount = graph.getNodeInfo ? (graph.getNodeInfo(Infinity) ? 0 : graph.getNodeInfo.length) : (model.getRawData ? model.getRawData().labels.length : 0);
-        // 假设我们能获取到所有节点的数量
-        // 我们需要一种方式遍历所有节点
-        const labels = model.getRawData ? model.getRawData().labels : []; // 假设有方法获取所有标签
-        if (labels.length > 0) {
-            for (let i = 0; i < labels.length; i++) {
-                const nodeName = labels[i];
-                if (nodeName) {
-                    modelIdToNodeIdMap.set(nodeName, i);
-                }
-            }
-            console.log(`Lookup table built with ${modelIdToNodeIdMap.size} entries.`);
+      if (rawData && rawData.labels && rawData.outLinks) {
+        // 1. 添加节点
+        for (let i = 0; i < rawData.labels.length; i++) {
+          ngraph.addNode(i);
         }
-        // --- 新增结束 ---
-        
+
+        // 2. 添加边
+        rawData.outLinks.forEach((links, fromId) => {
+          if (links) {
+            links.forEach(toId => {
+              ngraph.addLink(fromId, toId);
+            });
+          }
+        });
+
+        console.log("Community detection started on compatible graph...");
+        // 3. 在兼容的图上运行算法
+        communities = findCommunities(ngraph); 
+        console.log(`Community detection complete. Found ${communities.count} communities.`);
+
+      } else {
+        console.error("Cannot run community detection: raw graph data is missing.");
+      }
+      // --- 修复结束 ---
+    }, 0);
+
+    console.log("Building model_id to nodeId lookup table...");
+    modelIdToNodeIdMap.clear();
+    const labels = model.getRawData ? model.getRawData().labels : [];
+    if (labels.length > 0) {
+        for (let i = 0; i < labels.length; i++) {
+            const nodeName = labels[i];
+            if (nodeName) {
+                modelIdToNodeIdMap.set(nodeName, i);
+            }
+        }
+        console.log(`Lookup table built with ${modelIdToNodeIdMap.size} entries.`);
+    }
+    
     api.fire('loadProgress', {});
     appEvents.graphDownloaded.fire();
   }

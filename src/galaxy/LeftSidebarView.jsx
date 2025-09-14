@@ -14,7 +14,8 @@ module.exports = require('maco')((x) => {
         selectedLicense: 'none',
         isSimulating: false,
         simulationProgress: 0,
-        isCoreHighlighted: false
+        isCoreHighlighted: false,
+        isCommunityView: false
     };
 
     x.componentDidMount = function() {
@@ -83,15 +84,25 @@ module.exports = require('maco')((x) => {
         x.setState({ isCoreHighlighted: !currentlyHighlighted });
     };
 
+    const handleShowCommunities = () => {
+        const currentlyShowing = x.state.isCommunityView;
+        if (currentlyShowing) {
+            appEvents.cls.fire();
+        } else {
+            appEvents.showCommunities.fire();
+        }
+        x.setState({ isCommunityView: !currentlyShowing });
+    };
+
     const handleLicenseChange = (e) => x.setState({ selectedLicense: e.target.value });
     const handleToggleTimeline = () => appEvents.toggleTimeline.fire();
 
     x.render = function() {
-        const { isOpen, conflictCount, selectedLicense, isSimulating, simulationProgress, isCoreHighlighted } = x.state;
+        const { isOpen, conflictCount, selectedLicense, isSimulating, simulationProgress, isCoreHighlighted,isCommunityView } = x.state;
         const containerClass = isOpen ? "left-sidebar-container open" : "left-sidebar-container";
         const licenses = ['MIT', 'Apache-2.0', 'GPL-3.0', 'AGPL-3.0'];
         const coreButtonText = isCoreHighlighted ? "Show All Models" : "Highlight Core Models";
-
+        const communityButtonText = isCommunityView ? "Show Default View" : "Show Communities"; // 根据状态改变按钮文字
         return (
             <div 
                 className={containerClass} 
@@ -111,6 +122,9 @@ module.exports = require('maco')((x) => {
                     {/* --- 分类 2: 视角切换 --- */}
                     <h4>View Switch</h4>
                     <button onClick={handleHighlightCore} className="analysis-btn">{coreButtonText}</button>
+                    <button onClick={handleShowCommunities} className="analysis-btn">
+                        {communityButtonText}
+                    </button>
                     <button 
                         onClick={handleHighlightClick} 
                         className="analysis-btn highlight" 

@@ -85,6 +85,7 @@ function sceneRenderer(container) {
   appEvents.runLicenseSimulation.on(runLicenseSimulationHandler);
   appEvents.timelineChanged.on(handleTimelineChange);
   appEvents.highlightCoreModels.on(highlightCoreModelsHandler);
+  appEvents.showCommunities.on(showCommunitiesHandler); 
 
 
   var api = {
@@ -837,7 +838,7 @@ function clearPathHighlight() {
     }
 
     const camera = renderer.camera();
-    const minDistance = 8000;
+    const minDistance = 4000;
     const maxDistance = 200000;
     
     const maxScaleMultiplier = 4.0; 
@@ -981,7 +982,60 @@ function clearPathHighlight() {
     view.colors(colors);
     view.sizes(sizes);
   }
+// 新增：一个简单的函数，用于根据社区ID生成一个固定的颜色
+function getCommunityColor(communityId) {
+  // 使用黄金分割角来生成视觉上区分度高的颜色
+  const goldenRatioConjugate = 0.61803398875;
+  let hue = (communityId * goldenRatioConjugate) % 1;
+  
+  // 将HSB颜色转换为RGB
+  let h = hue * 6;
+  let i = Math.floor(h);
+  let f = h - i;
+  let q = 1 - f;
+  let r, g, b;
 
+  switch (i % 6) {
+      case 0: r = 1; g = f; b = 0; break;
+      case 1: r = q; g = 1; b = 0; break;
+      case 2: r = 0; g = 1; b = f; break;
+      case 3: r = 0; g = q; b = 1; break;
+      case 4: r = f; g = 0; b = 1; break;
+      case 5: r = 1; g = 0; b = q; break;
+  }
+  
+  // 转换为 0-255 范围的整数，并组合成一个十六进制颜色值
+  const red = Math.floor(r * 255);
+  const green = Math.floor(g * 255);
+  const blue = Math.floor(b * 255);
+
+  return (red << 24) | (green << 16) | (blue << 8) | 0xff; // 包含alpha通道
+}
+
+function showCommunitiesHandler() {
+  if (!renderer) return;
+  const communities = scene.getCommunities();
+  if (!communities) {
+      console.warn('Communities data not available yet.');
+      return;
+  }
+
+  cls(); // 先清除所有高亮
+
+  const view = renderer.getParticleView();
+  const colors = view.colors();
+  const totalNodes = colors.length / 4;
+
+  for (let i = 0; i < totalNodes; i++) {
+      const communityId = communities.getClass(i);
+      if (communityId !== undefined) {
+          const communityColor = getCommunityColor(communityId);
+          colorNode(i * 3, colors, communityColor);
+      }
+  }
+
+  view.colors(colors);
+}
   function destroy() {
     var input = renderer.input();
     if (input) input.off('move', clearHover);

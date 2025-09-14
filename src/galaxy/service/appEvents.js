@@ -116,5 +116,6 @@ export default eventMirror([
   'timelineChanged',
   'toggleTimeline',
   'highlightCoreModels',
+  'showCommunities',
 ], appEvents);
 

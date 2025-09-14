@@ -53,6 +53,8 @@
     "less-loader": "^2.2.0",
     "maco": "^2.0.3",
     "ngraph.events": "0.0.3",
+    "ngraph.graph": "^20.1.0",
+    "ngraph.louvain": "^2.0.0",
     "ngraph.offline.layout": "^2.0.0",
     "node-libs-browser": "^0.5.0",
     "qs": "^4.0.0",
