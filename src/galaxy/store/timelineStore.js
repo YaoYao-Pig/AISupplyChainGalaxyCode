@@ -25,12 +25,7 @@ function createTimelineStore() {
         getState: () => state,
         setCurrentIndex: (index) => {
             if (index === state.currentIndex) return;
-            //删除这个
-            let sum = 0;
-            for (let i = 0; i < 1000000000; i++) {
-                sum += Math.sqrt(i);
-            }
-            //删除这个
+            
             state.currentIndex = index;
             state.currentDate = formatDate(state.allDates[index]);
             api.fire('changed'); 
@@ -69,12 +64,6 @@ function createTimelineStore() {
     
     // --- 新增函数 ---
     function toggleTimeline() {
-        //删除这个
-        let sum = 0;
-        for (let i = 0; i < 2000000000; i++) {
-            sum += Math.sqrt(i);
-        }
-        //删除这个
         state.enabled = !state.enabled;
         
         // 如果是关闭时间线，则重置视图到显示所有节点的状态
