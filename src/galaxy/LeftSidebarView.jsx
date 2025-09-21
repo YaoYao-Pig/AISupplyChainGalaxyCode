@@ -148,10 +148,10 @@ module.exports = require('maco')((x) => {
                         disabled={conflictCount === 0}
                     >
                         Highlight Conflicts ({conflictCount})
-                    </button>
+                    </button> */}
                     <button onClick={handleToggleTimeline} className="analysis-btn">Toggle Timeline</button>
 
-                    <hr className="sidebar-separator" /> */}
+                    <hr className="sidebar-separator" />
 
                     {/* --- 分类 3: Other --- */}
                     <h4>Other</h4>
