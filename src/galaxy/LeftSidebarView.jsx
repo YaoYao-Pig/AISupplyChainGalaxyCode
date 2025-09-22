@@ -154,8 +154,8 @@ module.exports = require('maco')((x) => {
                     <hr className="sidebar-separator" />
 
                     {/* --- 分类 3: Other --- */}
-                    <h4>Other</h4>
-                    {/* <div className="simulator-controls">
+                    <h4>License</h4>
+                    <div className="simulator-controls">
                         <p>License Simulator</p>
                         <select value={selectedLicense} onChange={handleLicenseChange} disabled={isSimulating}>
                             <option value="none">-- Select a License --</option>
@@ -172,7 +172,7 @@ module.exports = require('maco')((x) => {
                                 {selectedLicense === 'none' ? 'Reset View' : 'Simulate'}
                             </button>
                         )}
-                    </div> */}
+                    </div>
                 </div>
             </div>
         );
