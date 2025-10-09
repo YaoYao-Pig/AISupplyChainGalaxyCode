@@ -118,8 +118,10 @@ module.exports = require('maco')((x) => {
         const { isTaskTypeView } = x.state;
         if (isTaskTypeView) {
             appEvents.cls.fire();
+            appEvents.showTaskTypeLegend.fire(false); // 隐藏图例
         } else {
             appEvents.showTaskTypeView.fire();
+            appEvents.showTaskTypeLegend.fire(true); // 显示图例
         }
         x.setState({ isTaskTypeView: !isTaskTypeView });
     };

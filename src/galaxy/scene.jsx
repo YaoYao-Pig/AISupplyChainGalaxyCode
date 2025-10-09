@@ -27,7 +27,8 @@ import complianceStore from './store/licenseComplianceStore.js';
 import { isLicenseCompatible } from './store/licenseUtils.js';
 import getBaseNodeViewModel from './store/baseNodeViewModel.js';
 import TimelineView from './TimelineView.jsx';
-import './store/rippleAnimationStore.js'
+import './store/rippleAnimationStore.js';
+import TaskTypeLegend from './TaskTypeLegend.jsx';
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 
@@ -74,6 +75,7 @@ function scene(x) {
         <Help />
         <About />
         <TimelineView />
+        <TaskTypeLegend />
         { x.state.showHelpToast && (
          <div className='toast-notification'>
            Press <kbd>H</kbd> for help

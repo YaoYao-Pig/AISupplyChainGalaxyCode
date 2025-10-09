@@ -118,5 +118,6 @@ export default eventMirror([
   'highlightCoreModels',
   'showCommunities',
   'showTaskTypeView',
+  'showTaskTypeLegend',
 ], appEvents);
 
