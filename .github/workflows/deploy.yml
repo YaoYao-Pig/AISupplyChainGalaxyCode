@@ -8,7 +8,7 @@ on:
   push:
     branches:
       - main
-
+    workflow_dispatch:
 jobs:
   build-and-deploy:
     # 运行此 job 的虚拟机环境
