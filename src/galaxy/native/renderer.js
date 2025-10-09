@@ -86,6 +86,7 @@ function sceneRenderer(container) {
   appEvents.timelineChanged.on(handleTimelineChange);
   appEvents.highlightCoreModels.on(highlightCoreModelsHandler);
   appEvents.showCommunities.on(showCommunitiesHandler); 
+  appEvents.showTaskTypeView.on(showTaskTypeView);
 
 
   var api = {
@@ -94,6 +95,77 @@ function sceneRenderer(container) {
 
   eventify(api);
   return api;
+  function showTaskTypeView() {
+    if (!renderer) return;
+
+    const graph = scene.getGraph();
+    if (!graph) return;
+
+    const view = renderer.getParticleView();
+    const colors = view.colors();
+    const nodeData = graph.getRawData().nodeData;
+
+    const taskCategories = {
+        'Multimodal': ['Any-to-Any', 'Audio-Text-to-Text', 'Document Question Answering', 'Visual Document Retrieval', 'Image-Text-to-Text', 'Video-Text-to-Text', 'Visual Question Answering'],
+        'Natural Language Processing': ['Feature Extraction', 'Fill-Mask', 'Question Answering', 'Sentence Similarity', 'Summarization', 'Table Question Answering', 'Text Classification', 'Text Generation', 'Text Ranking', 'Token Classification', 'Translation', 'Zero-Shot Classification'],
+        'Computer Vision': ['Depth Estimation', 'Image Classification', 'Image Feature Extraction', 'Image Segmentation', 'Image-to-Image', 'Image-to-Text', 'Image-to-Video', 'Keypoint Detection', 'Mask Generation', 'Object Detection', 'Video Classification', 'Text-to-Image', 'Text-to-Video', 'Unconditional Image Generation', 'Zero-Shot Image Classification', 'Zero-Shot Object Detection', 'Text-to-3D', 'Image-to-3D'],
+        'Audio': ['Audio Classification', 'Audio-to-Audio', 'Automatic Speech Recognition', 'Text-to-Speech'],
+        'Tabular': ['Tabular Classification', 'Tabular Regression', 'Reinforcement Learning']
+    };
+
+    const categoryColors = {
+        'Multimodal': [255, 0, 0], // Red
+        'Natural Language Processing': [0, 255, 0], // Green
+        'Computer Vision': [0, 0, 255], // Blue
+        'Audio': [255, 255, 0], // Yellow
+        'Tabular': [255, 0, 255]  // Magenta
+    };
+
+    const normalize = (str) => str.replace(/-/g, '').replace(/ /g, '').toUpperCase();
+
+    const normalizedTaskCategories = {};
+    for (const category in taskCategories) {
+        normalizedTaskCategories[category] = taskCategories[category].map(normalize);
+    }
+
+    for (let i = 0; i < nodeData.length; i++) {
+        const node = nodeData[i];
+        if (!node || !node.tags) {
+            colorNode(i * 3, colors, 0x808080ff); // Grey for nodes with no tags
+            continue;
+        };
+
+        let finalColor = [0, 0, 0];
+        let categoryCount = 0;
+
+        const normalizedTags = node.tags.map(normalize);
+
+        for (const category in normalizedTaskCategories) {
+            const tasks = normalizedTaskCategories[category];
+            const matchingTasks = normalizedTags.filter(tag => tasks.includes(tag));
+
+            if (matchingTasks.length > 0) {
+                const baseColor = categoryColors[category];
+                const colorVariation = Math.min(1, matchingTasks.length / 5);
+
+                finalColor[0] += baseColor[0] * (1 - 0.5 * colorVariation);
+                finalColor[1] += baseColor[1] * (1 - 0.5 * colorVariation);
+                finalColor[2] += baseColor[2] * (1 - 0.5 * colorVariation);
+
+                categoryCount++;
+            }
+        }
+        if (categoryCount > 0) {
+            const r = Math.floor(Math.min(255, finalColor[0] / categoryCount));
+            const g = Math.floor(Math.min(255, finalColor[1] / categoryCount));
+            const b = Math.floor(Math.min(255, finalColor[2] / categoryCount));
+            colorNode(i * 3, colors, (r << 24) | (g << 16) | (b << 8) | 0xff);
+        } else {
+            colorNode(i * 3, colors, 0x808080ff); // Grey
+        }
+    }
+    view.colors(colors);
+  }
   function highlightPath(nodeIds) {
     if (!renderer || !nodeIds || nodeIds.length === 0) return;
     cls();

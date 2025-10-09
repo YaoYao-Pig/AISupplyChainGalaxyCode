@@ -16,7 +16,8 @@ module.exports = require('maco')((x) => {
         isSimulating: false,
         simulationProgress: 0,
         isCoreHighlighted: false,
-        isCommunityView: false
+        isCommunityView: false,
+        isTaskTypeView: false
     };
 
     x.componentDidMount = function() {
@@ -113,13 +114,23 @@ module.exports = require('maco')((x) => {
 
     const handleLicenseChange = (e) => x.setState({ selectedLicense: e.target.value });
     const handleToggleTimeline = () => appEvents.toggleTimeline.fire();
+    const handleShowTaskTypeView = () => {
+        const { isTaskTypeView } = x.state;
+        if (isTaskTypeView) {
+            appEvents.cls.fire();
+        } else {
+            appEvents.showTaskTypeView.fire();
+        }
+        x.setState({ isTaskTypeView: !isTaskTypeView });
+    };
 
     x.render = function() {
-        const { isOpen, conflictCount, selectedLicense, isSimulating, simulationProgress, isCoreHighlighted,isCommunityView } = x.state;
+        const { isOpen, conflictCount, selectedLicense, isSimulating, simulationProgress, isCoreHighlighted, isCommunityView, isTaskTypeView } = x.state;
         const containerClass = isOpen ? "left-sidebar-container open" : "left-sidebar-container";
         const licenses = ['MIT', 'Apache-2.0', 'GPL-3.0', 'AGPL-3.0'];
         const coreButtonText = isCoreHighlighted ? "Show All Models" : "Highlight Core Models";
         const communityButtonText = isCommunityView ? "Show Default View" : "Show Communities"; // 根据状态改变按钮文字
+        const taskTypeButtonText = isTaskTypeView ? "Show Default View" : "Task Type View";
         return (
             <div 
                 className={containerClass} 
@@ -138,6 +149,7 @@ module.exports = require('maco')((x) => {
 
                     {/* --- 分类 2: 视角切换 --- */}
                     <h4>View Switch</h4>
+                    <button onClick={handleShowTaskTypeView} className="analysis-btn">{taskTypeButtonText}</button>
                     {/* <button onClick={handleHighlightCore} className="analysis-btn">{coreButtonText}</button>
                     <button onClick={handleShowCommunities} className="analysis-btn">
                         {communityButtonText}
