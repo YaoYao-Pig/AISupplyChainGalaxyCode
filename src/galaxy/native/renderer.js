@@ -1,4 +1,4 @@
-// src/galaxy/native/renderer.js (最终修复版)
+// src/galaxy/native/renderer.js
 
 import unrender from 'unrender';
 window.THREE = unrender.THREE;
@@ -49,7 +49,7 @@ let preHoverColors = new Map();
 
 let clusterLabels = []; 
 let clusterLabelsVisible = true;
-let isTaskTypeViewActive = false;
+let isTaskTypeViewActive = false; 
 
 function sceneRenderer(container) {
   var renderer, positions, graphModel, touchControl;
@@ -132,44 +132,41 @@ function sceneRenderer(container) {
     for (let i = 0; i < nodeData.length; i++) {
         const node = nodeData[i];
         if (!node || !node.tags) {
-            colorNode(i * 3, colors, 0x808080ff); // Grey for nodes with no tags
+            colorNode(i * 3, colors, 0x808080ff);
             continue;
         };
 
-        let finalColor = [0, 0, 0];
-        let categoryCount = 0;
-
+        const matchedCategories = [];
         const normalizedTags = node.tags.map(normalize);
 
         for (const category in normalizedTaskCategories) {
             const tasks = normalizedTaskCategories[category];
-            const matchingTasks = normalizedTags.filter(tag => tasks.includes(tag));
-
-            if (matchingTasks.length > 0) {
-                const baseColor = categoryColors[category];
-                const colorVariation = Math.min(1, matchingTasks.length / 5);
-
-                finalColor[0] += baseColor[0] * (1 - 0.5 * colorVariation);
-                finalColor[1] += baseColor[1] * (1 - 0.5 * colorVariation);
-                finalColor[2] += baseColor[2] * (1 - 0.5 * colorVariation);
-
-                categoryCount++;
+            if (normalizedTags.some(tag => tasks.includes(tag))) {
+                matchedCategories.push(categoryColors[category]);
             }
         }
-        if (categoryCount > 0) {
-            const r = Math.floor(Math.min(255, finalColor[0] / categoryCount));
-            const g = Math.floor(Math.min(255, finalColor[1] / categoryCount));
-            const b = Math.floor(Math.min(255, finalColor[2] / categoryCount));
+
+        if (matchedCategories.length > 0) {
+            const finalColor = [0, 0, 0];
+            matchedCategories.forEach(color => {
+                finalColor[0] += color[0];
+                finalColor[1] += color[1];
+                finalColor[2] += color[2];
+            });
+
+            const r = Math.floor(finalColor[0] / matchedCategories.length);
+            const g = Math.floor(finalColor[1] / matchedCategories.length);
+            const b = Math.floor(finalColor[2] / matchedCategories.length);
             colorNode(i * 3, colors, (r << 24) | (g << 16) | (b << 8) | 0xff);
         } else {
-            colorNode(i * 3, colors, 0x808080ff); // Grey
+            colorNode(i * 3, colors, 0x808080ff);
         }
     }
     view.colors(colors);
-
     isTaskTypeViewActive = true;
-    lineViewNeedsUpdate = true; // 强制在下次显示时重新渲染边
+    lineViewNeedsUpdate = true;
   }
+
   function highlightPath(nodeIds) {
     if (!renderer || !nodeIds || nodeIds.length === 0) return;
     cls();
@@ -203,9 +200,8 @@ function sceneRenderer(container) {
     if (points.length > 1) {
         clearPathHighlight();
 
-        // --- 核心修复：使用旧版的 API 来创建线条 ---
         const geometry = new THREE.Geometry();
-        geometry.vertices = points; // 直接将点赋值给 vertices 属性
+        geometry.vertices = points; 
 
         const material = new THREE.LineBasicMaterial({
             color: pathHighlightColor,
@@ -221,7 +217,6 @@ function sceneRenderer(container) {
 }
 
 function handleTimelineChange(selectedDate) {
-  // 日志1: 确认事件被接收
   if (selectedDate) {
     console.log(`[Renderer] Event 'timelineChanged' received. Filtering nodes up to date: ${selectedDate.toISOString()}`);
   } else {
@@ -246,7 +241,6 @@ function handleTimelineChange(selectedDate) {
 
   let visibleCount = 0;
   for (let i = 0; i < nodeData.length; i++) {
-      // 如果 selectedDate 为 null，则所有节点都可见 (isVisible = true)
       const isVisible = !selectedDate || (
           nodeData[i] && nodeData[i].createdAt && new Date(nodeData[i].createdAt) <= selectedDate
       );
@@ -254,7 +248,7 @@ function handleTimelineChange(selectedDate) {
       if (isVisible) visibleCount++;
 
       const colorOffset = i * 4;
-      colors[colorOffset + 3] = isVisible ? 255 : 0; // Alpha channel
+      colors[colorOffset + 3] = isVisible ? 255 : 0; 
     
       if (!originalNodeSizes.has(i)) {
           originalNodeSizes.set(i, sizes[i] || 30);
@@ -274,11 +268,9 @@ function handleTimelineChange(selectedDate) {
 function runLicenseSimulationHandler(targetLicense) {
   if (!renderer) return;
   
-  // 通知UI模拟开始
   appEvents.simulationStatusUpdate.fire({ running: true, progress: 0 });
 
   const graph = scene.getGraph();
-  // 如果没有选择目标许可证 (即用户点击了 'Reset View')，则清除高亮并立即结束
   if (!graph || !targetLicense) {
     if (!targetLicense) {
       console.log('[Renderer] Resetting view because targetLicense is null.');
@@ -292,7 +284,7 @@ function runLicenseSimulationHandler(targetLicense) {
   const colors = view.colors();
   const nodeCount = graph.getRawData().labels.length;
   const compatibilityCache = new Map();
-  const chunkSize = 500; // 每次处理500个节点以避免浏览器卡顿
+  const chunkSize = 500;
   let currentIndex = 0;
 
   console.log(`[Renderer] Starting simulation for ${nodeCount} nodes with target license: ${targetLicense}`);
@@ -302,7 +294,6 @@ function runLicenseSimulationHandler(targetLicense) {
     const end = Math.min(currentIndex + chunkSize, nodeCount);
 
     for (let i = start; i < end; i++) {
-      // 对于每个根节点的检查，都传入一个全新的 Set 作为递归路径的起点
       const isCompatible = isChainCompatible(i, targetLicense, graph, compatibilityCache, new Set());
       const color = isCompatible ? defaultNodeColor : incompatibleNodeColor;
       colorNode(i * 3, colors, color);
@@ -311,48 +302,35 @@ function runLicenseSimulationHandler(targetLicense) {
     currentIndex = end;
     const progress = (currentIndex / nodeCount) * 100;
 
-    // 更新UI进度
     appEvents.simulationStatusUpdate.fire({ running: true, progress: progress });
 
     if (currentIndex < nodeCount) {
-      // 如果还有节点未处理，请求下一帧继续处理
       requestAnimationFrame(processChunk);
     } else {
-      // 所有节点处理完毕
       console.log(`[Renderer] Simulation finished.`);
       view.colors(colors);
-      // 通知UI模拟结束
       appEvents.simulationStatusUpdate.fire({ running: false, progress: 100 });
     }
   }
 
-  // 启动第一个处理块
   requestAnimationFrame(processChunk);
 }
 
-// --- 这是需要完整替换的函数 ---
 function isChainCompatible(nodeId, targetLicense, graph, cache, path) {
-  // 缓存依然有效，优先从缓存读取结果
   if (cache.has(nodeId)) {
     return cache.get(nodeId);
   }
 
-  // --- 关键修复：检测循环依赖 ---
-  // path 集合跟踪当前递归调用链上的节点
   if (path.has(nodeId)) {
-    // 如果在当前调用链上再次遇到同一个节点，说明存在循环，这是一个风险。
-    // 我们将这种情况标记为不兼容，并中断递归。
     cache.set(nodeId, false);
     return false;
   }
-  // 将当前节点加入到路径中
   path.add(nodeId);
-  // --- 修复结束 ---
 
   const nodeData = graph.getNodeData(nodeId);
   if (!nodeData) {
-    path.delete(nodeId); // 在返回前，从路径中移除当前节点
-    cache.set(nodeId, true); // 无法获取数据，默认视为兼容
+    path.delete(nodeId); 
+    cache.set(nodeId, true); 
     return true;
   }
   
@@ -382,7 +360,6 @@ function isChainCompatible(nodeId, targetLicense, graph, cache, path) {
       return false;
     }
 
-    // 递归调用时，将当前的路径集合传递下去
     if (!isChainCompatible(parentNodeId, targetLicense, graph, cache, path)) {
       path.delete(nodeId);
       cache.set(nodeId, false);
@@ -390,7 +367,6 @@ function isChainCompatible(nodeId, targetLicense, graph, cache, path) {
     }
   }
   
-  // 在当前节点的所有分支都成功返回后，从路径中移除它
   path.delete(nodeId);
   cache.set(nodeId, true);
   return true;
@@ -401,7 +377,7 @@ function showLicenseContaminationHandler(startModelName) {
   const startNodeId = scene.getNodeIdByModelId(startModelName);
   if (startNodeId === undefined) return;
   
-  cls(); // 清除之前的所有高亮
+  cls();
 
   const view = renderer.getParticleView();
   const colors = view.colors();
@@ -410,10 +386,9 @@ function showLicenseContaminationHandler(startModelName) {
   
   contaminatedSet.add(startNodeId);
 
-  // 使用广度优先搜索 (BFS) 遍历所有下游节点
   while (queue.length > 0) {
     const currentNodeId = queue.shift();
-    const neighbors = scene.getConnected(currentNodeId, 'out'); // 获取所有出度邻居
+    const neighbors = scene.getConnected(currentNodeId, 'out'); 
 
     neighbors.forEach(neighbor => {
       if (!contaminatedSet.has(neighbor.id)) {
@@ -423,9 +398,7 @@ function showLicenseContaminationHandler(startModelName) {
     });
   }
 
-  // 为所有受影响的节点上色
   contaminatedSet.forEach(nodeId => {
-    // 中心节点用更亮的颜色突出
     const color = (nodeId === startNodeId) ? highlightNodeColor : contaminatedNodeColor;
     colorNode(nodeId * 3, colors, color);
   });
@@ -434,7 +407,7 @@ function showLicenseContaminationHandler(startModelName) {
 }
 
 function clearPathHighlight() {
-    cls(); // cls会重置颜色和大小
+    cls();
     if (pathLine) {
         renderer.scene().remove(pathLine);
         if (pathLine.geometry) pathLine.geometry.dispose();
@@ -585,17 +558,14 @@ function clearPathHighlight() {
 
   function toggleLinks() {
     if (!lineView) {
-        // 第一次切换，创建并渲染
         renderLineViewIfNeeded();
         return;
     }
 
-    // 如果数据已更新，或我们正准备显示边，则强制重新渲染
     if (lineViewNeedsUpdate || !lineView.linksVisible()) {
         renderLineViewIfNeeded();
     }
     
-    // 切换可见性
     lineView.toggleLinks();
   }
 
@@ -676,19 +646,16 @@ function clearPathHighlight() {
     const sizes = view.sizes();
     const nodeId = nodeIndex / 3;
 
-    // 恢复上一个高亮的节点
     if (lastHighlight !== undefined) {
       const lastNodeId = lastHighlight / 3;
-      // 从 Map 中获取之前保存的颜色
       const previousColor = preHoverColors.get(lastNodeId);
       if (previousColor) {
-        // 如果有保存的颜色，就恢复它
         const colorOffset = lastNodeId * 4;
         colors[colorOffset + 0] = previousColor.r;
         colors[colorOffset + 1] = previousColor.g;
         colors[colorOffset + 2] = previousColor.b;
         colors[colorOffset + 3] = previousColor.a;
-        preHoverColors.delete(lastNodeId); // 用完后删除
+        preHoverColors.delete(lastNodeId);
       }
       sizes[lastNodeId] = lastHighlightSize;
     }
@@ -696,7 +663,6 @@ function clearPathHighlight() {
     lastHighlight = nodeIndex;
 
     if (lastHighlight !== undefined) {
-      // 保存当前节点的颜色
       const colorOffset = nodeId * 4;
       preHoverColors.set(nodeId, {
         r: colors[colorOffset + 0],
@@ -705,7 +671,6 @@ function clearPathHighlight() {
         a: colors[colorOffset + 3]
       });
 
-      // 设置高亮色
       colorNode(lastHighlight, colors, highlightNodeColor);
       lastHighlightSize = sizes[nodeId];
       sizes[nodeId] *= 1.5;
@@ -784,7 +749,6 @@ function clearPathHighlight() {
     }
   }
 
-  // --- 修复: 恢复创建许可证标签的逻辑 ---
   function highlightRippleLevelHandler(nodes) {
     if (!renderer || !nodes || nodes.length === 0) return;
 
@@ -801,16 +765,14 @@ function clearPathHighlight() {
 
       colorNode(nodeInfo.id * 3, colors, color);
 
-      // --- 核心修复：从 originalNodeSizes Map 中获取或存储真实的原始尺寸 ---
       if (!originalNodeSizes.has(nodeInfo.id)) {
         originalNodeSizes.set(nodeInfo.id, sizes[nodeInfo.id] || baseSize);
       }
       const trueOriginalSize = originalNodeSizes.get(nodeInfo.id);
-      // --- 修复结束 ---
 
-      sizes[nodeInfo.id] = trueOriginalSize * 3.5; // 基于真实原始尺寸放大
+      sizes[nodeInfo.id] = trueOriginalSize * 3.5;
       setTimeout(() => {
-        sizes[nodeInfo.id] = trueOriginalSize * 1.8; // 基于真实原始尺寸恢复
+        sizes[nodeInfo.id] = trueOriginalSize * 1.8;
         view.sizes(sizes);
       }, 350);
     });
@@ -1000,10 +962,8 @@ function clearPathHighlight() {
     var view = renderer.getParticleView();
     var colors = view.colors();
     var sizes = view.sizes(); 
-
     isTaskTypeViewActive = false;
     lineViewNeedsUpdate = true;
-    
     for (var i = 0; i < colors.length/4; i++) {
       colorNode(i * 3, colors, defaultNodeColor);
       if (originalNodeSizes.has(i)) {
@@ -1037,10 +997,8 @@ function clearPathHighlight() {
   function highlightCoreModelsHandler(topN) {
     if (!renderer) return;
     
-    // 1. 先清除所有已有高亮
     cls();
 
-    // 2. 获取核心模型
     const coreModels = scene.getTopNModelsByCentrality(topN);
     const coreModelIds = new Set(coreModels.map(m => m.id));
 
@@ -1049,33 +1007,26 @@ function clearPathHighlight() {
     const sizes = view.sizes();
     const totalNodes = colors.length / 4;
 
-    // 3. 遍历所有节点
     for (let i = 0; i < totalNodes; i++) {
       if (coreModelIds.has(i)) {
-        // 如果是核心模型
-        colorNode(i * 3, colors, coreModelColor); // 设置为亮绿色
+        colorNode(i * 3, colors, coreModelColor);
         if (!originalNodeSizes.has(i)) {
           originalNodeSizes.set(i, sizes[i] || 30);
         }
-        sizes[i] = originalNodeSizes.get(i) * 3; // 尺寸放大3倍
+        sizes[i] = originalNodeSizes.get(i) * 3;
       } else {
-        // 如果不是核心模型，将其调暗
         const colorOffset = i * 4;
-        colors[colorOffset + 3] = 40; // Alpha通道设为40（0-255），使其半透明
+        colors[colorOffset + 3] = 40;
       }
     }
 
-    // 4. 应用更改
     view.colors(colors);
     view.sizes(sizes);
   }
-// 新增：一个简单的函数，用于根据社区ID生成一个固定的颜色
 function getCommunityColor(communityId) {
-  // 使用黄金分割角来生成视觉上区分度高的颜色
   const goldenRatioConjugate = 0.61803398875;
   let hue = (communityId * goldenRatioConjugate) % 1;
   
-  // 将HSB颜色转换为RGB
   let h = hue * 6;
   let i = Math.floor(h);
   let f = h - i;
@@ -1091,12 +1042,11 @@ function getCommunityColor(communityId) {
       case 5: r = 1; g = 0; b = q; break;
   }
   
-  // 转换为 0-255 范围的整数，并组合成一个十六进制颜色值
   const red = Math.floor(r * 255);
   const green = Math.floor(g * 255);
   const blue = Math.floor(b * 255);
 
-  return (red << 24) | (green << 16) | (blue << 8) | 0xff; // 包含alpha通道
+  return (red << 24) | (green << 16) | (blue << 8) | 0xff;
 }
 
 function showCommunitiesHandler(communityData) {
@@ -1109,25 +1059,22 @@ function showCommunitiesHandler(communityData) {
 
   const { result: communities, nodeIds: visibleNodeIds } = communityData;
 
-  cls(); // 先清除所有高亮
+  cls(); 
 
   const view = renderer.getParticleView();
   const colors = view.colors();
   const totalNodes = colors.length / 4;
 
   for (let i = 0; i < totalNodes; i++) {
-      // 检查当前节点是否在参与计算的节点列表中
       if (visibleNodeIds.has(i)) {
-          // 如果在，就安全地获取社区ID并上色
           const communityId = communities.getClass(i);
           if (communityId !== undefined) {
               const communityColor = getCommunityColor(communityId);
               colorNode(i * 3, colors, communityColor);
           }
       } else {
-          // 如果不在（说明被Timeline过滤了），就设为透明
           const colorOffset = i * 4;
-          colors[colorOffset + 3] = 0; // Alpha通道设为0
+          colors[colorOffset + 3] = 0;
       }
   }
 

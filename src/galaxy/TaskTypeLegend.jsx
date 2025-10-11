@@ -16,7 +16,7 @@ const TaskTypeLegend = maco((x) => {
         'Computer Vision': 'rgb(0, 0, 255)',
         'Audio': 'rgb(255, 255, 0)',
         'Tabular': 'rgb(255, 0, 255)',
-        'Other/Mixed': 'rgb(128, 128, 128)'
+        'Other': 'rgb(128, 128, 128)'
     };
 
     x.componentDidMount = function() {
