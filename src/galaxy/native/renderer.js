@@ -49,6 +49,7 @@ let preHoverColors = new Map();
 
 let clusterLabels = []; 
 let clusterLabelsVisible = true;
+let isTaskTypeViewActive = false;
 
 function sceneRenderer(container) {
   var renderer, positions, graphModel, touchControl;
@@ -165,6 +166,9 @@ function sceneRenderer(container) {
         }
     }
     view.colors(colors);
+
+    isTaskTypeViewActive = true;
+    lineViewNeedsUpdate = true; // 强制在下次显示时重新渲染边
   }
   function highlightPath(nodeIds) {
     if (!renderer || !nodeIds || nodeIds.length === 0) return;
@@ -575,17 +579,24 @@ function clearPathHighlight() {
     if (!lineView) {
       lineView = createLineView(renderer.scene(), unrender.THREE);
     }
-    lineView.render(links, positions);
+    lineView.render(links, positions, isTaskTypeViewActive, renderer.getParticleView().colors());
     lineViewNeedsUpdate = false;
   }
 
   function toggleLinks() {
-    if (lineView) {
-      if (lineViewNeedsUpdate) renderLineViewIfNeeded();
-      lineView.toggleLinks();
-    } else {
-      renderLineViewIfNeeded();
+    if (!lineView) {
+        // 第一次切换，创建并渲染
+        renderLineViewIfNeeded();
+        return;
     }
+
+    // 如果数据已更新，或我们正准备显示边，则强制重新渲染
+    if (lineViewNeedsUpdate || !lineView.linksVisible()) {
+        renderLineViewIfNeeded();
+    }
+    
+    // 切换可见性
+    lineView.toggleLinks();
   }
 
   function moveCamera() {
@@ -989,6 +1000,10 @@ function clearPathHighlight() {
     var view = renderer.getParticleView();
     var colors = view.colors();
     var sizes = view.sizes(); 
+
+    isTaskTypeViewActive = false;
+    lineViewNeedsUpdate = true;
+    
     for (var i = 0; i < colors.length/4; i++) {
       colorNode(i * 3, colors, defaultNodeColor);
       if (originalNodeSizes.has(i)) {
