@@ -115,6 +115,7 @@ export default eventMirror([
   'simulationStatusUpdate',
   'timelineChanged',
   'toggleTimeline',
+  'togglePlay',
   'highlightCoreModels',
   'showCommunities',
   'showTaskTypeView',

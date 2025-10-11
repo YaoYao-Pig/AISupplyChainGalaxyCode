@@ -5,9 +5,11 @@ import scene from './sceneStore.js';
 function createTimelineStore() {
     let debounceTimer = null;
     const DEBOUNCE_DELAY = 100;
+    let playInterval = null;
 
     let state = {
         enabled: false, // <-- 默认关闭
+        isPlaying: false, 
         minDate: '',
         maxDate: '',
         currentDate: '',
@@ -20,6 +22,7 @@ function createTimelineStore() {
     // --- 新增监听器 ---
     appEvents.toggleTimeline.on(toggleTimeline);
     appEvents.selectNode.on(hideTimeline);
+    appEvents.togglePlay.on(togglePlay);
 
     const api = {
         getState: () => state,
@@ -37,6 +40,53 @@ function createTimelineStore() {
         }
     };
     eventify(api);
+
+    function play() {
+        if (playInterval) return;
+        state.isPlaying = true;
+        
+        playInterval = setInterval(() => {
+            const currentDate = state.allDates[state.currentIndex];
+            if (!currentDate) return;
+
+            // 计算一个月后的日期
+            const targetDate = new Date(currentDate);
+            targetDate.setMonth(targetDate.getMonth() + 1);
+
+            // 找到第一个大于或等于目标日期的索引
+            let nextIndex = state.allDates.findIndex((date, index) => {
+                return index > state.currentIndex && date >= targetDate;
+            });
+            
+            // 如果找不到（说明已经接近末尾），就直接跳到最后
+            if (nextIndex === -1) {
+                nextIndex = state.totalSteps - 1;
+            }
+
+            api.setCurrentIndex(nextIndex);
+        }, 2000); // 每2000ms (2秒) 更新一次
+
+        api.fire('changed');
+    }
+
+    function pause() {
+        clearInterval(playInterval);
+        playInterval = null;
+        state.isPlaying = false;
+        api.fire('changed');
+    }
+    
+    function togglePlay() {
+        if (state.isPlaying) {
+            pause();
+        } else {
+            // 如果已经播放到最后，则从头开始
+            if (state.currentIndex >= state.totalSteps - 1) {
+                api.setCurrentIndex(0);
+            }
+            play();
+        }
+    }
 
     function initialize() {
         const graph = scene.getGraph();

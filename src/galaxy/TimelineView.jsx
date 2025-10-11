@@ -21,13 +21,25 @@ module.exports = require('maco')((x) => {
         const newIndex = parseInt(e.target.value, 10);
         timelineStore.setCurrentIndex(newIndex);
     };
-
+    const handlePlayPauseClick = () => {
+        appEvents.togglePlay.fire();
+    };
     x.render = function() {
-        const { minDate, maxDate, currentDate, totalSteps, currentIndex, enabled } = x.state;
+        const { minDate, maxDate, currentDate, totalSteps, currentIndex, enabled, isPlaying  } = x.state;
         if (!enabled) return null;
+
+        const playPauseIcon = isPlaying ? '❚❚' : '▶';
+        const playPauseTitle = isPlaying ? 'Pause' : 'Play';
 
         return (
             <div className="timeline-container">
+                                <button 
+                    onClick={handlePlayPauseClick} 
+                    className="play-pause-btn"
+                    title={playPauseTitle}
+                >
+                    {playPauseIcon}
+                </button>
                 <div className="timeline-labels">
                     <span>{minDate}</span>
                     <span className="current-date">{currentDate}</span>

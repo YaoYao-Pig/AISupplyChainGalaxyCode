@@ -1272,3 +1272,31 @@ a.media {
   margin-right: 10px;
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
+.timeline-container {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* 在按钮和滑块组之间添加一些间距 */
+}
+
+.play-pause-btn {
+  background: #3a82c4;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  line-height: 36px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.play-pause-btn:hover {
+  background: #4a94d4;
+}
+
+.timeline-slider-group {
+    flex-grow: 1; /* 让滑块区域占据剩余空间 */
+}
