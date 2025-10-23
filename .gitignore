@@ -25,6 +25,9 @@ build
 # https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git
 node_modules
 
-hf-data/
+hf-data/data/
+hf-data/galaxy_output_data/
+hf-data/node_modules/
+hf-data/*.json
 images/
 
