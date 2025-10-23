@@ -1300,3 +1300,47 @@ a.media {
 .timeline-slider-group {
     flex-grow: 1; /* 让滑块区域占据剩余空间 */
 }
+
+.edge-type-legend {
+  position: absolute;
+  bottom: 20px; // Adjust as needed, maybe position relative to TaskTypeLegend
+  right: 320px; // Position it to the left of the TaskTypeLegend
+  background-color: rgba(20, 20, 25, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 15px;
+  color: #eee;
+  z-index: 100; // Same level as TaskTypeLegend
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+  font-family: 'Roboto', 'PT Sans', sans-serif;
+  width: 200px; // Adjust width as needed
+}
+
+.edge-type-legend h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px; // Match TaskTypeLegend
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.edge-type-legend ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.edge-type-legend li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px; // Match TaskTypeLegend
+}
+
+.edge-type-legend .color-swatch {
+  width: 18px; // Match TaskTypeLegend
+  height: 18px;
+  border-radius: 4px;
+  margin-right: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}

@@ -29,6 +29,9 @@ import getBaseNodeViewModel from './store/baseNodeViewModel.js';
 import TimelineView from './TimelineView.jsx';
 import './store/rippleAnimationStore.js';
 import TaskTypeLegend from './TaskTypeLegend.jsx';
+import EdgeTypeLegend from './EdgeTypeLegend.jsx';
+
+
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 
@@ -76,6 +79,7 @@ function scene(x) {
         <About />
         <TimelineView />
         <TaskTypeLegend />
+        <EdgeTypeLegend />
         { x.state.showHelpToast && (
          <div className='toast-notification'>
            Press <kbd>H</kbd> for help
