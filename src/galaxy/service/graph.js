@@ -4,7 +4,8 @@ import linkFinder from './edgeFinder.js';
 export default graph;
 
 function graph(rawGraphLoaderData) {
-  const {labels, outLinks, inLinks, positions, nodeData} = rawGraphLoaderData;
+  // 确认这里解构了 linkTypes 和 linkData
+  const {labels, outLinks, inLinks, positions, nodeData, linkTypes, linkData} = rawGraphLoaderData;
   const empty = [];
 
 
@@ -48,7 +49,17 @@ function graph(rawGraphLoaderData) {
     find: find,
     findLinks: findLinks,
     getNodeData: (nodeId) => (nodeData && nodeId < nodeData.length) ? nodeData[nodeId] : null,
-    getRawData: () => rawGraphLoaderData,
+    getRawData: () => ({
+      labels: labels,
+      outLinks: outLinks,
+      inLinks: inLinks,
+      positions: positions,
+      nodeData: nodeData,
+      linkTypes: linkTypes, // 确保返回这里解构出来的 linkTypes
+      linkData: linkData    // 确保返回这里解构出来的 linkData
+      // 或者直接返回原始对象: return rawGraphLoaderData; (如果确信它在调用时是完整的)
+      // 但上面的方式更明确
+  }),
     findByTag: findByTag
   };
 

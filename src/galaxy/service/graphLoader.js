@@ -34,7 +34,7 @@ export default loadGraph;
  *
  */
 function loadGraph(name, progress) {
-  var positions, labels, nodeData;
+  var positions, labels, nodeData, linkTypes, linkData;
   var outLinks = [];
   var inLinks = [];
 
@@ -49,22 +49,62 @@ function loadGraph(name, progress) {
     .then(loadLinks)
     .then(loadLabels)
     .then(loadNodeData)
+    .then(loadLinkTypes) // 新增
+    .then(loadLinkData)  // 新增
     .then(convertToGraph);
 
-  function convertToGraph() {
-    return createGraph({
-      positions: positions,
-      labels: labels,
-      outLinks: outLinks,
-      inLinks: inLinks,
-      nodeData: nodeData
-    });
-  }
+    function convertToGraph() {
+      const graphData = {
+        positions: positions,
+        labels: labels,
+        outLinks: outLinks,
+        inLinks: inLinks,
+        nodeData: nodeData,
+        linkTypes: linkTypes, // <--- 检查这个变量
+        linkData: linkData    // <--- 检查这个变量
+      };
+    
+      // --- 添加调试日志 ---
+      console.log('--- Debugging graphLoader.js ---');
+      console.log('Data being passed TO createGraph:', graphData);
+      console.log('Is linkTypes defined HERE?', typeof linkTypes !== 'undefined', linkTypes ? `Length: ${linkTypes.length}` : '(undefined)');
+      console.log('Is linkData defined HERE?', typeof linkData !== 'undefined', linkData ? `Length: ${linkData.length}` : '(undefined)');
+      console.log('--- End Debugging ---');
+      // --- 调试日志结束 ---
+    
+      return createGraph(graphData); // 确认 createGraph 是 graph.js 导出的
+    }
 
   function loadManifest() {
     return request(manifestEndpoint + '/manifest.json?nocache=' + (+new Date()), {
       responseType: 'json'
     }).then(setManifest);
+  }
+
+  function loadLinkTypes() {
+    return request(galaxyEndpoint + '/link_types.json', {
+      responseType: 'json',
+      progress: reportProgress(name, 'link types')
+    }).then(setLinkTypes);
+  }
+  
+  function setLinkTypes(data) {
+    linkTypes = data;
+    // 可以触发一个新事件，如果需要的话
+    // appEvents.linkTypesDownloaded.fire(linkTypes);
+  }
+  
+  function loadLinkData() {
+    return request(galaxyEndpoint + '/link_data.bin', {
+      responseType: 'arraybuffer',
+      progress: reportProgress(name, 'link data')
+    }).then(setLinkData);
+  }
+  
+  function setLinkData(buffer) {
+    linkData = new Int32Array(buffer);
+    // 可以触发一个新事件，如果需要的话
+    // appEvents.linkDataDownloaded.fire(linkData);
   }
 
   function setManifest(response) {

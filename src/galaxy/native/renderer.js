@@ -552,7 +552,13 @@ function clearPathHighlight() {
     if (!lineView) {
       lineView = createLineView(renderer.scene(), unrender.THREE);
     }
-    lineView.render(links, positions, isTaskTypeViewActive, renderer.getParticleView().colors());
+    // 不再需要传递 links 和 positions，lineView 会自己获取
+    // 确保 isTaskTypeViewActive 被传递
+    const graph = scene.getGraph();
+    const rawData = graph ? graph.getRawData() : null;
+    const positions = rawData ? rawData.positions : null;
+    // 传递 isTaskViewActive，即使 positions 为 null，lineView 内部也会处理
+    lineView.render(null, positions, isTaskTypeViewActive, renderer.getParticleView().colors());
     lineViewNeedsUpdate = false;
   }
 

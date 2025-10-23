@@ -1,12 +1,23 @@
 // src/galaxy/native/lineView.js
 
 import appConfig from './appConfig.js';
-
+import sceneStore from '../store/sceneStore.js';
 export default renderLinks;
 
 function renderLinks(scene, THREE) {
   var linksVisible = true;
   var linkMesh;
+
+  const edgeTypeColors = {
+    'BASE_MODEL': [0.2, 0.5, 1.0], // 示例：蓝色
+    'MERGE': [1.0, 0.5, 0.2],       // 示例：橙色
+    'PEFT': [0.2, 1.0, 0.5],      // 示例：绿色
+    'LIKES': [0.8, 0.8, 0.8],      // 示例：浅灰色 (如果存在这种类型)
+    'OWNS': [1.0, 1.0, 0.0],       // 示例：黄色 (如果存在这种类型)
+    'UNKNOWN': [0.5, 0.5, 0.5],     // 未知或默认类型的颜色
+    // 添加更多您需要的类型和颜色...
+  };
+  const defaultEdgeColor = [0.5, 0.5, 0.5]; // 默认颜色
 
   var api = {
     render: render,
@@ -33,45 +44,85 @@ function renderLinks(scene, THREE) {
     return linksVisible;
   }
 
-  function render(links, idxToPos, isTaskView, nodeColors) {
+function render(links, idxToPos, isTaskView, nodeColors) { // links 参数现在实际未使用
+  if (!idxToPos) {
+    console.warn("Positions data (idxToPos) is not available for rendering lines.");
+    // 清除可能存在的旧边
+    if (linkMesh) {
+      scene.remove(linkMesh);
+      if (linkMesh.geometry) linkMesh.geometry.dispose();
+      if (linkMesh.material) linkMesh.material.dispose();
+      linkMesh = null;
+    }
+    return;
+  }
     var jsPos = [];
     var jsColors = [];
     var r = 16000;
-    var i = 0;
     var maxVisibleDistance = appConfig.getMaxVisibleEdgeLength();
 
-    for (i = 0; i < links.length; ++i) {
-      var to = links[i];
-      if (to === undefined) continue; 
+    // --- 获取边的类型数据 ---
+    const graphRawData = sceneStore.getGraph().getRawData();
+    const linkData = graphRawData.linkData; // Int32Array [fromId, toId, typeId, ...]
+    const linkTypes = graphRawData.linkTypes; // Array ['BASE_MODEL', 'PEFT', ...]
 
-      var fromX = idxToPos[i * 3];
-      var fromY = idxToPos[i * 3 + 1];
-      var fromZ = idxToPos[i * 3 + 2];
-
-      for (var j = 0; j < to.length; j++) {
-        var toIdx = to[j];
-
-        var toX = idxToPos[toIdx * 3];
-        var toY = idxToPos[toIdx * 3 + 1];
-        var toZ = idxToPos[toIdx * 3 + 2];
-
-        var dist = distance(fromX, fromY, fromZ, toX, toY, toZ);
-        if (maxVisibleDistance < dist) continue;
-        jsPos.push(fromX, fromY, fromZ, toX, toY, toZ);
-        
-        if (isTaskView && nodeColors) {
-            const fromNodeId = i;
-            const colorOffset = fromNodeId * 4;
-            const r = nodeColors[colorOffset] / 255;
-            const g = nodeColors[colorOffset + 1] / 255;
-            const b = nodeColors[colorOffset + 2] / 255;
-            jsColors.push(r, g, b, r, g, b); // 使用源节点的颜色
-        } else {
-            jsColors.push(fromX / r + 0.5, fromY / r + 0.5, fromZ / r + 0.5, toX / r + 0.5, toY / r + 0.5, toZ / r + 0.5);
-        }
+    if (!linkData || !linkTypes) {
+      // 如果数据还没加载好，则不渲染边
+      console.warn("Link data or types not available for rendering.");
+      // 清除可能存在的旧边
+      if (linkMesh) {
+        scene.remove(linkMesh);
+        linkMesh.geometry.dispose();
+        linkMesh.material.dispose();
+        linkMesh = null;
       }
+      return;
     }
+    // --- 数据获取结束 ---
+    const alphas = nodeColors;
+    // --- 新的循环逻辑：遍历 linkData ---
+    for (let i = 0; i < linkData.length; i += 3) {
+      const fromId = linkData[i];
+      const toId = linkData[i + 1];
+      const typeId = linkData[i + 2];
+      if (!alphas || alphas[fromId * 4 + 3] === 0 || alphas[toId * 4 + 3] === 0) {
+        continue; // 如果任一节点不可见，则跳过这条边
+     }
 
+      // 检查节点 ID 是否有效 (可能因为过滤等原因不存在于 positions 中)
+      if (fromId * 3 + 2 >= idxToPos.length || toId * 3 + 2 >= idxToPos.length) {
+          // console.warn(`Skipping link with invalid node ID: from ${fromId}, to ${toId}`);
+          continue;
+      }
+
+
+      const fromX = idxToPos[fromId * 3];
+      const fromY = idxToPos[fromId * 3 + 1];
+      const fromZ = idxToPos[fromId * 3 + 2];
+      const toX = idxToPos[toId * 3];
+      const toY = idxToPos[toId * 3 + 1];
+      const toZ = idxToPos[toId * 3 + 2];
+
+      const dist = distance(fromX, fromY, fromZ, toX, toY, toZ);
+      if (maxVisibleDistance < dist) continue;
+
+      jsPos.push(fromX, fromY, fromZ, toX, toY, toZ);
+
+      // --- 根据 isTaskView 和边的类型决定颜色 ---
+      if (isTaskView) {
+        const typeName = linkTypes[typeId] || 'UNKNOWN';
+        const color = edgeTypeColors[typeName] || defaultEdgeColor;
+        jsColors.push(color[0], color[1], color[2], color[0], color[1], color[2]);
+      } else {
+        // 保持原来的颜色逻辑（基于位置）
+        jsColors.push(fromX / r + 0.5, fromY / r + 0.5, fromZ / r + 0.5, toX / r + 0.5, toY / r + 0.5, toZ / r + 0.5);
+      }
+      // --- 颜色逻辑结束 ---
+    }
+    // --- 循环结束 ---
+
+
+    // --- 后续的 Buffer 创建和渲染逻辑保持不变 ---
     var positions = new Float32Array(jsPos);
     var colors = new Float32Array(jsColors);
 
@@ -79,7 +130,7 @@ function renderLinks(scene, THREE) {
     var material = new THREE.LineBasicMaterial({
       vertexColors: THREE.VertexColors,
       blending: THREE.AdditiveBlending,
-      opacity:0.5,
+      opacity: 0.5, // 可以根据需要调整不透明度
       transparent: true
     });
 
@@ -89,14 +140,17 @@ function renderLinks(scene, THREE) {
     geometry.computeBoundingSphere();
     if (linkMesh) {
       scene.remove(linkMesh);
+      // 确保释放旧的几何体和材质资源
+      linkMesh.geometry.dispose();
+      linkMesh.material.dispose();
     }
 
-    linkMesh = new THREE.Line(geometry, material, THREE.LinePieces);
+    linkMesh = new THREE.Line(geometry, material, THREE.LinePieces);// 使用 LineSegments 效率更高
     if (linksVisible) {
         scene.add(linkMesh);
     }
+    // --- Buffer 创建和渲染逻辑结束 ---
   }
-
   function toggleLinks() {
     setOrGetLinksVisible(!linksVisible);
   }
