@@ -13,10 +13,10 @@ const EdgeTypeLegend = maco((x) => {
     // --- IMPORTANT: Define edge colors EXACTLY as in lineView.js ---
     const edgeTypeColors = {
       'BASE_MODEL': 'rgb(30, 80, 200)', // Adjusted RGB for better visibility
-      'PEFT': 'rgb(255, 128, 50)',      // Adjusted RGB
-      'MERGE': 'rgb(50, 200, 128)',     // Adjusted RGB
-      'LIKES': 'rgb(204, 204, 204)',    // Adjusted RGB
-      'OWNS': 'rgb(255, 255, 0)',       // Adjusted RGB (Keep yellow)
+      'ADAPTER': 'rgb(255, 128, 50)',      // Adjusted RGB
+      'FINETUNE': 'rgb(50, 200, 128)',     // Adjusted RGB
+      'MERGE': 'rgb(204, 204, 204)',    // Adjusted RGB
+      'QUANTIZED': 'rgb(255, 255, 0)',       // Adjusted RGB (Keep yellow)
       'UNKNOWN': 'rgb(128, 128, 128)',   // Keep grey
       // Add other types if you defined more in lineView.js
     };
