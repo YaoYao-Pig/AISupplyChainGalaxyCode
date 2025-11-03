@@ -152,11 +152,11 @@ module.exports = require('maco')((x) => {
                     {/* --- 分类 2: 视角切换 --- */}
                     <h4>View Switch</h4>
                     <button onClick={handleShowTaskTypeView} className="analysis-btn">{taskTypeButtonText}</button>
-                    {/* <button onClick={handleHighlightCore} className="analysis-btn">{coreButtonText}</button>
+                     <button onClick={handleHighlightCore} className="analysis-btn">{coreButtonText}</button>
                     <button onClick={handleShowCommunities} className="analysis-btn">
                         {communityButtonText}
                     </button>
-                    <button 
+                    {/*<button 
                         onClick={handleHighlightClick} 
                         className="analysis-btn highlight" 
                         disabled={conflictCount === 0}
