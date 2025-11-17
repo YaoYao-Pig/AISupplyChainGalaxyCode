@@ -1344,3 +1344,24 @@ a.media {
   margin-right: 10px;
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
+.edge-type-legend li {
+  cursor: pointer; // 表明这是可点击的
+  transition: opacity 0.2s ease-in-out, background-color 0.2s ease-in-out; // 添加过渡效果
+  border-radius: 4px; // 轻微圆角
+  padding: 4px 6px; // 增加一点内边距，使其更容易点击
+  margin-left: -6px; // 抵消内边距
+  margin-right: -6px; // 抵消内边距
+}
+
+.edge-type-legend li:hover {
+  background-color: rgba(255, 255, 255, 0.1); // 添加悬停背景色
+}
+
+.edge-type-legend li.disabled {
+  opacity: 0.35; // 禁用的类型变暗
+}
+
+.edge-type-legend li.disabled:hover {
+  opacity: 0.6; // 悬停在禁用的类型上时稍微变亮
+}

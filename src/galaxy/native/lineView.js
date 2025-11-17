@@ -2,6 +2,8 @@
 
 import appConfig from './appConfig.js';
 import sceneStore from '../store/sceneStore.js';
+import edgeFilterStore from '../store/edgeFilterStore.js'; // 导入 store
+
 export default renderLinks;
 
 function renderLinks(scene, THREE) {
@@ -10,12 +12,11 @@ function renderLinks(scene, THREE) {
 
   const edgeTypeColors = {
     'BASE_MODEL': [0.2, 0.5, 1.0], // 示例：蓝色
-    'MERGE': [1.0, 0.5, 0.2],       // 示例：橙色
-    'PEFT': [0.2, 1.0, 0.5],      // 示例：绿色
-    'LIKES': [0.8, 0.8, 0.8],      // 示例：浅灰色 (如果存在这种类型)
-    'OWNS': [1.0, 1.0, 0.0],       // 示例：黄色 (如果存在这种类型)
+    'ADAPTER': [1.0, 0.5, 0.2],       // <--- 修正为 ADAPTER
+    'FINETUNE': [0.2, 1.0, 0.5],      // <--- 修正为 FINETUNE
+    'MERGE': [0.8, 0.8, 0.8],      // <--- 修正为 MERGE
+    'QUANTIZED': [1.0, 1.0, 0.0],       // <--- 修正为 QUANTIZED
     'UNKNOWN': [0.5, 0.5, 0.5],     // 未知或默认类型的颜色
-    // 添加更多您需要的类型和颜色...
   };
   const defaultEdgeColor = [0.5, 0.5, 0.5]; // 默认颜色
 
@@ -23,6 +24,8 @@ function renderLinks(scene, THREE) {
     render: render,
     toggleLinks: toggleLinks,
     linksVisible: setOrGetLinksVisible
+    // 注意：我们将不在 lineView 内部进行订阅，以避免内存泄漏
+    // 主 renderer 将负责在过滤器更改时调用 render
   };
 
   return api;
@@ -66,6 +69,9 @@ function render(links, idxToPos, isTaskView, nodeColors) { // links 参数现在
     const linkData = graphRawData.linkData; // Int32Array [fromId, toId, typeId, ...]
     const linkTypes = graphRawData.linkTypes; // Array ['BASE_MODEL', 'PEFT', ...]
 
+    // --- 关键修改 1: 获取当前启用的类型 ---
+    const enabledTypes = edgeFilterStore.getEnabledTypes();
+
     if (!linkData || !linkTypes) {
       // 如果数据还没加载好，则不渲染边
       console.warn("Link data or types not available for rendering.");
@@ -85,6 +91,15 @@ function render(links, idxToPos, isTaskView, nodeColors) { // links 参数现在
       const fromId = linkData[i];
       const toId = linkData[i + 1];
       const typeId = linkData[i + 2];
+      
+      // --- 关键修改 2: 执行过滤 ---
+      const typeName = linkTypes[typeId] || 'UNKNOWN';
+      // 检查 enabledTypes 是否已初始化，以及该类型是否为 true
+      if (enabledTypes.size > 0 && !enabledTypes.get(typeName)) {
+          continue; // 如果该类型未启用，则跳过此边
+      }
+      // --- 过滤结束 ---
+
       if (!alphas || alphas[fromId * 4 + 3] === 0 || alphas[toId * 4 + 3] === 0) {
         continue; // 如果任一节点不可见，则跳过这条边
      }
@@ -110,7 +125,7 @@ function render(links, idxToPos, isTaskView, nodeColors) { // links 参数现在
 
       // --- 根据 isTaskView 和边的类型决定颜色 ---
       if (isTaskView) {
-        const typeName = linkTypes[typeId] || 'UNKNOWN';
+        // const typeName = linkTypes[typeId] || 'UNKNOWN'; // 已在前面获取
         const color = edgeTypeColors[typeName] || defaultEdgeColor;
         jsColors.push(color[0], color[1], color[2], color[0], color[1], color[2]);
       } else {

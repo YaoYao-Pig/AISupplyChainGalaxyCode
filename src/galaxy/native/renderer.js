@@ -11,6 +11,7 @@ import createTouchControl from './touchControl.js';
 import createLineView from './lineView.js';
 import appConfig from './appConfig.js';
 import { canBeUsedBy } from '../store/licenseUtils.js';
+import edgeFilterStore from '../store/edgeFilterStore.js'; // <--- 导入 store
 
 export default sceneRenderer;
 var pathLine = null;
@@ -89,6 +90,9 @@ function sceneRenderer(container) {
   appEvents.showCommunities.on(showCommunitiesHandler); 
   appEvents.showTaskTypeView.on(showTaskTypeView);
 
+  // --- 新增：监听 edgeFilterStore ---
+  edgeFilterStore.on('changed', onFilterChanged);
+
 
   var api = {
     destroy: destroy
@@ -96,6 +100,17 @@ function sceneRenderer(container) {
 
   eventify(api);
   return api;
+
+  // --- 新增：过滤器变化处理函数 ---
+  function onFilterChanged() {
+    // 如果 lineView 存在并且链接是可见的，标记为需要更新并重新渲染
+    if (lineView && lineView.linksVisible()) {
+      console.log('Edge filter changed, re-rendering lines...');
+      lineViewNeedsUpdate = true;
+      renderLineViewIfNeeded();
+    }
+  }
+
   function showTaskTypeView() {
     if (!renderer) return;
 
@@ -1094,6 +1109,11 @@ function showCommunitiesHandler(communityData) {
     appEvents.linksDownloaded.off(setLinks);
     appEvents.graphDownloaded.off(createClusterLabels);
     if (touchControl) touchControl.destroy();
+
+    // --- 新增：取消订阅 ---
+    edgeFilterStore.off('changed', onFilterChanged);
+    // --- 结束 ---
+
     renderer = null;
     clearInterval(queryUpdateId);
     appConfig.off('camera', moveCamera);
