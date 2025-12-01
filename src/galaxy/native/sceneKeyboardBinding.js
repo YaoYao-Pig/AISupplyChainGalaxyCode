@@ -54,7 +54,10 @@ function sceneKeyboardBinding(container) {
     else if (e.which === Key.T) { // <-- 在这里添加新的代码块
       events.toggleClusterLabels.fire();
     }
-
+    else if (e.which === 8) { 
+        e.preventDefault(); // 防止浏览器后退
+        events.navigateBack.fire();
+    }
     if (e.shiftKey && !lastShiftKey) {
       lastShiftKey = true;
       events.accelerateNavigation.fire(true);

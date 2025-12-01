@@ -24,6 +24,7 @@ module.exports = require('maco')((x) => {
         complianceStore.on('changed', updateConflictCount);
         updateConflictCount();
         appEvents.simulationStatusUpdate.on(updateSimulationStatus);
+        appEvents.cls.on(handleCls);
     };
 
     x.componentWillUnmount = function() {
@@ -31,6 +32,24 @@ module.exports = require('maco')((x) => {
         appEvents.simulationStatusUpdate.off(updateSimulationStatus);
     };
     
+    const handleCls = () => {
+        // 如果当前处于 TaskView 模式，且被外部动作（如点击空白处）打断
+        if (x.state.isTaskTypeView) {
+            x.setState({ isTaskTypeView: false });
+            appEvents.showTaskTypeLegend.fire(false); // 确保图例也隐藏
+        }
+        
+        // 同样逻辑也可以应用于社区视图，如果需要的话
+        if (x.state.isCommunityView) {
+             x.setState({ isCommunityView: false });
+        }
+        
+        // 重置核心高亮按钮状态
+        if (x.state.isCoreHighlighted) {
+            x.setState({ isCoreHighlighted: false });
+        }
+    };
+
     const handleShowRiskChart = () => {
         appEvents.hideNodeListWindow.fire('inheritance-risk');
         const riskData = inheritanceRiskStore.getRiskData();

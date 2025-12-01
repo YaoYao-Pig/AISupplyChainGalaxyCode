@@ -80,11 +80,11 @@ function scene(x) {
         <TimelineView />
         <TaskTypeLegend />
         <EdgeTypeLegend />
-        { x.state.showHelpToast && (
-         <div className='toast-notification'>
-           Press <kbd>H</kbd> for help
-         </div>
-         )}
+{ x.state.showHelpToast && (
+    <div className='toast-notification'>
+        Press <kbd>H</kbd> for help | <kbd>Backspace</kbd> to go back
+    </div>
+)}
       </div>
     );
   };

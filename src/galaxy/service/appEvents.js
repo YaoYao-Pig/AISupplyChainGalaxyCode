@@ -120,5 +120,6 @@ export default eventMirror([
   'showCommunities',
   'showTaskTypeView',
   'showTaskTypeLegend',
+  'navigateBack',
 ], appEvents);
 

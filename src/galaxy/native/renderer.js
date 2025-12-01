@@ -59,7 +59,8 @@ function sceneRenderer(container) {
   var queryUpdateId = setInterval(updateQuery, 200);
 
   let highlightedNeighbors = new Set();
-
+  let cameraHistory = [];
+  const MAX_HISTORY_LENGTH = 10;
   // --- 事件监听区 ---
   appEvents.positionsDownloaded.on(setPositions);
   appEvents.linksDownloaded.on(setLinks);
@@ -89,6 +90,7 @@ function sceneRenderer(container) {
   appEvents.highlightCoreModels.on(highlightCoreModelsHandler);
   appEvents.showCommunities.on(showCommunitiesHandler); 
   appEvents.showTaskTypeView.on(showTaskTypeView);
+  appEvents.navigateBack.on(handleNavigateBack);
 
   // --- 新增：监听 edgeFilterStore ---
   edgeFilterStore.on('changed', onFilterChanged);
@@ -182,6 +184,69 @@ function sceneRenderer(container) {
     lineViewNeedsUpdate = true;
   }
 
+  function recordCameraState() {
+      if (!renderer) return;
+      const camera = renderer.camera();
+      
+      const state = {
+          pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+          // 保存四元数以保持旋转角度
+          quat: { x: camera.quaternion.x, y: camera.quaternion.y, z: camera.quaternion.z, w: camera.quaternion.w }
+      };
+
+      cameraHistory.push(state);
+      if (cameraHistory.length > MAX_HISTORY_LENGTH) {
+          cameraHistory.shift(); // 移除最旧的记录
+      }
+  }
+
+    function handleNavigateBack() {
+      if (!renderer || cameraHistory.length === 0) {
+          console.log("No camera history to go back to.");
+          return;
+      }
+
+      const prevState = cameraHistory.pop();
+      const camera = renderer.camera();
+
+      // 使用动画移动回上一个位置
+      // 注意：这里我们使用 appConfig 来触发移动，或者直接调用 renderer
+      // 推荐更新 appConfig 以保持 URL 同步，但这可能会有点慢。
+      // 直接操作 camera 并同步 appConfig 是更好的体验。
+      
+      // 停止当前任何可能的动画
+      if (renderer.isAnimated) renderer.isAnimated = false; 
+
+      // 简单起见，直接飞回去（需要引入 simple-tween 或复用 unrender 的动画能力，这里我们直接设置位置，或者使用 appEvents.focusScene 类似的逻辑）
+      // 这里我们复用 focusOnNode 的 lookAt 逻辑的变体，或者直接设置。
+      // 为了平滑体验，我们使用 appConfig.setCameraConfig 会比较安全，因为它被监听并触发动画(如果配置了)。
+      
+      // 但是 renderer.js 内部通常直接操作。
+      // 让我们直接设置目标，unrender 库会自动处理平滑过渡吗？unrender 的 camera.goTo 是平滑的。
+      
+      // 计算目标位置对应的 "lookAt" 并不是简单的坐标，unrender 的 camera 模型比较特殊。
+      // 这里最稳妥的方式是恢复 position 和 quaternion。
+      
+      const cameraObj = renderer.camera();
+      
+      // 使用 unrender 的 goTo 接口 (如果有) 或者手动插值。
+      // 查看代码，camera.goTo 存在于 camera.js 中。
+      
+      // 注意：scene.jsx 中传入的 renderer 是 unrender 的实例。
+      // unrender 的 camera.goTo 接受 {x, y, ratio, angle}。
+      // 但这里我们保存的是 3D 坐标。
+      
+      // 既然我们之前 focusOnNode 是让相机飞到某个点，
+      // 这里的 navigateBack 最简单的实现是：
+      cameraObj.position.set(prevState.pos.x, prevState.pos.y, prevState.pos.z);
+      cameraObj.quaternion.set(prevState.quat.x, prevState.quat.y, prevState.quat.z, prevState.quat.w);
+      
+      // 更新 URL hash，这样如果用户刷新页面，会停留在返回后的位置
+      appConfig.setCameraConfig(prevState.pos, prevState.quat);
+      
+      // 触发重绘
+      updateQuery(); 
+  }
   function highlightPath(nodeIds) {
     if (!renderer || !nodeIds || nodeIds.length === 0) return;
     cls();
@@ -476,6 +541,8 @@ function clearPathHighlight() {
 
   function focusOnNode(nodeId, shouldSelectAfterFocus = true) {
     if (!renderer) return;
+    recordCameraState();
+
     function highlightFocused() {
       appEvents.selectNode.fire(nodeId);
     }
