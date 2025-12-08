@@ -12,7 +12,7 @@ import createLineView from './lineView.js';
 import appConfig from './appConfig.js';
 import { canBeUsedBy } from '../store/licenseUtils.js';
 import edgeFilterStore from '../store/edgeFilterStore.js'; // <--- 导入 store
-
+import taskFilterStore from '../store/taskFilterStore.js'; // <--- 导入任务类型过滤器 store
 export default sceneRenderer;
 var pathLine = null;
 var incompatibleNodeColor = 0x80808033; // 半透明灰色
@@ -94,7 +94,12 @@ function sceneRenderer(container) {
 
   // --- 新增：监听 edgeFilterStore ---
   edgeFilterStore.on('changed', onFilterChanged);
-
+  taskFilterStore.on('changed', () => {
+      // 只有当前处于 Task View 模式时才刷新
+      if (isTaskTypeViewActive) {
+          showTaskTypeView();
+      }
+  });
 
   var api = {
     destroy: destroy
@@ -113,7 +118,7 @@ function sceneRenderer(container) {
     }
   }
 
-  function showTaskTypeView() {
+function showTaskTypeView() {
     if (!renderer) return;
 
     const graph = scene.getGraph();
@@ -121,6 +126,7 @@ function sceneRenderer(container) {
 
     const view = renderer.getParticleView();
     const colors = view.colors();
+    const sizes = view.sizes(); // 获取尺寸数组
     const nodeData = graph.getRawData().nodeData;
 
     const taskCategories = {
@@ -132,11 +138,11 @@ function sceneRenderer(container) {
     };
 
     const categoryColors = {
-        'Multimodal': [255, 0, 0], // Red
-        'Natural Language Processing': [0, 255, 0], // Green
-        'Computer Vision': [0, 0, 255], // Blue
-        'Audio': [255, 255, 0], // Yellow
-        'Tabular': [255, 0, 255]  // Magenta
+        'Multimodal': [255, 0, 0], 
+        'Natural Language Processing': [0, 255, 0], 
+        'Computer Vision': [0, 0, 255], 
+        'Audio': [255, 255, 0], 
+        'Tabular': [255, 0, 255]  
     };
 
     const normalize = (str) => str.replace(/-/g, '').replace(/ /g, '').toUpperCase();
@@ -148,40 +154,67 @@ function sceneRenderer(container) {
 
     for (let i = 0; i < nodeData.length; i++) {
         const node = nodeData[i];
-        if (!node || !node.tags) {
-            colorNode(i * 3, colors, 0x808080ff);
-            continue;
-        };
+        
+        // 默认设置为不可见/灰色
+        let finalColor = 0x808080ff; 
+        let isVisible = false;
 
-        const matchedCategories = [];
-        const normalizedTags = node.tags.map(normalize);
+        if (node && node.tags) {
+            const matchedCategories = [];
+            const normalizedTags = node.tags.map(normalize);
 
-        for (const category in normalizedTaskCategories) {
-            const tasks = normalizedTaskCategories[category];
-            if (normalizedTags.some(tag => tasks.includes(tag))) {
-                matchedCategories.push(categoryColors[category]);
+            // 检查每个分类是否匹配且启用
+            for (const category in normalizedTaskCategories) {
+                // *** 核心修改：检查 taskFilterStore ***
+                if (!taskFilterStore.isEnabled(category)) continue;
+
+                const tasks = normalizedTaskCategories[category];
+                if (normalizedTags.some(tag => tasks.includes(tag))) {
+                    matchedCategories.push(categoryColors[category]);
+                }
+            }
+
+            if (matchedCategories.length > 0) {
+                isVisible = true;
+                const mixedColor = [0, 0, 0];
+                matchedCategories.forEach(color => {
+                    mixedColor[0] += color[0];
+                    mixedColor[1] += color[1];
+                    mixedColor[2] += color[2];
+                });
+
+                const r = Math.floor(mixedColor[0] / matchedCategories.length);
+                const g = Math.floor(mixedColor[1] / matchedCategories.length);
+                const b = Math.floor(mixedColor[2] / matchedCategories.length);
+                
+                // 将颜色数组转换为整数
+                finalColor = (r << 24) | (g << 16) | (b << 8) | 0xff;
+            } else {
+                // 检查是否应该归类为 "Other"
+                // 逻辑：如果它有 tags 但没有匹配任何主要分类，且 "Other" 是启用的
+                const hasAnyMainCategory = Object.values(normalizedTaskCategories).flat().some(t => normalizedTags.includes(t));
+                if (!hasAnyMainCategory && taskFilterStore.isEnabled('Other')) {
+                     isVisible = true; // Other 显示为灰色但可见
+                     finalColor = 0x808080ff;
+                }
             }
         }
 
-        if (matchedCategories.length > 0) {
-            const finalColor = [0, 0, 0];
-            matchedCategories.forEach(color => {
-                finalColor[0] += color[0];
-                finalColor[1] += color[1];
-                finalColor[2] += color[2];
-            });
-
-            const r = Math.floor(finalColor[0] / matchedCategories.length);
-            const g = Math.floor(finalColor[1] / matchedCategories.length);
-            const b = Math.floor(finalColor[2] / matchedCategories.length);
-            colorNode(i * 3, colors, (r << 24) | (g << 16) | (b << 8) | 0xff);
-        } else {
-            colorNode(i * 3, colors, 0x808080ff);
+        // 应用颜色
+        colorNode(i * 3, colors, finalColor);
+        
+        // *** 交互优化：将隐藏的节点缩小，使其不干扰视线 ***
+        // 注意：需要保存原始大小以便恢复，这里简化处理，假设不可见则大小设为 0
+        if (!originalNodeSizes.has(i)) {
+             originalNodeSizes.set(i, sizes[i] || 30);
         }
+        sizes[i] = isVisible ? originalNodeSizes.get(i) : 0; 
     }
+    
     view.colors(colors);
+    view.sizes(sizes); // 更新尺寸
     isTaskTypeViewActive = true;
-    lineViewNeedsUpdate = true;
+    lineViewNeedsUpdate = true; // 确保连接线也可能需要更新
   }
 
   function recordCameraState() {
