@@ -41,7 +41,7 @@ var specialClosestColor = 0x00ffff; // 青色 (Closest)
 var contaminatedNodeColor = 0xff4500ff; 
 
 var coreModelColor = 0x00ff00ff;
-
+let communityBubbles = [];
 // --- 模块作用域变量 ---
 let licenseLabels = [];
 let chainLine = null;
@@ -91,7 +91,7 @@ function sceneRenderer(container) {
   appEvents.showCommunities.on(showCommunitiesHandler); 
   appEvents.showTaskTypeView.on(showTaskTypeView);
   appEvents.navigateBack.on(handleNavigateBack);
-
+appEvents.showCommunities.on(showCommunitiesHandler);
   // --- 新增：监听 edgeFilterStore ---
   edgeFilterStore.on('changed', onFilterChanged);
   taskFilterStore.on('changed', () => {
@@ -1145,62 +1145,149 @@ function clearPathHighlight() {
     view.sizes(sizes);
   }
 function getCommunityColor(communityId) {
-  const goldenRatioConjugate = 0.61803398875;
-  let hue = (communityId * goldenRatioConjugate) % 1;
-  
-  let h = hue * 6;
-  let i = Math.floor(h);
-  let f = h - i;
-  let q = 1 - f;
-  let r, g, b;
+      const goldenRatioConjugate = 0.61803398875;
+      let hue = (communityId * goldenRatioConjugate) % 1;
+      
+      let h = hue * 6;
+      let i = Math.floor(h);
+      let f = h - i;
+      let q = 1 - f;
+      let r, g, b;
 
-  switch (i % 6) {
-      case 0: r = 1; g = f; b = 0; break;
-      case 1: r = q; g = 1; b = 0; break;
-      case 2: r = 0; g = 1; b = f; break;
-      case 3: r = 0; g = q; b = 1; break;
-      case 4: r = f; g = 0; b = 1; break;
-      case 5: r = 1; g = 0; b = q; break;
+      switch (i % 6) {
+          case 0: r = 1; g = f; b = 0; break;
+          case 1: r = q; g = 1; b = 0; break;
+          case 2: r = 0; g = 1; b = f; break;
+          case 3: r = 0; g = q; b = 1; break;
+          case 4: r = f; g = 0; b = 1; break;
+          case 5: r = 1; g = 0; b = q; break;
+      }
+      
+      return {
+          // 粒子系统需要的整数格式 (0-255, 含 Alpha)
+          int: (Math.floor(r * 255) << 24) | (Math.floor(g * 255) << 16) | (Math.floor(b * 255) << 8) | 0xff,
+          // THREE.Mesh 需要的浮点格式 (0.0-1.0)
+          float: { r, g, b } 
+      };
   }
-  
-  const red = Math.floor(r * 255);
-  const green = Math.floor(g * 255);
-  const blue = Math.floor(b * 255);
-
-  return (red << 24) | (green << 16) | (blue << 8) | 0xff;
-}
 
 function showCommunitiesHandler(communityData) {
-  if (!renderer) return;
-  
-  if (!communityData || !communityData.result || !communityData.nodeIds) {
-      console.warn('Communities data is not available or has incorrect format.');
-      return;
+    if (!renderer) return;
+    
+    if (!communityData || !communityData.result || !communityData.nodeIds) {
+        cls(); 
+        return;
+    }
+
+    const { result: communities, nodeIds: visibleNodeIds, centroids } = communityData;
+
+    cls(); 
+
+    const view = renderer.getParticleView();
+    const colors = view.colors();
+    const totalNodes = colors.length / 4;
+
+    for (let i = 0; i < totalNodes; i++) {
+        if (visibleNodeIds.has(i)) {
+            const communityId = communities.getClass(i);
+            if (communityId !== undefined) {
+                const colorObj = getCommunityColor(communityId);
+                colorNode(i * 3, colors, colorObj.int); // 使用整数颜色给粒子染色
+            }
+        } else {
+            const colorOffset = i * 4;
+            colors[colorOffset + 3] = 0;
+        }
+    }
+    view.colors(colors);
+
+    // 渲染修正后的气泡
+    if (centroids && centroids.length > 0) {
+        renderCommunityBubbles(centroids);
+    }
   }
 
-  const { result: communities, nodeIds: visibleNodeIds } = communityData;
+  // 3. 修正 renderCommunityBubbles
+  function renderCommunityBubbles(centroids) {
+      // 移除旧气泡
+      communityBubbles.forEach(mesh => renderer.scene().remove(mesh));
+      communityBubbles = [];
 
-  cls(); 
+      // 使用 IcosahedronGeometry (二十面体) 近似球体，性能更好且风格更像"Low Poly"科技感
+      // 如果报错 SphereGeometry not found，这是很好的替代
+      const geometry = new THREE.IcosahedronGeometry(1, 2); 
 
-  const view = renderer.getParticleView();
-  const colors = view.colors();
-  const totalNodes = colors.length / 4;
+      centroids.forEach(c => {
+          const colorObj = getCommunityColor(c.communityId);
+          
+          // 修复：使用 float (0-1) 值创建颜色
+          const color = new THREE.Color(colorObj.float.r, colorObj.float.g, colorObj.float.b);
+          
+          const material = new THREE.MeshBasicMaterial({
+              color: color,
+              transparent: true,
+              opacity: 0.15, // 降低透明度，让内部节点更清晰
+              depthWrite: false, // 关键：防止遮挡内部粒子
+              wireframe: false,
+              side: THREE.DoubleSide // 双面渲染，防止视角进入球体内部消失
+          });
 
-  for (let i = 0; i < totalNodes; i++) {
-      if (visibleNodeIds.has(i)) {
-          const communityId = communities.getClass(i);
-          if (communityId !== undefined) {
-              const communityColor = getCommunityColor(communityId);
-              colorNode(i * 3, colors, communityColor);
-          }
-      } else {
-          const colorOffset = i * 4;
-          colors[colorOffset + 3] = 0;
+          const sphere = new THREE.Mesh(geometry, material);
+          sphere.position.set(c.x, c.y, c.z);
+          
+          // 稍微放大一点半径，确保包裹住大部分节点
+          const displayRadius = c.radius * 1.2; 
+          sphere.scale.set(displayRadius, displayRadius, displayRadius);
+          
+          // 增加一个线框外壳，增强视觉效果 (可选)
+          const wireframeMat = new THREE.MeshBasicMaterial({
+              color: color,
+              wireframe: true,
+              transparent: true,
+              opacity: 0.3
+          });
+          const wireframe = new THREE.Mesh(geometry, wireframeMat);
+          sphere.add(wireframe); // 作为子对象添加
+
+          renderer.scene().add(sphere);
+          communityBubbles.push(sphere);
+      });
+  }
+
+  function cls() {
+    if (!renderer) return;
+    // ... (保留原有的 cls 逻辑)
+    var view = renderer.getParticleView();
+    var colors = view.colors();
+    var sizes = view.sizes(); 
+    isTaskTypeViewActive = false;
+    lineViewNeedsUpdate = true;
+    for (var i = 0; i < colors.length/4; i++) {
+      colorNode(i * 3, colors, defaultNodeColor);
+      if (originalNodeSizes.has(i)) {
+          sizes[i] = originalNodeSizes.get(i);
       }
-  }
+    }
+    view.colors(colors);
+    view.sizes(sizes);
+    originalNodeSizes.clear();
 
-  view.colors(colors);
-}
+    licenseLabels.forEach(label => renderer.scene().remove(label));
+    licenseLabels = [];
+    if (chainLine) {
+        renderer.scene().remove(chainLine);
+        // ... dispose logic
+        chainLine = null;
+    }
+
+    // *** 新增：清理气泡 ***
+    communityBubbles.forEach(mesh => {
+        renderer.scene().remove(mesh);
+        if(mesh.geometry) mesh.geometry.dispose();
+        if(mesh.material) mesh.material.dispose();
+    });
+    communityBubbles = [];
+  }
   function destroy() {
     var input = renderer.input();
     if (input) input.off('move', clearHover);

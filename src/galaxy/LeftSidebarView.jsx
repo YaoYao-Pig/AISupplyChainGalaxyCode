@@ -17,7 +17,8 @@ module.exports = require('maco')((x) => {
         simulationProgress: 0,
         isCoreHighlighted: false,
         isCommunityView: false,
-        isTaskTypeView: false
+        isTaskTypeView: false,
+        isCommunityView: false,
     };
 
     x.componentDidMount = function() {
@@ -25,11 +26,13 @@ module.exports = require('maco')((x) => {
         updateConflictCount();
         appEvents.simulationStatusUpdate.on(updateSimulationStatus);
         appEvents.cls.on(handleCls);
+        appEvents.timelineChanged.on(handleTimelineUpdate);
     };
 
     x.componentWillUnmount = function() {
         complianceStore.off('changed', updateConflictCount);
         appEvents.simulationStatusUpdate.off(updateSimulationStatus);
+        appEvents.timelineChanged.off(handleTimelineUpdate);
     };
     
     const handleCls = () => {
@@ -47,6 +50,20 @@ module.exports = require('maco')((x) => {
         // 重置核心高亮按钮状态
         if (x.state.isCoreHighlighted) {
             x.setState({ isCoreHighlighted: false });
+        }
+    };
+
+const handleTimelineUpdate = (date) => {
+        // 只有当社区视图处于激活状态，且 Timeline 处于开启状态 (date 不为 null) 时，才进行重绘
+        if (x.state.isCommunityView && date) {
+            // 注意：社区计算比较耗时，如果在播放动画时可能会卡顿。
+            // 简单的优化是：仅在手动拖拽或每隔几帧更新，这里为了演示直接更新
+            const communitiesToRender = scene.calculateCommunitiesForDate(date);
+            appEvents.showCommunities.fire(communitiesToRender);
+        } else if (!date && x.state.isCommunityView) {
+             // 如果 Timeline 关闭了 (date 为 null)，但还在社区视图，则切回全局社区
+             const communitiesToRender = scene.getCommunities();
+             appEvents.showCommunities.fire(communitiesToRender);
         }
     };
 
@@ -105,7 +122,7 @@ module.exports = require('maco')((x) => {
         x.setState({ isCoreHighlighted: !currentlyHighlighted });
     };
 
-    const handleShowCommunities = () => {
+const handleShowCommunities = () => {
         const currentlyShowing = x.state.isCommunityView;
         if (currentlyShowing) {
             appEvents.cls.fire();
@@ -113,20 +130,19 @@ module.exports = require('maco')((x) => {
             return;
         }
 
-        // --- 核心逻辑：检查 Timeline 状态 ---
         const timelineState = timelineStore.getState();
         let communitiesToRender;
 
-        if (timelineState.enabled) {
-            // 如果 Timeline 开启，则根据当前日期动态计算社区
-            const currentDate = timelineState.allDates[timelineState.currentIndex];
-            communitiesToRender = scene.calculateCommunitiesForDate(currentDate);
+        if (timelineState.enabled && timelineState.currentDate) {
+            // 如果 Timeline 开启，计算当前日期的社区
+            // 注意：timelineStore.allDates[timelineState.currentIndex] 可能更准确
+            const date = new Date(timelineState.currentDate); 
+            communitiesToRender = scene.calculateCommunitiesForDate(date);
         } else {
-            // 如果 Timeline 关闭，则使用全局的、预先计算好的社区
+            // 全局社区
             communitiesToRender = scene.getCommunities();
         }
         
-        // 将计算好的社区数据传递给渲染器
         appEvents.showCommunities.fire(communitiesToRender);
         x.setState({ isCommunityView: true });
     };

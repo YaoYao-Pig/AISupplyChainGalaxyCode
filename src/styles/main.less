@@ -1365,3 +1365,172 @@ a.media {
 .edge-type-legend li.disabled:hover {
   opacity: 0.6; // 悬停在禁用的类型上时稍微变亮
 }
+
+// ... (保留原有的 pathfinder 样式)
+
+/* 新增样式：合规模式 */
+.compliance-mode {
+    .config-section {
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        
+        label {
+            color: #aaa;
+            margin-right: 10px;
+            font-size: 13px;
+        }
+        select {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 4px;
+            border-radius: 4px;
+        }
+    }
+
+    .compliance-list {
+        list-style: none;
+        padding: 0;
+        max-height: 300px;
+        overflow-y: auto;
+
+        li {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+
+            &.conflict-item {
+                border-left: 3px solid #e74c3c;
+                background: rgba(231, 76, 60, 0.1);
+            }
+            &.safe-item {
+                border-left: 3px solid #2ecc71;
+            }
+        }
+    }
+
+    .node-row {
+        display: flex;
+        align-items: center;
+        
+        .status-icon { margin-right: 8px; }
+        .node-name { 
+            flex-grow: 1; 
+            font-weight: bold; 
+            color: #d0eaff;
+            cursor: pointer;
+            &:hover { text-decoration: underline; }
+        }
+        .license-tag {
+            font-size: 11px;
+            background: #444;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #ccc;
+        }
+    }
+
+    .conflict-actions {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255,0,0,0.2);
+        
+        .conflict-msg {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .find-alt-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            &:hover { background: #c0392b; }
+        }
+    }
+
+    .alternatives-panel {
+        margin-top: 10px;
+        background: rgba(0,0,0,0.3);
+        padding: 8px;
+        border-radius: 4px;
+
+        h5 {
+            margin: 0 0 5px 0;
+            font-size: 12px;
+            color: #2ecc71;
+        }
+        ul {
+            padding: 0; margin: 0;
+            li {
+                display: flex;
+                justify-content: space-between;
+                font-size: 12px;
+                padding: 4px;
+                cursor: pointer;
+                &:hover { background: rgba(255,255,255,0.1); }
+                
+                .alt-name { color: white; }
+                .alt-meta { color: #888; }
+            }
+        }
+        .no-alts { font-style: italic; color: #666; font-size: 12px; }
+    }
+}
+
+.path-help {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    color: #bbb;
+
+    h5 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #3a82c4; /* 醒目的蓝色 */
+        font-weight: bold;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        
+        .glyphicon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+    }
+
+    ul {
+        padding-left: 0;
+        list-style: none;
+        margin-bottom: 0;
+        
+        li {
+            margin-bottom: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            
+            strong { 
+                color: #fff; 
+                margin-right: 4px; 
+                display: inline-block;
+            }
+            
+            em { 
+                color: #2ecc71; /* 强调 "your project" */
+                font-style: normal; 
+                font-weight: bold;
+            }
+            
+            b { 
+                color: #e74c3c; /* 强调 "Find Alternatives" */
+            }
+        }
+    }
+}
