@@ -1,7 +1,7 @@
 // src/galaxy/windows/windowCollectionView.jsx
 
 import React from 'react';
-import DraggableWindow from './DraggableWindow.jsx'; // 引入拖拽外壳
+import DraggableWindow from './DraggableWindow.jsx';
 import NodeListView from './nodeListView.jsx';
 import LicenseListView from './LicenseListView.jsx';
 import LicenseReportWindow from './LicenseReportWindow.jsx';
@@ -17,14 +17,16 @@ import InheritanceRiskWindow from './InheritanceRiskWindow.jsx';
 const windowContentMap = {
   'degree': NodeListView,
   'pathfinder-window': PathfindingWindow,
-  // --- 核心修复：添加下面这一行 ---
   'degree-results-window': NodeListView,
   'search-results-window': NodeListView, 
   'compliance-graph': ComplianceGraphWindow,
   'license-distribution': LicenseListView,
   'license-report-global': LicenseReportWindow,
   'compliance-stats': ComplianceStatsWindow,
-  'inheritance-risk-window': InheritanceRiskWindow, 
+  
+  // --- 修复点：确保 id 和 class 都能匹配到组件 ---
+  'inheritance-risk-window': InheritanceRiskWindow, // 匹配 viewModel.class
+  'inheritance-risk': InheritanceRiskWindow,        // 匹配 viewModel.id (核心修复)
 };
 
 module.exports = require('maco')(windowCollectionView, React);
@@ -48,21 +50,20 @@ function windowCollectionView(x) {
   };
 
   function showPathfindingWindow() {
-    // 确保一次只显示一个
     appEvents.hideNodeListWindow.fire('pathfinder');
     appEvents.showNodeListWindow.fire(new PathfindingViewModel(), 'pathfinder');
   }
+
   function toWindowView(viewModel, idx) {
-    // 逻辑修正：优先使用 className，如果不存在，则使用 class 进行查找
+    // 逻辑：先找 class/className，找不到再找 id
     const lookupKey = viewModel.className || viewModel.class;
     const ContentComponent = windowContentMap[lookupKey] || windowContentMap[viewModel.id];
 
     if (!ContentComponent) {
-      console.error('No content component found for viewModel:', viewModel); // 添加错误日志
+      console.error('No content component found for viewModel:', viewModel);
       return null; 
     }
 
-    // 所有窗口都由 DraggableWindow 包裹
     return (
         <DraggableWindow viewModel={viewModel} key={viewModel.id || idx}>
             <ContentComponent viewModel={viewModel} />

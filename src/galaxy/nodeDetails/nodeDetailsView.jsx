@@ -12,12 +12,12 @@ function detailedNodeView(x) {
     var selectedNode = detailModel.getSelectedNode();
     if (!selectedNode) return null;
     var NodeDetails = getNodeDetails(selectedNode);
-
+var graph = scene.getGraph();
     return (
       // 使用一个容器来包裹详情和新的提示信息
       <div className='node-details-container'>
         <div className='node-details'>
-          <NodeDetails model={selectedNode} />
+          <NodeDetails model={selectedNode} graph={graph} />
         </div>
         {/* 新增的提示信息 */}
         <div className='node-actions-help'>

@@ -87,6 +87,7 @@ function getBaseNodeViewModel(nodeId) {
     const regions = (nodeData.tags || []).filter(t => typeof t === 'string' && t.startsWith(prefixes.region)).map(t => t.substring(prefixes.region.length));
     const arxivs = (nodeData.tags || []).filter(t => typeof t === 'string' && t.startsWith(prefixes.arxiv)).map(t => t.substring(prefixes.arxiv.length));
 
+    
     return {
         name: nodeInfo.name,
         id: nodeInfo.id,
