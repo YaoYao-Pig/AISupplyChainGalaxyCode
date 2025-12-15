@@ -34,7 +34,7 @@ export default loadGraph;
  *
  */
 function loadGraph(name, progress) {
-  var positions, labels, nodeData, linkTypes, linkData;
+var positions, labels, nodeData, linkTypes, linkData, complianceData; 
   var outLinks = [];
   var inLinks = [];
 
@@ -49,8 +49,9 @@ function loadGraph(name, progress) {
     .then(loadLinks)
     .then(loadLabels)
     .then(loadNodeData)
-    .then(loadLinkTypes) // 新增
-    .then(loadLinkData)  // 新增
+    .then(loadLinkTypes)
+    .then(loadLinkData)
+    .then(loadComplianceData)
     .then(convertToGraph);
 
     function convertToGraph() {
@@ -61,7 +62,8 @@ function loadGraph(name, progress) {
         inLinks: inLinks,
         nodeData: nodeData,
         linkTypes: linkTypes, // <--- 检查这个变量
-        linkData: linkData    // <--- 检查这个变量
+        linkData: linkData,    // <--- 检查这个变量
+        complianceData: complianceData
       };
     
       // --- 添加调试日志 ---
@@ -226,6 +228,23 @@ function loadGraph(name, progress) {
     // 可以在这里触发一个新事件，如果需要的话
     //appEvents.nodeDataDownloaded.fire(nodeData); 
   }
+
+  function loadComplianceData() {
+    return request(galaxyEndpoint + '/compliance_data.json', {
+      responseType: 'json',
+      progress: reportProgress(name, 'compliance data')
+    })
+    .catch(function(err) {
+      console.warn('Could not load compliance data, defaulting to empty.', err);
+      return {}; // 如果加载失败或文件不存在，返回空对象
+    })
+    .then(setComplianceData);
+  }
+
+  function setComplianceData(data) {
+    complianceData = data || {};
+  }
+  
   function reportProgress(name, file) {
     return function(e) {
       let progressInfo = {

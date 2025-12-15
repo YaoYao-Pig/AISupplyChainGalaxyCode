@@ -5,13 +5,32 @@ export default graph;
 
 function graph(rawGraphLoaderData) {
   // 确认这里解构了 linkTypes 和 linkData
-  const {labels, outLinks, inLinks, positions, nodeData, linkTypes, linkData} = rawGraphLoaderData;
+  const {labels, outLinks, inLinks, positions, nodeData, linkTypes, linkData, complianceData} = rawGraphLoaderData;
   const empty = [];
 
 
 
   function findLinks(from, to) {
     return linkFinder(from, to, outLinks, inLinks, labels);
+  }
+
+function getComplianceDetails(nodeId) {
+    // 确保 complianceData 存在
+    if (complianceData && complianceData[nodeId]) {
+      const details = complianceData[nodeId];
+      return {
+        isCompliant: false, // 只要在列表里，就是有风险
+        risks: details.risks || [],
+        reasons: details.reasons || [],
+        fixed_license: details.fixed_license
+      };
+    }
+    return {
+      isCompliant: true,
+      risks: [],
+      reasons: [],
+      fixed_license: null // 或者从 nodeData 获取
+    };
   }
 
 
@@ -48,8 +67,9 @@ function graph(rawGraphLoaderData) {
     getConnected: getConnected,
     find: find,
     findLinks: findLinks,
+    getComplianceDetails: getComplianceDetails,
     getNodeData: (nodeId) => (nodeData && nodeId < nodeData.length) ? nodeData[nodeId] : null,
-    getRawData: () => ({
+    getRawData: () => ({ 
       labels: labels,
       outLinks: outLinks,
       inLinks: inLinks,

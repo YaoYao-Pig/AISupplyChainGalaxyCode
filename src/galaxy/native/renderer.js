@@ -1202,9 +1202,9 @@ function showCommunitiesHandler(communityData) {
     view.colors(colors);
 
     // 渲染修正后的气泡
-    if (centroids && centroids.length > 0) {
-        renderCommunityBubbles(centroids);
-    }
+    // if (centroids && centroids.length > 0) {
+    //     renderCommunityBubbles(centroids);
+    // }
   }
 
   // 3. 修正 renderCommunityBubbles
