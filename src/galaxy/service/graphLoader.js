@@ -1,20 +1,4 @@
-/**
- * Graph loader downloads graph from repository. Each graph consist of multiple
- * files:
- *
- * manifest.json - declares where the last version of the graph is stored.
- * positions.bin - a binary file of int32 trpilets. Each triplet defines
- *   node position in 3d space. Index of triplet is considered as node id.
- * links.bin - a sequence of edges. Read https://github.com/anvaka/ngraph.tobinary#linksbin-format
- *   for more information about its structure.
- * labels.json - array of node names. Position of a label in the array corresponds
- *   to the triplet index.
- *
- * During download this downloader will report on global event bus its progress:
- *  appEvents.labelsDownloaded - labels file is downloaded;
- *  appEvents.linksDownloaded - links file is downloaded;
- *  appEvents.positionsDownloaded - positions file is downloaded;
- */
+// src/galaxy/service/graphLoader.js (包含防缓存和调试日志)
 
 import config from '../../config.js';
 import request from './request.js';
@@ -26,19 +10,11 @@ import Promise from 'bluebird';
 
 export default loadGraph;
 
-/**
- * @param {string} name of the graph to be downloaded
- * @param {progressCallback} progress notifies when download progress event is
- * received
- * @param {completeCallback} complete notifies when all graph files are downloaded
- *
- */
 function loadGraph(name, progress) {
-var positions, labels, nodeData, linkTypes, linkData, complianceData; 
+  var positions, labels, nodeData, linkTypes, linkData, complianceData; 
   var outLinks = [];
   var inLinks = [];
 
-  // todo: handle errors
   var manifestEndpoint = config.dataUrl + name;
   var galaxyEndpoint = manifestEndpoint;
 
@@ -51,30 +27,30 @@ var positions, labels, nodeData, linkTypes, linkData, complianceData;
     .then(loadNodeData)
     .then(loadLinkTypes)
     .then(loadLinkData)
-    .then(loadComplianceData)
+    .then(loadComplianceData) // 加载合规数据
     .then(convertToGraph);
 
     function convertToGraph() {
+      // 调试日志：确认数据是否准备好传递给图模型
+      console.log('[GraphLoader] Converting to graph...');
+      if (complianceData && Object.keys(complianceData).length > 0) {
+        console.log(`[GraphLoader] Compliance data loaded with ${Object.keys(complianceData).length} entries.`);
+      } else {
+        console.warn('[GraphLoader] Compliance data is empty or missing!');
+      }
+
       const graphData = {
         positions: positions,
         labels: labels,
         outLinks: outLinks,
         inLinks: inLinks,
         nodeData: nodeData,
-        linkTypes: linkTypes, // <--- 检查这个变量
-        linkData: linkData,    // <--- 检查这个变量
-        complianceData: complianceData
+        linkTypes: linkTypes, 
+        linkData: linkData,    
+        complianceData: complianceData // 传递数据
       };
     
-      // --- 添加调试日志 ---
-      console.log('--- Debugging graphLoader.js ---');
-      console.log('Data being passed TO createGraph:', graphData);
-      console.log('Is linkTypes defined HERE?', typeof linkTypes !== 'undefined', linkTypes ? `Length: ${linkTypes.length}` : '(undefined)');
-      console.log('Is linkData defined HERE?', typeof linkData !== 'undefined', linkData ? `Length: ${linkData.length}` : '(undefined)');
-      console.log('--- End Debugging ---');
-      // --- 调试日志结束 ---
-    
-      return createGraph(graphData); // 确认 createGraph 是 graph.js 导出的
+      return createGraph(graphData);
     }
 
   function loadManifest() {
@@ -92,8 +68,6 @@ var positions, labels, nodeData, linkTypes, linkData, complianceData;
   
   function setLinkTypes(data) {
     linkTypes = data;
-    // 可以触发一个新事件，如果需要的话
-    // appEvents.linkTypesDownloaded.fire(linkTypes);
   }
   
   function loadLinkData() {
@@ -105,16 +79,12 @@ var positions, labels, nodeData, linkTypes, linkData, complianceData;
   
   function setLinkData(buffer) {
     linkData = new Int32Array(buffer);
-    // 可以触发一个新事件，如果需要的话
-    // appEvents.linkDataDownloaded.fire(linkData);
   }
 
   function setManifest(response) {
     manifest = response;
     var version = getFromAppConfig(manifest) || manifest.last;
     if (manifest.endpoint) {
-      // the endpoint is overridden. Since we trust manifest endpoint, we also
-      // trust overridden endpoint:
       galaxyEndpoint = manifest.endpoint;
     } else {
       galaxyEndpoint = manifestEndpoint;
@@ -126,11 +96,7 @@ var positions, labels, nodeData, linkTypes, linkData, complianceData;
   function getFromAppConfig(manifest) {
     var appConfigVersion = appConfig.getManifestVersion();
     var approvedVersions = manifest && manifest.all;
-
-    // default to the last version:
     if (!approvedVersions || !appConfigVersion) return;
-
-    // If this version is whitelisted, let it through:
     if (approvedVersions.indexOf(appConfigVersion) >= 0) {
       return appConfigVersion;
     }
@@ -225,18 +191,21 @@ var positions, labels, nodeData, linkTypes, linkData, complianceData;
 
   function setNodeData(data) {
     nodeData = data;
-    // 可以在这里触发一个新事件，如果需要的话
-    //appEvents.nodeDataDownloaded.fire(nodeData); 
   }
 
+  // --- [修复核心 3] 加载合规数据并增加防缓存机制 ---
   function loadComplianceData() {
-    return request(galaxyEndpoint + '/compliance_data.json', {
+    // 增加 nocache 参数，防止浏览器缓存旧的空文件
+    const url = galaxyEndpoint + '/compliance_data.json?nocache=' + (+new Date());
+    console.log('[GraphLoader] Fetching compliance data from:', url);
+
+    return request(url, {
       responseType: 'json',
       progress: reportProgress(name, 'compliance data')
     })
     .catch(function(err) {
-      console.warn('Could not load compliance data, defaulting to empty.', err);
-      return {}; // 如果加载失败或文件不存在，返回空对象
+      console.warn('[GraphLoader] Could not load compliance data (404 or error), defaulting to empty.', err);
+      return {}; 
     })
     .then(setComplianceData);
   }
@@ -244,6 +213,7 @@ var positions, labels, nodeData, linkTypes, linkData, complianceData;
   function setComplianceData(data) {
     complianceData = data || {};
   }
+  // ----------------------------------------------
   
   function reportProgress(name, file) {
     return function(e) {

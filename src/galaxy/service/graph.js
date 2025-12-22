@@ -1,27 +1,25 @@
-// src/galaxy/service/graph.js (最终修复版)
+// src/galaxy/service/graph.js
 
 import linkFinder from './edgeFinder.js';
 export default graph;
 
 function graph(rawGraphLoaderData) {
-  // 确认这里解构了 linkTypes 和 linkData
   const {labels, outLinks, inLinks, positions, nodeData, linkTypes, linkData, complianceData} = rawGraphLoaderData;
   const empty = [];
-
-
 
   function findLinks(from, to) {
     return linkFinder(from, to, outLinks, inLinks, labels);
   }
 
-function getComplianceDetails(nodeId) {
+  function getComplianceDetails(nodeId) {
     // 确保 complianceData 存在
     if (complianceData && complianceData[nodeId]) {
       const details = complianceData[nodeId];
+      // 数据源中的字段是 risks，UI 需要的是 reasons，这里做一个映射
       return {
-        isCompliant: false, // 只要在列表里，就是有风险
+        isCompliant: false, 
         risks: details.risks || [],
-        reasons: details.reasons || [],
+        reasons: details.risks || [], // [FIX] 将 risks 赋值给 reasons，让 UI 能显示原因
         fixed_license: details.fixed_license
       };
     }
@@ -29,15 +27,14 @@ function getComplianceDetails(nodeId) {
       isCompliant: true,
       risks: [],
       reasons: [],
-      fixed_license: null // 或者从 nodeData 获取
+      fixed_license: null 
     };
   }
-
 
   function findShortestPath(startNodeId, endNodeId) {
     if (startNodeId === endNodeId) return [startNodeId];
 
-    const queue = [[startNodeId]]; // 队列中存储的是路径
+    const queue = [[startNodeId]]; 
     const visited = new Set([startNodeId]);
 
     while (queue.length > 0) {
@@ -51,14 +48,14 @@ function getComplianceDetails(nodeId) {
           const newPath = [...path, neighborId];
 
           if (neighborId === endNodeId) {
-            return newPath; // 找到路径，返回
+            return newPath; 
           }
           queue.push(newPath);
         }
       }
     }
 
-    return null; // 遍历完成，未找到路径
+    return null; 
   }
 
   const api = {
@@ -75,10 +72,8 @@ function getComplianceDetails(nodeId) {
       inLinks: inLinks,
       positions: positions,
       nodeData: nodeData,
-      linkTypes: linkTypes, // 确保返回这里解构出来的 linkTypes
-      linkData: linkData    // 确保返回这里解构出来的 linkData
-      // 或者直接返回原始对象: return rawGraphLoaderData; (如果确信它在调用时是完整的)
-      // 但上面的方式更明确
+      linkTypes: linkTypes, 
+      linkData: linkData    
   }),
     findByTag: findByTag
   };
@@ -97,7 +92,6 @@ function getComplianceDetails(nodeId) {
     }
     return results;
   }
-
 
   function find(query) {
     var result = [];

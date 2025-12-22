@@ -1,9 +1,10 @@
-// src/galaxy/store/baseNodeViewModel.js (最终版 - 包含子节点的完整继承链)
+// src/galaxy/store/baseNodeViewModel.js
 
 import getGraphSpecificInfo from './graphSepcific/graphSpecificInfo.js';
 import scene from './sceneStore.js';
 import formatNumber from '../utils/formatNumber.js';
 import { isLicenseCompatible } from './licenseUtils.js';
+
 export default getBaseNodeViewModel;
 
 function getBaseNodeViewModel(nodeId) {
@@ -17,6 +18,13 @@ function getBaseNodeViewModel(nodeId) {
         const data = graphModel.getNodeData(nodeId);
         if (data) { nodeData = data; }
     }
+
+    // --- [修复 1] 获取合规性数据 (之前这里缺失了！) ---
+    let compliance = { isCompliant: true, risks: [], reasons: [] };
+    if (graphModel && typeof graphModel.getComplianceDetails === 'function') {
+        compliance = graphModel.getComplianceDetails(nodeId);
+    }
+    // --------------------------------------------------
 
     const prefixes = {
         license: 'license:',
@@ -74,8 +82,6 @@ function getBaseNodeViewModel(nodeId) {
     }
 
     const baseModelTags = (nodeData.tags || []).filter(t => t.startsWith(prefixes.base_model));
-    
-    // --- 这是上次被遗漏的关键代码行 ---
     const currentLicenseForComparison = licenseFromTag || nodeData.license || 'N/A';
     
     baseModelTags.forEach(tag => {
@@ -87,7 +93,6 @@ function getBaseNodeViewModel(nodeId) {
     const regions = (nodeData.tags || []).filter(t => typeof t === 'string' && t.startsWith(prefixes.region)).map(t => t.substring(prefixes.region.length));
     const arxivs = (nodeData.tags || []).filter(t => typeof t === 'string' && t.startsWith(prefixes.arxiv)).map(t => t.substring(prefixes.arxiv.length));
 
-    
     return {
         name: nodeInfo.name,
         id: nodeInfo.id,
@@ -100,6 +105,9 @@ function getBaseNodeViewModel(nodeId) {
         tags: generalTags,
         regions: regions,
         arxivs: arxivs,
-        inheritanceChain: inheritanceChain
+        inheritanceChain: inheritanceChain,
+        // --- [修复 2] 必须返回 compliance 字段 ---
+        compliance: compliance 
+        // ----------------------------------------
     };
 }

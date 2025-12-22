@@ -1,5 +1,4 @@
 import React from 'react';
-// 引入之前的 ViewModel 和 Window 管理器 (如果你还想保留“点击查看完整链路”的功能)
 import InheritanceRiskViewModel from '../../windows/InheritanceRiskViewModel.js';
 import windowCollection from '../../windows/windowCollectionModel.js';
 
@@ -9,35 +8,42 @@ function template(props) {
   var model = props.model;
   var graph = props.graph;
 
-  // 1. 获取合规详情
-  let compliance = { isCompliant: true, reasons: [], risks: [] };
-  
-  if (graph && typeof graph.getComplianceDetails === 'function') {
+  // 双重保险：优先从 model (ViewModel) 获取，没有的话再尝试从 graph 直接获取
+  let compliance = model.compliance;
+  if (!compliance && graph && typeof graph.getComplianceDetails === 'function') {
     compliance = graph.getComplianceDetails(model.id);
-  } else {
-    // 如果 graph 还没加载好或者方法不存在，做个防御
-    // console.warn("Graph or getComplianceDetails missing");
+  }
+  // 默认值
+  if (!compliance) {
+      compliance = { isCompliant: true, reasons: [], risks: [] };
   }
 
-  // 2. 定义打开完整链路窗口的函数 (可选)
   function openChainWindow() {
     if (!graph) return;
     var vm = new InheritanceRiskViewModel(graph, model.id);
     windowCollection.add(vm);
   }
 
+  // 标题样式：有风险时显示红色
+  const titleStyle = {
+      marginBottom: '5px', 
+      wordWrap: 'break-word',
+      color: compliance.isCompliant ? 'inherit' : '#e74c3c' // 红色警告色
+  };
+
   return (
     <div className='container-fluid row'>
       <div className='hidden-xs'>
-        {/* 顶部：名字 */}
+        {/* 顶部：名字 (现在有颜色了) */}
         <div className='col-xs-12'>
-          <h4 title={model.name} style={{marginBottom: '5px', wordWrap: 'break-word'}}>{model.name}</h4>
+          <h4 title={model.name} style={titleStyle}>
+            {model.name} {compliance.isCompliant ? '' : '⚠️'}
+          </h4>
         </div>
 
-        {/* --- 新增：合规性状态展示区域 --- */}
+        {/* 合规性状态展示区域 */}
         <div className='col-xs-12' style={{marginBottom: '15px'}}>
            {compliance.isCompliant ? (
-             // --- 合规显示 (绿色) ---
              <div style={styles.compliantBox}>
                <span style={{fontSize: '14px'}}>✅ <strong>Compliant</strong></span>
                <div style={{fontSize: '10px', marginTop: '2px', color: '#a0dcb5'}}>
@@ -45,27 +51,23 @@ function template(props) {
                </div>
              </div>
            ) : (
-             // --- 违规显示 (红色) ---
              <div style={styles.riskBox}>
                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                   <span style={{fontSize: '14px'}}>⚠️ <strong>Non-Compliant</strong></span>
-                  {/* 查看详情按钮 */}
                   <button onClick={openChainWindow} style={styles.traceButton}>
                     Trace Chain
                   </button>
                </div>
                
                <div style={{fontSize: '11px', marginTop: '4px', color: '#ffcccb'}}>
-                 Detected Risks: {compliance.risks.join(', ')}
+                 Detected Risks: {compliance.risks && compliance.risks.length > 0 ? compliance.risks.map(r => r.type).join(', ') : 'Unknown'}
                </div>
 
-               {/* 原因列表 */}
                {compliance.reasons && compliance.reasons.length > 0 && (
                  <ul style={styles.reasonList}>
                    {compliance.reasons.map((r, i) => (
                      <li key={i} style={styles.reasonItem}>
-                       {/* 显示简短的原因，太长截断 */}
-                       - {r.reason}
+                       - {typeof r === 'string' ? r : r.reason}
                      </li>
                    ))}
                  </ul>
@@ -73,9 +75,7 @@ function template(props) {
              </div>
            )}
         </div>
-        {/* ------------------------------- */}
 
-        {/* 原有的入度/出度统计 */}
         <div className="col-xs-6">
           <div className="row">
             <h2 id={model.id} className='in-degree'>{model.inDegree}</h2>
@@ -90,7 +90,6 @@ function template(props) {
         </div>
       </div>
 
-      {/* 移动端视图 (Mobile) */}
       <div className='visible-xs-block'>
         <div className='row info-block'>
           <div className='col-xs-6 no-overflow'>
@@ -106,7 +105,6 @@ function template(props) {
   );
 }
 
-// 简单的内联样式
 const styles = {
   compliantBox: {
     backgroundColor: 'rgba(46, 204, 113, 0.15)',
@@ -138,7 +136,7 @@ const styles = {
   },
   reasonItem: {
     fontSize: '11px',
-    color: '#ddd', // 浅灰色文字，避免全红太刺眼
+    color: '#ddd',
     marginBottom: '3px',
     lineHeight: '1.2'
   }
