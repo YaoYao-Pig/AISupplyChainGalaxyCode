@@ -9,7 +9,7 @@ const JSONStream = require('JSONStream');
 const through2 = require('through2');
 
 // --- 配置项 ---
-const INPUT_JSON_PATH = './hf_database_filtered.json';
+const INPUT_JSON_PATH = './output_graph_filtered.json';
 const OUTPUT_DIR = './galaxy_output_data';
 const GRAPH_NAME = 'my_model_galaxy';
 const VERSION_NAME = 'v1_updated_links'; // 可以用新版本名区分

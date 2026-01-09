@@ -715,8 +715,18 @@ function clearPathHighlight() {
     hitTest.off('hitTestReady', adjustMovementSpeed);
   }
 
-  function handleClick(e) {
+function handleClick(e) {
     var nearestIndex = getNearestIndex(positions, e.indexes, e.ray, 30);
+
+    // [修复代码开始] -------------------------------------------------
+    // 如果当前处于 TaskView 模式 (isTaskTypeViewActive)，
+    // 并且没有击中任何节点 (nearestIndex === undefined)，
+    // 则忽略这次点击，避免触发 "selectNode(undefined)" 导致整个场景重置(cls)。
+    if (isTaskTypeViewActive && nearestIndex === undefined) {
+      return;
+    }
+    // [修复代码结束] -------------------------------------------------
+
     appEvents.selectNode.fire(getModelIndex(nearestIndex));
   }
 

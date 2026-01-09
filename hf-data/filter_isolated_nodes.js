@@ -1,4 +1,4 @@
-// filter_isolated_nodes.js
+// filter_isolated_nodes_optimized.js
 
 const fs = require('fs-extra');
 const path = require('path');
@@ -7,19 +7,20 @@ const JSONStream = require('JSONStream');
 const through2 = require('through2');
 
 // --- 配置项 ---
-const INPUT_JSON_PATH = './hf_database_export.json';
-const OUTPUT_JSON_PATH = './hf_database_filtered.json'; // 输出的过滤后的新JSON文件
-const ISOLATED_NODE_SURVIVAL_RATE = 0.1; // 孤立节点的存活率 (0.1 表示保留 10%)
+const INPUT_JSON_PATH = './output_graph.json';
+const OUTPUT_JSON_PATH = './output_graph_filtered.json';
+const ISOLATED_NODE_SURVIVAL_RATE = 0.1; 
 const LOG_INTERVAL = 50000;
 // --- 配置结束 ---
 
 async function filterJsonFile() {
     let overallProgressBar = null;
     try {
-        console.log(`🚀 开始预处理并过滤JSON文件: ${INPUT_JSON_PATH}`);
+        console.log(`🚀 (内存优化版) 开始预处理并过滤JSON文件: ${INPUT_JSON_PATH}`);
         
-        const degreeMap = new Map();
-        let nodesFoundInPass1 = 0;
+        // 关键优化：使用 Set 仅存储"有关系的节点ID"，不再存储对象
+        const connectedNodeIds = new Set(); 
+        
         let relationshipsFoundInPass1 = 0;
         let fileSize = 0;
 
@@ -31,33 +32,37 @@ async function filterJsonFile() {
         }
 
         // =================================================================
-        // === 第一遍扫描: 计算所有节点的度
+        // === 第一遍扫描: 扫描关系，找出所有"非孤立"的节点ID
         // =================================================================
-        console.log('\n--- 扫描阶段 1/2: 计算所有节点的度 ---');
+        // 逻辑变更：先扫关系。因为只要出现在关系里，就一定不是孤立节点。
+        console.log('\n--- 扫描阶段 1/2: 标记活跃节点 (扫描关系) ---');
         
         overallProgressBar = new cliProgress.SingleBar({
-            format: '度计算 | {bar} | {percentage}% || {value_MB}/{total_MB}MB ({status_msg})',
+            format: '标记活跃节点 | {bar} | {percentage}% || {value_MB}/{total_MB}MB ({status_msg})',
             barCompleteChar: '\u2588', barIncompleteChar: '\u2591', hideCursor: true
         });
-        if (fileSize > 0) overallProgressBar.start(Math.round(fileSize/(1024*1024)), 0, { status_msg: "初始化节点..."});
+        if (fileSize > 0) overallProgressBar.start(Math.round(fileSize/(1024*1024)), 0, { status_msg: "初始化..."});
         
-        // 1a: 初始化所有节点的度为 {in: 0, out: 0}
         await new Promise((resolve, reject) => {
             let bytesRead = 0;
             const stream = fs.createReadStream(INPUT_JSON_PATH, { encoding: 'utf8' });
             stream.on('data', chunk => {
                 bytesRead += chunk.length;
-                if (fileSize > 0 && overallProgressBar) overallProgressBar.update(Math.round(bytesRead/(1024*1024)), {status_msg: `扫描节点... (${nodesFoundInPass1})`});
+                if (fileSize > 0 && overallProgressBar) overallProgressBar.update(Math.round(bytesRead/(1024*1024)), {status_msg: `发现关联节点... (Set大小: ${connectedNodeIds.size})`});
             });
-            stream.pipe(JSONStream.parse('nodes.*'))
-                .pipe(through2.obj(function(node, enc, callback) {
-                    if (node && node.id) {
-                        degreeMap.set(node.id, { in: 0, out: 0 });
-                        nodesFoundInPass1++;
-                         if (nodesFoundInPass1 % LOG_INTERVAL === 0) {
-                            if (fileSize > 0 && overallProgressBar) overallProgressBar.update(Math.round(bytesRead/(1024*1024)), {status_msg: `扫描节点... (${nodesFoundInPass1})`});
-                            else process.stdout.write(`已扫描节点: ${nodesFoundInPass1}\r`);
-                         }
+            
+            // 只解析 relationships
+            stream.pipe(JSONStream.parse('relationships.*'))
+                .pipe(through2.obj(function(rel, enc, callback) {
+                    if (rel && rel.start_node_id && rel.end_node_id) {
+                        // 只要在关系中出现过，就加入 Set
+                        connectedNodeIds.add(rel.start_node_id);
+                        connectedNodeIds.add(rel.end_node_id);
+                        
+                        relationshipsFoundInPass1++;
+                        if (relationshipsFoundInPass1 % LOG_INTERVAL === 0) {
+                             if (!overallProgressBar) process.stdout.write(`已扫描关系: ${relationshipsFoundInPass1}, 活跃节点数: ${connectedNodeIds.size}\r`);
+                        }
                     }
                     callback();
                 }))
@@ -66,48 +71,15 @@ async function filterJsonFile() {
             stream.on('error', reject);
         }).catch(err => {
             if (overallProgressBar) overallProgressBar.stop();
-            console.error('\n❌ 在第一遍扫描（节点）时出错:', err);
-            throw err;
-        });
-        if (overallProgressBar) overallProgressBar.stop();
-        console.log(`\n✅ 第一遍扫描 (节点) 完成，发现 ${nodesFoundInPass1} 个节点。`);
-
-        // 1b: 根据关系更新节点的度
-        if (fileSize > 0) overallProgressBar.start(Math.round(fileSize/(1024*1024)), 0, { status_msg: "扫描关系..."});
-        await new Promise((resolve, reject) => {
-            let bytesRead = 0;
-            const stream = fs.createReadStream(INPUT_JSON_PATH, { encoding: 'utf8' });
-            stream.on('data', chunk => {
-                bytesRead += chunk.length;
-                if (fileSize > 0 && overallProgressBar) overallProgressBar.update(Math.round(bytesRead/(1024*1024)), {status_msg: `扫描关系... (${relationshipsFoundInPass1})`});
-            });
-            stream.pipe(JSONStream.parse('relationships.*'))
-                .pipe(through2.obj(function(rel, enc, callback) {
-                    if (rel && rel.start_node_id && rel.end_node_id) {
-                        if (degreeMap.has(rel.start_node_id)) {
-                            degreeMap.get(rel.start_node_id).out++;
-                        }
-                        if (degreeMap.has(rel.end_node_id)) {
-                            degreeMap.get(rel.end_node_id).in++;
-                        }
-                        relationshipsFoundInPass1++;
-                        if (relationshipsFoundInPass1 % LOG_INTERVAL === 0) {
-                            if (fileSize > 0 && overallProgressBar) overallProgressBar.update(Math.round(bytesRead/(1024*1024)), {status_msg: `扫描关系... (${relationshipsFoundInPass1})`});
-                            else process.stdout.write(`已扫描关系: ${relationshipsFoundInPass1}\r`);
-                        }
-                    }
-                    callback();
-                }))
-                .on('error', reject)
-                .on('finish', resolve);
-             stream.on('error', reject);
-        }).catch(err => {
-            if (overallProgressBar) overallProgressBar.stop();
             console.error('\n❌ 在第一遍扫描（关系）时出错:', err);
             throw err;
         });
+        
         if (overallProgressBar) overallProgressBar.stop();
-        console.log(`\n✅ 第一遍扫描 (关系) 完成，所有节点的度已计算完毕。`);
+        console.log(`\n✅ 第一遍扫描完成。发现 ${relationshipsFoundInPass1} 条关系，涉及 ${connectedNodeIds.size} 个活跃节点。`);
+        
+        // 显式垃圾回收建议（如果运行环境开启了 --expose-gc，但通常不需要）
+        // global.gc && global.gc();
 
         // =================================================================
         // === 第二遍扫描: 过滤数据并写入新文件
@@ -115,29 +87,33 @@ async function filterJsonFile() {
         console.log('\n--- 扫描阶段 2/2: 过滤并生成新的JSON文件 ---');
         
         const writeStream = fs.createWriteStream(OUTPUT_JSON_PATH, { encoding: 'utf8' });
-        writeStream.write('{\n  "nodes": [\n'); // 写入新JSON的开头
+        writeStream.write('{\n  "nodes": [\n'); 
 
         if (fileSize > 0) overallProgressBar.start(Math.round(fileSize/(1024*1024)), 0, { status_msg: "过滤节点..."});
+        
         let isFirstNodeWritten = true;
-        const keptNodeIds = new Set(); // 存储被保留的节点的ID
+        const finalKeptNodeIds = new Set(); // 记录最终写入文件的节点ID（包含原本活跃的 + 幸运存活的孤立节点）
 
         // 2a: 过滤并写入节点
+        let nodesProcessed = 0;
         await new Promise((resolve, reject) => {
             let bytesRead = 0;
             const stream = fs.createReadStream(INPUT_JSON_PATH, { encoding: 'utf8' });
             stream.on('data', chunk => {
                 bytesRead += chunk.length;
-                if (fileSize > 0 && overallProgressBar) overallProgressBar.update(Math.round(bytesRead/(1024*1024)), { status_msg: `过滤节点... (${keptNodeIds.size})` });
+                if (fileSize > 0 && overallProgressBar) overallProgressBar.update(Math.round(bytesRead/(1024*1024)), { status_msg: `处理节点... (${nodesProcessed})` });
             });
+            
             stream.pipe(JSONStream.parse('nodes.*'))
                 .pipe(through2.obj(function(node, enc, callback) {
-                    if (node && node.id && degreeMap.has(node.id)) {
-                        const degrees = degreeMap.get(node.id);
-                        const isIsolated = degrees.in === 0 && degrees.out === 0;
-                        let shouldKeep = !isIsolated;
+                    nodesProcessed++;
+                    if (node && node.id) {
+                        // 判断是否孤立：如果 ID 不在 connectedNodeIds 集合中，就是孤立的
+                        const isConnected = connectedNodeIds.has(node.id);
+                        let shouldKeep = isConnected;
 
-                        if (isIsolated) {
-                            // 俄罗斯轮盘赌算法
+                        if (!isConnected) {
+                            // 它是孤立节点，进行轮盘赌
                             if (Math.random() < ISOLATED_NODE_SURVIVAL_RATE) {
                                 shouldKeep = true;
                             }
@@ -149,7 +125,7 @@ async function filterJsonFile() {
                             }
                             writeStream.write(JSON.stringify(node));
                             isFirstNodeWritten = false;
-                            keptNodeIds.add(node.id);
+                            finalKeptNodeIds.add(node.id); // 记录下来，供后面写关系时验证
                         }
                     }
                     callback();
@@ -159,35 +135,45 @@ async function filterJsonFile() {
             stream.on('error', reject);
         }).catch(err => {
             if (overallProgressBar) overallProgressBar.stop();
-            console.error('\n❌ 在第二遍扫描（过滤节点）时出错:', err);
             throw err;
         });
+        
+        // 释放掉第一阶段的大 Set，回收内存
+        connectedNodeIds.clear(); 
+        
         if (overallProgressBar) overallProgressBar.stop();
-        console.log(`\n✅ 第二遍扫描 (节点) 完成，保留了 ${keptNodeIds.size} 个节点。`);
+        console.log(`\n✅ 节点写入完成。最终保留节点数: ${finalKeptNodeIds.size} (处理总数: ${nodesProcessed})`);
 
-        writeStream.write('\n  ],\n  "relationships": [\n'); // 写入节点和关系之间的部分
+        writeStream.write('\n  ],\n  "relationships": [\n');
 
         // 2b: 写入关系
+        // 注意：虽然第一遍扫过关系，但我们必须保证关系的 *两端* 都在 finalKeptNodeIds 里。
+        // (因为理论上非孤立节点都会被保留，但为了数据一致性，最好还是检查一下)
         if (fileSize > 0) overallProgressBar.start(Math.round(fileSize/(1024*1024)), 0, { status_msg: "写入关系..."});
+        
         let isFirstRelWritten = true;
         let relationshipsWritten = 0;
+        
         await new Promise((resolve, reject) => {
             let bytesRead = 0;
             const stream = fs.createReadStream(INPUT_JSON_PATH, { encoding: 'utf8' });
-             stream.on('data', chunk => {
+            stream.on('data', chunk => {
                 bytesRead += chunk.length;
                 if (fileSize > 0 && overallProgressBar) overallProgressBar.update(Math.round(bytesRead/(1024*1024)), { status_msg: `写入关系... (${relationshipsWritten})` });
             });
+            
             stream.pipe(JSONStream.parse('relationships.*'))
                 .pipe(through2.obj(function(rel, enc, callback) {
-                    // 确保关系的两个端点都存在于被保留的节点中
-                    if (rel && rel.start_node_id && rel.end_node_id && keptNodeIds.has(rel.start_node_id) && keptNodeIds.has(rel.end_node_id)) {
-                        if (!isFirstRelWritten) {
-                            writeStream.write(',\n');
+                    // 确保两端都在最终保留的节点列表中
+                    if (rel && rel.start_node_id && rel.end_node_id) {
+                        if (finalKeptNodeIds.has(rel.start_node_id) && finalKeptNodeIds.has(rel.end_node_id)) {
+                            if (!isFirstRelWritten) {
+                                writeStream.write(',\n');
+                            }
+                            writeStream.write(JSON.stringify(rel));
+                            isFirstRelWritten = false;
+                            relationshipsWritten++;
                         }
-                        writeStream.write(JSON.stringify(rel));
-                        isFirstRelWritten = false;
-                        relationshipsWritten++;
                     }
                     callback();
                 }))
@@ -196,26 +182,22 @@ async function filterJsonFile() {
             stream.on('error', reject);
         }).catch(err => {
             if (overallProgressBar) overallProgressBar.stop();
-            console.error('\n❌ 在第二遍扫描（写入关系）时出错:', err);
             throw err;
         });
+        
         if (overallProgressBar) overallProgressBar.stop();
-        console.log(`\n✅ 第二遍扫描 (关系) 完成，写入了 ${relationshipsWritten} 条关系。`);
+        console.log(`\n✅ 关系写入完成。写入了 ${relationshipsWritten} 条关系。`);
 
-        writeStream.write('\n  ]\n}\n'); // 写入JSON的结尾
+        writeStream.write('\n  ]\n}\n');
         writeStream.end();
 
         await new Promise(resolve => writeStream.on('finish', resolve));
 
         console.log('\n🎉 --- JSON文件过滤完成! --- 🎉');
-        console.log(`新的、经过过滤的JSON文件已保存至: ${OUTPUT_JSON_PATH}`);
-        console.log(`下一步，请使用您之前的布局计算脚本来处理这个新的、更小的文件。`);
 
     } catch (error) {
-        if (overallProgressBar && typeof overallProgressBar.stop === 'function' && overallProgressBar.isActive) {
-            overallProgressBar.stop();
-        }
-        console.error('❌ 处理过程中发生致命错误:', error);
+        if (overallProgressBar && overallProgressBar.stop) overallProgressBar.stop();
+        console.error('❌ 错误:', error);
         process.exit(1);
     }
 }
