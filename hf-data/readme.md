@@ -8,3 +8,7 @@ node convert_scropt2.js
 ```
 
 或者直接运行我写的shell文件
+```shell
+chmod +x run_pipeline.sh
+./run_pipeline.sh
+```
