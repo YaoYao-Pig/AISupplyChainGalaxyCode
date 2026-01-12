@@ -55,7 +55,7 @@ echo "==========================================="
 
 # 依次运行 node 脚本
 echo "运行 fiter_isolated_node.js..."
-node fiter_isolated_node.js
+node --max-old-space-size=8192 ./filter_isolated_nodes.js
 
 echo "运行 convert_script.js..."
 node convert_script.js

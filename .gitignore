@@ -31,3 +31,4 @@ hf-data/node_modules/
 hf-data/*.json
 images/
 
+hf-data/dataTransfer/*.json
