@@ -12,4 +12,9 @@ node convert_scropt2.js
 chmod +x run_pipeline.sh
 ./run_pipeline.sh
 ```
- 
+
+# 更新流程：
+先本地跑一下运行，跑完之后提交运行后的中间产物到服务器上
+```shell
+scp -r ./hf-data/galaxy_output_data/* ip:/var/www/galaxy_data/my_model_galaxy/
+```
