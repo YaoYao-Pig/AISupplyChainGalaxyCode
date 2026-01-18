@@ -3,6 +3,8 @@
 # 遇到错误立即停止脚本 (Exit immediately if a command exits with a non-zero status)
 set -e
 
+echo "请确认ip是否正确设置"
+
 echo "==========================================="
 echo ">>> Step 1: 准备环境并下载数据"
 echo "==========================================="
@@ -62,6 +64,8 @@ node convert_script.js
 
 echo "运行 convert_scropt2.js..."
 node convert_scropt2.js
+
+scp -r ./hf-data/galaxy_output_data/* [ip]:/var/www/galaxy_data/my_model_galaxy/
 
 echo "==========================================="
 echo ">>> 全部流程执行完毕！"
