@@ -191,13 +191,13 @@ const handleShowCommunities = () => {
                     <button onClick={handleShowCommunities} className="analysis-btn">
                         {communityButtonText}
                     </button>
-                    {/*<button 
+                    <button 
                         onClick={handleHighlightClick} 
                         className="analysis-btn highlight" 
                         disabled={conflictCount === 0}
                     >
                         Highlight Conflicts ({conflictCount})
-                    </button> */}
+                    </button>
                     <button onClick={handleToggleTimeline} className="analysis-btn">Toggle Timeline</button>
 
                     <hr className="sidebar-separator" />
