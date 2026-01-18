@@ -1,62 +1,40 @@
-// convert_script_final_fixed_v4.js
+// convert_script_final_optimized.js
 
 const createGraphNgraph = require('ngraph.graph');
 const createLayout = require('ngraph.offline.layout');
 const fs = require('fs-extra');
 const path = require('path');
-const cliProgress = require('cli-progress');
+const cliProgress = require('cli-progress'); // 确保已安装: npm install cli-progress
 const JSONStream = require('JSONStream');
 const through2 = require('through2');
 
 // --- 1. 基础配置项 ---
-const INPUT_JSON_PATH = './output_graph_filtered.json';
-const OUTPUT_DIR = './galaxy_output_data';
-const GRAPH_NAME = 'my_model_galaxy';
-const VERSION_NAME = 'v1_updated_links';
-const LAYOUT_ITERATIONS = 19005;
-const LOG_INTERVAL = 20000;
+const CONFIG = {
+    INPUT_PATH: './output_graph_filtered.json',
+    OUTPUT_DIR: './galaxy_output_data',
+    GRAPH_NAME: 'my_model_galaxy',
+    VERSION_NAME: 'v1_updated_links',
+    LAYOUT_ITERATIONS: 19005,
+    PROPAGATION_TYPES: new Set(["FINETUNE", "MERGE", "QUANTIZED", "ADAPTER"]) // 使用 Set 提高查找速度
+};
 
-// --- 2. 辅助函数 ---
-function safeString(val) {
-    if (val === null || val === undefined) return "None";
-    if (Array.isArray(val)) {
-        return val.length > 0 ? String(val[0]) : "None";
-    }
-    return String(val);
-}
-
-// 辅助：判断是否在数组中
-function isIn(val, list) {
-    if (!val) return false;
-    return list.includes(val);
-}
-
-// --- 3. 业务规则常量 ---
-
+// --- 2. 业务规则常量 (使用 Set 提高性能) ---
 const RISK_LISTS = {
-    // h_Mismatch: 包含所有非 Llama 官方许可的通用协议
-    // 只有在模型是 Llama 系列时，这些协议才会被标记为 Warning
     h_Mismatch: new Set(["apache-2.0", "None", "mit", "cc-by-nc-4.0", "cc-by-4.0", "cc-by-nc-sa-4.0", "cc-by-sa-4.0", "bsd-3-clause", "gpl-3.0", "unknown", "cc", "cc-by-nc-nd-4.0", "afl-3.0", "agpl-3.0", "cc0-1.0", "wtfpl", "cc-by-nc-2.0", "artistic-2.0", "unlicense", "cc-by-sa-3.0", "bsl-1.0", "gpl", "apple-ascl", "osl-3.0", "cc-by-nc-3.0", "cc-by-2.0", "gpl-2.0", "bsd", "ms-pl", "ecl-2.0", "bsd-3-clause-clear", "cc-by-3.0", "lgpl-3.0", "deepfloyd-if-license", "mpl-2.0", "pddl", "bsd-2-clause", "cc-by-nd-4.0", "cdla-permissive-2.0", "eupl-1.1", "cc-by-nc-sa-3.0", "etalab-2.0", "odc-by", "cc-by-2.5", "ofl-1.1", "odbl", "cc-by-nc-sa-2.0", "cdla-sharing-1.0", "lgpl-lr", "lgpl", "zlib"]),
-
-    // g_Copyleft_Terms
+    
     g_Source: new Set(["creativeml-openrail-m", "llama2", "cc-by-nc-4.0", "gemma", "llama3", "openrail++", "llama3.1", "llama3.2", "openrail", "bigcode-openrail-m", "cc-by-nc-3.0", "bigscience-bloom-rail-1.0", "llama3.3", "bigscience-openrail-m", "cc-by-nc-2.0", "deepfloyd-if-license", "c-uda"]),
     
-    // f_Copyleft
     f_Source: new Set(["cc-by-nc-sa-4.0", "cc-by-sa-4.0", "gpl-3.0", "agpl-3.0", "cc-by-sa-3.0", "gpl", "osl-3.0", "gpl-2.0", "ms-pl", "lgpl-3.0", "mpl-2.0", "eupl-1.1", "cc-by-nc-sa-3.0", "odbl", "cc-by-nc-sa-2.0", "cdla-sharing-1.0", "lgpl-lr", "lgpl", "epl-2.0", "epl-1.0", "lgpl-2.1"]),
 
-    // e_Conflict_ND
     e_Source: new Set(["cc-by-nc-nd-4.0", "cc-by-nd-4.0"]),
 
-    // d_Conflict_CC
     d_Source: new Set(["cc-by-nc-4.0", "cc-by-4.0", "cc-by-nc-sa-4.0", "cc-by-sa-4.0", "cc", "cc-by-nc-2.0", "cc-by-sa-3.0", "cc-by-nc-3.0", "cc-by-2.0", "cc-by-3.0", "cc-by-nc-sa-3.0", "cc-by-2.5", "cc-by-nc-sa-2.0"]),
     d_ConflictTarget: new Set(["other", "creativeml-openrail-m", "llama2", "gemma", "llama3", "openrail++", "llama3.1", "llama3.2", "openrail", "bigcode-openrail-m", "bigscience-bloom-rail-1.0", "llama3.3", "agpl-3.0", "bigscience-openrail-m", "gpl", "apple-ascl", "osl-3.0", "gpl-2.0", "lgpl-3.0", "deepfloyd-if-license", "mpl-2.0", "pddl", "eupl-1.1", "odbl", "cdla-sharing-1.0", "lgpl-lr", "lgpl", "epl-2.0", "epl-1.0", "lgpl-2.1"]),
 
-    // c_Conflict_FSF
     c_Source: new Set(["gpl-3.0", "agpl-3.0", "gpl"]),
     c_ConflictParent: new Set(["other", "creativeml-openrail-m", "llama2", "cc-by-nc-4.0", "gemma", "llama3", "openrail++", "llama3.1", "llama3.2", "cc-by-nc-sa-4.0", "openrail", "bigcode-openrail-m", "bigscience-bloom-rail-1.0", "unknown", "cc", "cc-by-nc-nd-4.0", "llama3.3", "cc-by-nc-2.0", "cc-by-sa-3.0", "apple-ascl", "cc-by-nc-3.0", "cc-by-2.0", "deepfloyd-if-license", "pddl", "cc-by-nd-4.0", "cc-by-nc-sa-3.0", "etalab-2.0", "odc-by", "cc-by-2.5", "cc-by-nc-sa-2.0", "cdla-sharing-1.0", "lgpl-lr", "deepfloyd-if-license", "odbl", "osl-3.0", "ms-pl", "eupl-1.1", "afl-3.0"])
 };
 
-// 风险等级: Mismatch 为 Warning，其他为 Error
 const RISK_LEVELS = {
     h_Mismatch: 'Warning',       
     g_Copyleft_Terms: 'Error',
@@ -69,29 +47,48 @@ const RISK_LEVELS = {
     g_Source: 'Error' 
 };
 
-// --- 4. 合规性分析核心函数 ---
+// --- 3. 辅助函数 ---
+const safeString = (val) => {
+    if (val == null) return "None"; // check both null and undefined
+    return Array.isArray(val) ? (val.length > 0 ? String(val[0]) : "None") : String(val);
+};
+
+// --- 4. 合规性分析核心函数 (优化版) ---
 function runComplianceAnalysis(graph) {
-    console.log("🕵️ 开始合规性分析 (Fix Edges & Mismatch Logic)...");
+    console.log("🕵️ 开始合规性分析...");
+    const progressBar = new cliProgress.SingleBar({ format: 'Analysis |{bar}| {percentage}% || {value}/{total} Nodes' }, cliProgress.Presets.shades_classic);
+    progressBar.start(graph.getNodesCount(), 0);
 
-    // [关键修复] 直接从边对象中读取 type 字符串，不再依赖 ID 映射
-    const isPropagationEdge = (link) => {
-        const typeStr = link.data ? link.data.type : null;
-        if (!typeStr) return false;
-        return ["FINETUNE", "MERGE", "QUANTIZED", "ADAPTER"].includes(typeStr);
-    };
+    // --- 0. 预计算传播图结构 (Pre-computation) ---
+    // 建立一个只包含 "传播边" 的轻量级邻接表，避免 BFS 时重复检查边类型
+    const propChildren = new Map(); // Parent -> [Children]
+    const propParents = new Map();  // Child -> [Parents]
 
+    graph.forEachLink(link => {
+        if (link.data && link.data.type && CONFIG.PROPAGATION_TYPES.has(link.data.type)) {
+            // Forward
+            if (!propChildren.has(link.fromId)) propChildren.set(link.fromId, []);
+            propChildren.get(link.fromId).push(link.toId);
+            // Backward
+            if (!propParents.has(link.toId)) propParents.set(link.toId, []);
+            propParents.get(link.toId).push(link.fromId);
+        }
+    });
+
+    // 辅助：添加风险
     function addRisk(node, type, reason) {
         if (!node.data.compliance) {
             node.data.compliance = { risks: [], status: 'compliant' };
         }
-        const level = RISK_LEVELS[type] || 'Warning'; 
+        const level = RISK_LEVELS[type] || 'Warning';
         
+        // 简单去重，避免同一类型同一原因重复
         const exists = node.data.compliance.risks.some(r => r.type === type && r.reason === reason);
         if (!exists) {
             node.data.compliance.risks.push({ type, level, reason });
         }
         
-        // Error > Warning > Compliant
+        // 状态升级逻辑
         if (level === 'Error') {
             node.data.compliance.status = 'error';
         } else if (level === 'Warning' && node.data.compliance.status !== 'error') {
@@ -99,41 +96,33 @@ function runComplianceAnalysis(graph) {
         }
     }
 
-    // --- Step 1: 严格归一化 ---
+    // --- Step 1: 归一化 (Normalization) ---
     graph.forEachNode(node => {
         const data = node.data || {};
         const rawLicense = safeString(data.license); 
         const rawName = safeString(data.license_name);
         
-        let fixed = null;
+        let fixed = rawLicense;
+        const isNoneOrOther = (rawLicense === "None" || rawLicense === "other");
 
-        if (!rawLicense || rawLicense === "null" || rawLicense === "undefined") {
+        if (!rawLicense || rawLicense === "null" || rawLicense === "undefined" || rawLicense === "unknown") {
             fixed = "None";
-        }
-        else if (isIn(rawLicense, ["None", "other"]) && isIn(rawName, ["llama3", "llama-3", "llama-3-community-license"])) {
-            fixed = "llama3";
-        }
-        else if (isIn(rawLicense, ["None", "other"]) && isIn(rawName, ["gemma", "gemma-terms-of-use"])) {
-            fixed = "gemma";
-        }
-        else if (isIn(rawLicense, ["None", "other"]) && isIn(rawName, ["apple-ascl", "apple-sample-code-license"])) {
-            fixed = "apple-ascl";
-        }
-        else if (isIn(rawLicense, ["None", "other"]) && isIn(rawName, ["mit", "mit-license"])) {
-            fixed = "mit";
-        }
-        else if (isIn(rawLicense, ["None", "unknown"])) {
-            fixed = "None";
-        }
-        else {
-            fixed = rawLicense; 
+        } else if (isNoneOrOther) {
+            if (rawName.includes("llama-3") || rawName === "llama3") fixed = "llama3";
+            else if (rawName.includes("gemma")) fixed = "gemma";
+            else if (rawName.includes("apple")) fixed = "apple-ascl";
+            else if (rawName.includes("mit")) fixed = "mit";
         }
         
         node.data.fixed_license = fixed;
         node.data.compliance = { risks: [], status: 'compliant' };
+        progressBar.increment();
     });
+    progressBar.stop();
 
-    // --- Step 2: h_Mismatch (Warning) ---
+    console.log("   - Normalized licenses. Analyzing risks...");
+
+    // --- Step 2: 本地风险 (Mismatch) ---
     graph.forEachNode(node => {
         const fl = node.data.fixed_license;
         if (RISK_LISTS.h_Mismatch.has(fl)) {
@@ -141,52 +130,62 @@ function runComplianceAnalysis(graph) {
             const isLlama = modelId.includes("llama");
             const isInvalidData = ["None", "unknown", "null", "undefined", "other"].includes(fl);
 
-            // 1. 无效数据 -> 任何模型都报 Warning
             if (isInvalidData) {
                  addRisk(node, "h_Mismatch", `License information is missing or unknown ('${fl}').`);
-            }
-            // 2. Llama 模型使用了通用协议 -> 报 Warning (Mismatch)
-            else if (isLlama) {
+            } else if (isLlama) {
                  addRisk(node, "h_Mismatch", `Llama-related model using generic license '${fl}' (expected specific Llama license).`);
             }
         }
     });
 
-    // --- Step 3: 传播逻辑核心 (BFS) ---
+    // --- Step 3: 优化后的传播逻辑 (BFS using Pre-computed Map) ---
+    // sourceConditionFn: (node) => boolean
+    // targetConditionFn: (srcNode, currNode) => boolean
     function checkDownstreamPropagation(sourceConditionFn, targetConditionFn, riskType, reasonFn) {
-        graph.forEachNode(sourceNode => {
-            if (!sourceConditionFn(sourceNode)) return;
+        // 1. 收集所有风险源
+        const sources = [];
+        graph.forEachNode(node => {
+            if (sourceConditionFn(node)) sources.push(node);
+        });
 
+        // 2. 对每个源进行 BFS (利用预计算的 propChildren)
+        sources.forEach(sourceNode => {
             const sourceLic = sourceNode.data.fixed_license;
             const sourceIdStr = safeString(sourceNode.data.model_id);
+            const riskReason = reasonFn(sourceLic, sourceIdStr);
 
             const queue = [sourceNode.id];
-            const visited = new Set([sourceNode.id]);
-            
+            const visited = new Set([sourceNode.id]); // Local visited for this source propagation
+
             while(queue.length > 0) {
                 const currId = queue.shift();
                 
+                // 处理当前节点（非源节点）
                 if (currId !== sourceNode.id) {
                     const currNode = graph.getNode(currId);
                     if (targetConditionFn(sourceNode, currNode)) {
-                        addRisk(currNode, riskType, reasonFn(sourceLic, sourceIdStr));
+                        addRisk(currNode, riskType, riskReason);
                     }
                 }
-                
-                graph.forEachLinkedNode(currId, (linked, link) => {
-                    // 检查是否为向下游的边 (currId -> linked)
-                    if(link.fromId === currId && isPropagationEdge(link) && !visited.has(linked.id)) {
-                        visited.add(linked.id);
-                        queue.push(linked.id);
+
+                // 获取预计算的子节点
+                const children = propChildren.get(currId);
+                if (children) {
+                    for (let i = 0; i < children.length; i++) {
+                        const childId = children[i];
+                        if (!visited.has(childId)) {
+                            visited.add(childId);
+                            queue.push(childId);
+                        }
                     }
-                });
+                }
             }
         });
     }
 
-    // --- Step 4: 执行各种 Error 检查 ---
+    // --- Step 4: 执行传播检查 ---
 
-    // g_Copyleft_Terms (Error)
+    // g_Copyleft_Terms
     checkDownstreamPropagation(
         (src) => RISK_LISTS.g_Source.has(src.data.fixed_license),
         (src, curr) => curr.data.fixed_license !== src.data.fixed_license,
@@ -194,7 +193,7 @@ function runComplianceAnalysis(graph) {
         (srcLic, srcId) => `Inherited restrictive terms from ${srcId} (${srcLic}).`
     );
 
-    // f_Copyleft (Error)
+    // f_Copyleft
     checkDownstreamPropagation(
         (src) => RISK_LISTS.f_Source.has(src.data.fixed_license),
         (src, curr) => curr.data.fixed_license !== src.data.fixed_license,
@@ -202,7 +201,7 @@ function runComplianceAnalysis(graph) {
         (srcLic, srcId) => `Inherited copyleft obligations from ${srcId} (${srcLic}).`
     );
 
-    // e_Conflict_ND (Error)
+    // e_Conflict_ND (Viral)
     checkDownstreamPropagation(
         (src) => RISK_LISTS.e_Source.has(src.data.fixed_license),
         (src, curr) => true, 
@@ -210,7 +209,7 @@ function runComplianceAnalysis(graph) {
         (srcLic, srcId) => `Violates No-Derivatives term from ${srcId} (${srcLic}).`
     );
 
-    // d_Conflict_CC (Error)
+    // d_Conflict_CC
     checkDownstreamPropagation(
         (src) => RISK_LISTS.d_Source.has(src.data.fixed_license),
         (src, curr) => RISK_LISTS.d_ConflictTarget.has(curr.data.fixed_license),
@@ -218,22 +217,25 @@ function runComplianceAnalysis(graph) {
         (srcLic, srcId) => `CC License (${srcLic}) from ${srcId} conflicts with downstream license.`
     );
 
-    // --- Step 5: FSF Conflict (Error) ---
+    // --- Step 5: FSF Conflict (Upstream Check) ---
     graph.forEachNode(node => {
         if (RISK_LISTS.c_Source.has(node.data.fixed_license)) {
-            let conflictParents = [];
-            graph.forEachLinkedNode(node.id, (parent, link) => {
-                // 检查是否为上游边 (parent -> node)
-                if (link.toId === node.id && isPropagationEdge(link)) {
-                    if (RISK_LISTS.c_ConflictParent.has(parent.data.fixed_license)) {
-                        conflictParents.push(safeString(parent.data.model_id));
-                    }
+            const parents = propParents.get(node.id); // 使用预计算的 parents
+            if (!parents) return;
+
+            const conflictParents = [];
+            for(const pid of parents) {
+                const pNode = graph.getNode(pid);
+                if (RISK_LISTS.c_ConflictParent.has(pNode.data.fixed_license)) {
+                    conflictParents.push(safeString(pNode.data.model_id));
                 }
-            });
+            }
             
             if (conflictParents.length > 0) {
-                const reason = `GPL model derived from incompatible parents: ${conflictParents.join(', ')}.`;
+                const reason = `GPL model derived from incompatible parents: ${conflictParents.slice(0, 3).join(', ')}.`;
                 addRisk(node, "c_Conflict_FSF", reason);
+                
+                // 这里仍然使用 BFS 向下传播这个特定的冲突
                 checkDownstreamPropagation(
                     (src) => src.id === node.id,
                     (src, curr) => true,
@@ -244,47 +246,65 @@ function runComplianceAnalysis(graph) {
         }
     });
 
-    // --- Step 6: Llama Lineage (Error) ---
+    // --- Step 6: Llama Lineage (Optimized) ---
     function analyzeLineage(keyword, licenseKey, riskType) {
-        const officialRoots = [];
+        // 1. 找出官方根节点
+        const officialRootIds = new Set();
         graph.forEachNode(node => {
-            if (safeString(node.data.model_id).includes(keyword)) officialRoots.push(node.id);
+            if (safeString(node.data.model_id).includes(keyword)) officialRootIds.add(node.id);
         });
         
-        const validIds = new Set(officialRoots);
-        const queue = [...officialRoots];
+        // 2. 标记所有合法的后代 (Flood Fill)
+        const validFamilyIds = new Set(officialRootIds);
+        const queue = Array.from(officialRootIds);
+        
         while(queue.length > 0) {
-            const u = queue.shift();
-            graph.forEachLinkedNode(u, (v, link) => {
-                if(link.fromId === u && isPropagationEdge(link) && !validIds.has(v.id)) {
-                    validIds.add(v.id);
-                    queue.push(v.id);
-                }
-            });
-        }
-
-        graph.forEachNode(node => {
-            if (node.data.fixed_license === licenseKey) {
-                let invalidParents = [];
-                graph.forEachLinkedNode(node.id, (parent, link) => {
-                    if (link.toId === node.id && isPropagationEdge(link)) {
-                        if (!validIds.has(parent.id)) {
-                            invalidParents.push(safeString(parent.data.model_id));
-                        }
+            const uId = queue.shift();
+            const children = propChildren.get(uId);
+            if (children) {
+                for (const vId of children) {
+                    if (!validFamilyIds.has(vId)) {
+                        validFamilyIds.add(vId);
+                        queue.push(vId);
                     }
-                });
-
-                if (invalidParents.length > 0) {
-                    const reason = `Unofficial lineage: Parent(s) [${invalidParents.slice(0,3).join(', ')}...] are not in official ${keyword} family.`;
-                    addRisk(node, riskType, reason);
-                    checkDownstreamPropagation(
-                        (src) => src.id === node.id,
-                        (src, curr) => true,
-                        riskType,
-                        (srcLic, srcId) => `Inherited Lineage conflict from ${srcId}.`
-                    );
                 }
             }
+        }
+
+        // 3. 检查所有声明为 Llama 协议的节点
+        const lineageSources = [];
+        graph.forEachNode(node => {
+            if (node.data.fixed_license === licenseKey) {
+                const parents = propParents.get(node.id);
+                if (parents) {
+                    let isInvalid = false;
+                    const invalidParentNames = [];
+                    
+                    for (const pid of parents) {
+                        if (!validFamilyIds.has(pid)) { // 如果父节点不在合法家族树中
+                            isInvalid = true;
+                            invalidParentNames.push(safeString(graph.getNode(pid).data.model_id));
+                        }
+                    }
+
+                    if (isInvalid) {
+                        const reason = `Unofficial lineage: Parent(s) [${invalidParentNames.slice(0,3).join(', ')}] are not in official ${keyword} family.`;
+                        addRisk(node, riskType, reason);
+                        lineageSources.push(node);
+                    }
+                }
+            }
+        });
+
+        // 4. 传播 Lineage 错误
+        lineageSources.forEach(sourceNode => {
+             // 复用逻辑：手动调用传播
+             checkDownstreamPropagation(
+                (src) => src.id === sourceNode.id,
+                (src, curr) => true,
+                riskType,
+                (srcLic, srcId) => `Inherited Lineage conflict from ${srcId}.`
+            );
         });
     }
 
@@ -300,131 +320,168 @@ async function convertData() {
     const linkTypesArray = []; 
     let nextLinkTypeId = 0;
     const linkDataForSave = []; 
+    
+    // 初始化进度条
+    const parseBar = new cliProgress.MultiBar({
+        clearOnComplete: false,
+        hideCursor: true,
+        format: ' {bar} | {filename} | {value} processed'
+    }, cliProgress.Presets.shades_grey);
+    const nodeBar = parseBar.create(0, 0, { filename: 'Nodes' });
+    const relBar = parseBar.create(0, 0, { filename: 'Links' });
+
     try {
         const graph = createGraphNgraph();
         const displayLabels = [];
         const nodeOriginalIdToInternalIdMap = new Map();
         let internalIdCounter = 0;
-        let nodesProcessed = 0;
-        let relationshipsProcessed = 0;
         
-        console.log("📂 Reading input JSON...");
+        console.log("📂 Reading input JSON streams...");
 
-        await new Promise((resolveNodePromise, rejectNodePromise) => {
-             const nodesFileStream = fs.createReadStream(INPUT_JSON_PATH, { encoding: 'utf8' });
-             const nodeProcessor = through2.obj(function (node, enc, callback) {
-                try {
-                    if (!node || typeof node.id === 'undefined') { return callback(); }
-                    if (nodeOriginalIdToInternalIdMap.has(node.id)) { return callback(); }
-                    const currentInternalId = internalIdCounter++;
-                    nodeOriginalIdToInternalIdMap.set(node.id, currentInternalId);
-                    let label = node.properties?.model_id || node.id;
-                    displayLabels[currentInternalId] = label;
-                    
-                    graph.addNode(currentInternalId, {
-                        originalId: node.id,
-                        model_id: node.properties?.model_id,
-                        author: node.properties?.author,
-                        license: node.properties?.license, 
-                        license_name: node.properties?.license_name,
-                        downloads: node.properties?.downloads,
-                        likes: node.properties?.likes,
-                        tags: node.properties?.tags,
-                        createdAt: node.properties?.createdAt 
-                    });
-                    nodesProcessed++;
-                } catch (e) { console.error(e); }
-                callback();
-            });
-            nodesFileStream.pipe(JSONStream.parse('nodes.*')).pipe(nodeProcessor)
-                .on('error', rejectNodePromise).on('finish', resolveNodePromise);
+        // Promise for Nodes
+        await new Promise((resolve, reject) => {
+             const nodesStream = fs.createReadStream(CONFIG.INPUT_PATH, { encoding: 'utf8' });
+             const parser = JSONStream.parse('nodes.*');
+             
+             nodesStream.pipe(parser)
+                .pipe(through2.obj((node, enc, cb) => {
+                    if (node && node.id !== undefined && !nodeOriginalIdToInternalIdMap.has(node.id)) {
+                        const iId = internalIdCounter++;
+                        nodeOriginalIdToInternalIdMap.set(node.id, iId);
+                        displayLabels[iId] = node.properties?.model_id || node.id;
+                        
+                        graph.addNode(iId, {
+                            originalId: node.id,
+                            model_id: node.properties?.model_id,
+                            author: node.properties?.author,
+                            license: node.properties?.license, 
+                            license_name: node.properties?.license_name,
+                            downloads: node.properties?.downloads,
+                            likes: node.properties?.likes,
+                            tags: node.properties?.tags,
+                            createdAt: node.properties?.createdAt 
+                        });
+                        nodeBar.increment();
+                    }
+                    cb();
+                }))
+                .on('error', reject)
+                .on('finish', resolve);
         });
-        console.log(`Node read complete: ${nodesProcessed} nodes.`);
+        nodeBar.stop();
 
-        await new Promise((resolveRelPromise, rejectRelPromise) => {
-            const relationshipsFileStream = fs.createReadStream(INPUT_JSON_PATH, { encoding: 'utf8' });
-            const relationshipProcessor = through2.obj(function (rel, enc, callback) {
-                try {
-                     if (!rel || typeof rel.start_node_id === 'undefined' || typeof rel.end_node_id === 'undefined') return callback();
-                     const s = nodeOriginalIdToInternalIdMap.get(rel.start_node_id);
-                     const t = nodeOriginalIdToInternalIdMap.get(rel.end_node_id);
-                     if (s === undefined || t === undefined) return callback();
-                     
-                     graph.addLink(s, t, { type: rel.type });
-                     
-                     const edgeType = rel.type || 'UNKNOWN';
-                     let typeId = linkTypeMap[edgeType];
-                     if (typeId === undefined) {
-                         typeId = nextLinkTypeId++;
-                         linkTypeMap[edgeType] = typeId;
-                         linkTypesArray[typeId] = edgeType;
-                     }
-                     linkDataForSave.push(s, t, typeId);
-                     relationshipsProcessed++;
-                } catch (e) {}
-                callback();
-            });
-            relationshipsFileStream.pipe(JSONStream.parse('relationships.*')).pipe(relationshipProcessor)
-                .on('error', rejectRelPromise).on('finish', resolveRelPromise);
+        // Promise for Relationships
+        await new Promise((resolve, reject) => {
+            const relStream = fs.createReadStream(CONFIG.INPUT_PATH, { encoding: 'utf8' });
+            const parser = JSONStream.parse('relationships.*');
+
+            relStream.pipe(parser)
+               .pipe(through2.obj((rel, enc, cb) => {
+                   if (rel && rel.start_node_id !== undefined && rel.end_node_id !== undefined) {
+                       const s = nodeOriginalIdToInternalIdMap.get(rel.start_node_id);
+                       const t = nodeOriginalIdToInternalIdMap.get(rel.end_node_id);
+                       
+                       if (s !== undefined && t !== undefined) {
+                           // 注意：ngraph 是多重图友好的，但通常一个 type 只存一条
+                           graph.addLink(s, t, { type: rel.type });
+
+                           // 收集保存数据
+                           const edgeType = rel.type || 'UNKNOWN';
+                           let typeId = linkTypeMap[edgeType];
+                           if (typeId === undefined) {
+                               typeId = nextLinkTypeId++;
+                               linkTypeMap[edgeType] = typeId;
+                               linkTypesArray[typeId] = edgeType;
+                           }
+                           linkDataForSave.push(s, t, typeId);
+                           relBar.increment();
+                       }
+                   }
+                   cb();
+               }))
+               .on('error', reject)
+               .on('finish', resolve);
         });
+        relBar.stop();
+        parseBar.stop();
 
-        console.log("🕸️ Running layout...");
-        const layout = createLayout(graph, { dimensions: 3, iterations: LAYOUT_ITERATIONS });
-        layout.run();
+        console.log(`\n🕸️  Running layout (${CONFIG.LAYOUT_ITERATIONS} iterations)...`);
+        const layout = createLayout(graph, { dimensions: 3, iterations: CONFIG.LAYOUT_ITERATIONS });
         
-        const versionSpecificPath = path.join(OUTPUT_DIR, GRAPH_NAME, VERSION_NAME);
-        await fs.ensureDir(versionSpecificPath);
-
+        // 布局进度条
+        const layoutBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+        layoutBar.start(CONFIG.LAYOUT_ITERATIONS, 0);
+        
+        // 分批执行布局以更新进度
+        const batchSize = 100;
+        for (let i = 0; i < CONFIG.LAYOUT_ITERATIONS; i += batchSize) {
+            const steps = Math.min(batchSize, CONFIG.LAYOUT_ITERATIONS - i);
+            for(let j=0; j<steps; j++) layout.step();
+            layoutBar.increment(steps);
+        }
+        layoutBar.stop();
+        
+        // 执行合规分析
         runComplianceAnalysis(graph);
 
-        console.log("💾 Saving data...");
-        const nodeDataForSave = [];
-        graph.forEachNode(node => { nodeDataForSave[node.id] = node.data; });
-        await fs.writeJson(path.join(versionSpecificPath, 'nodeData.json'), nodeDataForSave);
-        await fs.writeJson(path.join(versionSpecificPath, 'labels.json'), displayLabels);
+        console.log("\n💾 Saving binary data...");
+        const versionPath = path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, CONFIG.VERSION_NAME);
+        await fs.ensureDir(versionPath);
 
+        // Save Node Data & Labels
+        const nodeDataForSave = {};
+        graph.forEachNode(node => { nodeDataForSave[node.id] = node.data; });
+        await fs.writeJson(path.join(versionPath, 'nodeData.json'), nodeDataForSave);
+        await fs.writeJson(path.join(versionPath, 'labels.json'), displayLabels);
+
+        // Save Positions
         const positionsArray = new Int32Array(graph.getNodesCount() * 3);
         const finalPositions = layout.getLayout();
         for (let id = 0; id < graph.getNodesCount(); id++) {
-            const pos = finalPositions ? finalPositions[id] : null;
+            const pos = finalPositions[id];
             if (pos) {
                 positionsArray[id * 3] = Math.round(pos.x);
                 positionsArray[id * 3 + 1] = Math.round(pos.y);
                 positionsArray[id * 3 + 2] = Math.round(pos.z);
-            } else {
-                positionsArray[id * 3] = 0; positionsArray[id * 3 + 1] = 0; positionsArray[id * 3 + 2] = 0;
             }
         }
-        await fs.writeFile(path.join(versionSpecificPath, 'positions.bin'), Buffer.from(positionsArray.buffer));
+        await fs.writeFile(path.join(versionPath, 'positions.bin'), Buffer.from(positionsArray.buffer));
 
-        const linksDataArray = [];
+        // Save Links (Visual Adjacency)
+        // ngraph 存储是无向的，但 links 迭代器可以拿到所有连接
+        const linksBufferData = [];
         graph.forEachNode(node => {
-            linksDataArray.push(-node.id - 1);
-            graph.forEachLinkedNode(node.id, (linked) => linksDataArray.push(linked.id + 1), true);
+            linksBufferData.push(-node.id - 1); // 标记新节点开始
+            // 注意：forEachLinkedNode 会同时返回入边和出边，作为无向边渲染通常没问题
+            graph.forEachLinkedNode(node.id, (linked) => {
+                linksBufferData.push(linked.id + 1);
+            }, true); // true = unique links only? ngraph doc says third arg is 'oriented' sometimes depending on implementation
         });
-        await fs.writeFile(path.join(versionSpecificPath, 'links.bin'), Buffer.from(new Int32Array(linksDataArray).buffer));
+        await fs.writeFile(path.join(versionPath, 'links.bin'), Buffer.from(new Int32Array(linksBufferData).buffer));
 
-        await fs.writeJson(path.join(versionSpecificPath, 'link_types.json'), linkTypesArray);
-        await fs.writeFile(path.join(versionSpecificPath, 'link_data.bin'), Buffer.from(new Int32Array(linkDataForSave).buffer));
+        // Save Link Types
+        await fs.writeJson(path.join(versionPath, 'link_types.json'), linkTypesArray);
+        await fs.writeFile(path.join(versionPath, 'link_data.bin'), Buffer.from(new Int32Array(linkDataForSave).buffer));
         
-        await fs.writeJson(path.join(OUTPUT_DIR, GRAPH_NAME, 'manifest.json'), { all: [VERSION_NAME], last: VERSION_NAME });
+        // Manifest & Compliance
+        await fs.writeJson(path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, 'manifest.json'), { all: [CONFIG.VERSION_NAME], last: CONFIG.VERSION_NAME });
 
         const nodeComplianceData = {};
         let problemCount = 0;
         graph.forEachNode(node => {
-            if (node.data.compliance && node.data.compliance.risks && node.data.compliance.risks.length > 0) {
-                const id = node.id;
-                nodeComplianceData[id] = node.data.compliance;
-                nodeComplianceData[id].fixed_license = node.data.fixed_license;
+            if (node.data.compliance?.risks?.length > 0) {
+                nodeComplianceData[node.id] = node.data.compliance;
+                // 添加冗余字段方便前端直接读取
+                nodeComplianceData[node.id].fixed_license = node.data.fixed_license;
                 problemCount++;
             }
         });
-        await fs.writeJson(path.join(versionSpecificPath, 'compliance_data.json'), nodeComplianceData);
+        await fs.writeJson(path.join(versionPath, 'compliance_data.json'), nodeComplianceData);
         
-        console.log(`✅ Done. Found ${problemCount} nodes with compliance risks.`);
+        console.log(`✅ Done. Found ${problemCount} nodes with risks.`);
 
     } catch (error) {
-        console.error(error);
+        console.error("❌ Fatal Error:", error);
         process.exit(1);
     }
 }
