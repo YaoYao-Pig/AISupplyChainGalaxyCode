@@ -1,4 +1,4 @@
-name: Deploy to Hugging Face Space (Docker)
+name: Deploy to Hugging Face Space (Full Auto)
 
 on:
   push:
@@ -9,21 +9,38 @@ jobs:
   sync-to-hf:
     runs-on: ubuntu-latest
     steps:
+      # 1. 检出代码
       - name: Checkout Code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          lfs: true
 
-      - name: Configure for Production
+      # 2. 修改前端配置 (指向本地 data/)
+      - name: Configure Data Source
         run: |
-          if [ -n "${{ secrets.PROD_DATA_URL }}" ]; then
-            sed -i "s|http://localhost:9090/|${{ secrets.PROD_DATA_URL }}|g" src/config.js
-            echo "Successfully updated config.js with production URL."
-          else
-            echo "Warning: PROD_DATA_URL secret is not set."
-          fi
+          sed -i "s|http://localhost:9090/|data/|g" src/config.js
+          echo "Config updated: Data source set to 'data/'"
 
+      # 3. 【核心步骤】从阿里云下载数据
+      - name: Download Data from Aliyun
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+        run: |
+          # A. 安装 sshpass (用于在命令行输入密码)
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+          # B. 创建存放目录
+          mkdir -p hf-data/galaxy_output_data
+
+          # C. 使用 SCP 拉取数据 (反向操作)
+          # -o StrictHostKeyChecking=no: 跳过 SSH 首次连接的 yes/no 确认
+          # -r: 递归下载文件夹
+          echo "Starting download from Aliyun (approx 2GB)..."
+          sshpass -e scp -o StrictHostKeyChecking=no -r root@8.159.137.183:/var/www/galaxy_data/my_model_galaxy/* hf-data/galaxy_output_data/
+          
+          # D. 检查一下是否下载成功
+          ls -lh hf-data/galaxy_output_data/ | head -n 5
+
+      # 4. 推送到 Hugging Face
       - name: Push to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -33,22 +50,27 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           
-          # 1. 克隆 HF 仓库
+          # A. 克隆 HF 仓库
           git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME /tmp/hf_space
           
-          # 2. 清理旧文件 (保留 .git)
+          # B. 清理旧文件 (全清理，准备覆盖)
           cd /tmp/hf_space
-          find . -maxdepth 1 ! -name '.git' ! -name '.gitattributes' ! -name '.' -exec rm -rf {} +
+          find . -maxdepth 1 ! -name '.git' ! -name '.gitattributes' ! -name 'README.md' ! -name '.' -exec rm -rf {} +
           
-          # 3. 复制新代码
+          # C. 开启 Git LFS (重要！因为数据有 2G)
+          git lfs install
+          # 追踪所有 json 文件 (假设你的数据是 json，如果是其他格式请修改，或者直接追踪整个文件夹)
+          git lfs track "hf-data/galaxy_output_data/**"
+          
+          # D. 复制新代码 + 刚刚下载的数据
+          # 注意：$GITHUB_WORKSPACE 里现在已经包含了 hf-data 文件夹
           cp -r $GITHUB_WORKSPACE/* .
           
-          # 4. 删除大文件
+          # E. 再次清理不需要的 PPT
           rm -f "初赛PPT.pdf" "复赛PPT.pdf"
           rm -rf .git/modules
 
-          # --- 关键修改：自动生成带配置的 README.md ---
-          # 这一步会创建一个临时的头部文件，然后把你原来的 README 接在后面
+          # F. 自动生成 README 配置
           echo "---
           title: Model Galaxy
           emoji: 🌌
@@ -58,18 +80,15 @@ jobs:
           pinned: false
           ---" > README_HEADER.md
           
-          # 如果原项目有 README.md，就拼接到配置后面；如果没有，就只保留配置
           if [ -f "README.md" ]; then
             cat README_HEADER.md README.md > README_NEW.md
             mv README_NEW.md README.md
           else
             mv README_HEADER.md README.md
           fi
-          
-          rm -f README_HEADER.md
-          # ------------------------------------------
+          rm README_HEADER.md
 
-          # 5. 提交并推送
+          # G. 提交并推送
           git add .
-          git commit -m "Deploy: auto-inject readme config" --allow-empty
+          git commit -m "Deploy: auto-fetched aliyun data" --allow-empty
           git push --force
