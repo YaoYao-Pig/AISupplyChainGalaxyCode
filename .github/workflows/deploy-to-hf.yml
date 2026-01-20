@@ -49,23 +49,26 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_USERNAME: "MrYaoYaozhu"
           HF_SPACE_NAME: "ModelGalaxy"
-        run: |
+      run: |
+          # 1. 配置 Git 身份
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           
-          # 1. 克隆仓库
+          # 2. 克隆 Hugging Face 仓库到临时目录
           git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME /tmp/hf_space
           
-          # 2. 【新增】清理旧文件 (保留 .git 和 README.md)
+          # 3. 【关键步骤】清理旧文件
+          # 进入仓库目录
           cd /tmp/hf_space
+          # 删除所有文件，但保留 .git 目录和 README.md
+          # 这一步是为了清除之前意外上传的 package.json
           find . -maxdepth 1 ! -name '.git' ! -name 'README.md' ! -name '.gitattributes' ! -name '.' -exec rm -rf {} +
           
-          # 3. 复制新构建的文件
-          # 注意：这里假设你在上一步构建生成的 build 目录在 GitHub 工作区的根目录下
-          # 我们需要回到 GitHub 工作区把文件拷过来
+          # 4. 把你刚刚构建好的 build 文件夹里的内容复制进去
+          # 注意：$GITHUB_WORKSPACE 是 GitHub Action 默认的代码根目录
           cp -r $GITHUB_WORKSPACE/build/* .
           
-          # 4. 提交并推送
+          # 5. 提交并强制推送
           git add .
-          git commit -m "Deploy: clean and push" --allow-empty
+          git commit -m "Deploy clean static site" --allow-empty
           git push --force
