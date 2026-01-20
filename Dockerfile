@@ -11,30 +11,30 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# --- 【修复部分】 ---
+# --- 【核心修复区】 ---
 
-# A. 修复 sigma 找不到的问题
-# 1. 把 src/vendor 下的所有 js 拷贝到 build 根目录
+# A. 修复 JS 路径
 RUN cp src/vendor/*.js build/
-# 2. 强行修改 index.html，把 src="sigma..." 替换为绝对路径 src="/sigma..."
-RUN sed -i 's|src="sigma|src="/sigma|g' build/index.html
+# 强制 Base URL 为根目录
+RUN sed -i 's|<head>|<head><base href="/">|g' build/index.html
 
-# B. 修复样式丢失
+# B. 修复样式
 RUN cp -r src/styles build/styles
 
-# C. 准备数据目录 (数据会由 GitHub Action 下载并拷进来)
-# 这一步确保目录存在，防止拷贝失败
+# C. 复制数据
 RUN mkdir -p build/data
+# 【关键修改】hf-data/my_model_galaxy 是上一步 scp 下来的文件夹
+# 我们把它拷贝到 build/data/my_model_galaxy
+COPY hf-data/my_model_galaxy build/data/my_model_galaxy
 
-# D. 复制下载好的数据 (从 hf-data 到 build/data)
-COPY hf-data/galaxy_output_data build/data/my_model_galaxy
+# D. 【构建自检】确保 manifest.json 真的存在！
+# 如果这一步报错 (No such file)，说明数据没拷对，构建会直接失败，方便排查
+RUN ls -lh build/data/my_model_galaxy/manifest.json
 
-# --- 调试：列出文件确保都在 (构建日志里能看到) ---
-RUN ls -R build
+# --------------------
 
-# 4. 安装 serve
+# 4. 安装 Web Server
 RUN npm install -g serve@13
 
 EXPOSE 7860
-# 启动时开启 CORS 支持，虽然同源可能不需要，但加上保险
 CMD ["serve", "-s", "build", "-l", "7860", "--cors"]

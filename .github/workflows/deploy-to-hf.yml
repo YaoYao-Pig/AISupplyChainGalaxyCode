@@ -13,29 +13,29 @@ jobs:
         uses: actions/checkout@v3
 
       # 1. 修改 Config (使用绝对路径 /data/)
-      # 这样无论 URL 是 /galaxy 还是 /foo/bar，它都会去根目录找 data
       - name: Configure Data Source
         run: |
           sed -i "s|http://localhost:9090/|/data/|g" src/config.js
           echo "Config updated: Data source set to absolute path '/data/'"
           grep "dataUrl" src/config.js
 
-      # 2. 从阿里云下载数据 (带调试)
+      # 2. 从阿里云下载数据 (整文件夹下载)
       - name: Download Data from Aliyun
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
           sudo apt-get update && sudo apt-get install -y sshpass
-          mkdir -p hf-data/galaxy_output_data
+          # 创建父目录
+          mkdir -p hf-data
           
-          echo "--> Test connection and list remote files:"
-          sshpass -e ssh -o StrictHostKeyChecking=no root@8.159.137.183 "ls -lh /var/www/galaxy_data/my_model_galaxy/ | head -n 5"
+          echo "--> Starting Download from Aliyun..."
+          # 【关键修改】直接下载整个 my_model_galaxy 文件夹到 hf-data 目录下
+          # 结果会在 hf-data/my_model_galaxy/ 里，结构非常清晰
+          sshpass -e scp -o StrictHostKeyChecking=no -r root@8.159.137.183:/var/www/galaxy_data/my_model_galaxy hf-data/
           
-          echo "--> Starting Download..."
-          sshpass -e scp -o StrictHostKeyChecking=no -r root@8.159.137.183:/var/www/galaxy_data/my_model_galaxy/* hf-data/galaxy_output_data/
-          
-          echo "--> Local Data Check (Top 5 files):"
-          ls -lh hf-data/galaxy_output_data/ | head -n 5
+          echo "--> Data Structure Check:"
+          # 打印目录结构，确认 manifest.json 在正确的位置
+          ls -R hf-data | grep manifest.json || echo "WARNING: manifest.json not found!"
 
       # 3. 推送到 Hugging Face
       - name: Push to Hugging Face Hub
@@ -53,14 +53,16 @@ jobs:
           find . -maxdepth 1 ! -name '.git' ! -name '.gitattributes' ! -name 'README.md' ! -name '.' -exec rm -rf {} +
           
           git lfs install
-          git lfs track "hf-data/galaxy_output_data/**"
+          # 追踪 hf-data 下的所有大文件
+          git lfs track "hf-data/**"
           
-          # 复制新代码 (包含刚刚下载的 hf-data)
+          # 复制新代码
           cp -r $GITHUB_WORKSPACE/* .
           
           rm -f "初赛PPT.pdf" "复赛PPT.pdf"
           rm -rf .git/modules
 
+          # 自动生成 README 配置
           echo "---
           title: Model Galaxy
           emoji: 🌌
@@ -79,5 +81,5 @@ jobs:
           rm README_HEADER.md
 
           git add .
-          git commit -m "Deploy: fixed paths and data" --allow-empty
+          git commit -m "Deploy: fixed folder structure" --allow-empty
           git push --force
