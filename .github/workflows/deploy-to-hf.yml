@@ -47,23 +47,25 @@ jobs:
       - name: Push to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          # 修改下面的变量为你自己的 Hugging Face 用户名和 Space 名称
-          HF_USERNAME: "MrYaoYaozhu"     # 例如: jarrodbarnes
-          HF_SPACE_NAME: "ModelGalaxy"  # 例如: my-react-app
+          HF_USERNAME: "你的HF用户名"
+          HF_SPACE_NAME: "你的Space名称"
         run: |
-          # 配置 Git 信息
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           
-          # 克隆 HF Space 仓库到临时目录
+          # 1. 克隆仓库
           git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME /tmp/hf_space
           
-          # 关键步骤：只复制 build 目录下的内容到 Space 根目录
-          # 因为 Static Space 需要 index.html 在根目录下
-          cp -r build/* /tmp/hf_space/
-          
-          # 提交并推送
+          # 2. 【新增】清理旧文件 (保留 .git 和 README.md)
           cd /tmp/hf_space
+          find . -maxdepth 1 ! -name '.git' ! -name 'README.md' ! -name '.gitattributes' ! -name '.' -exec rm -rf {} +
+          
+          # 3. 复制新构建的文件
+          # 注意：这里假设你在上一步构建生成的 build 目录在 GitHub 工作区的根目录下
+          # 我们需要回到 GitHub 工作区把文件拷过来
+          cp -r $GITHUB_WORKSPACE/build/* .
+          
+          # 4. 提交并推送
           git add .
-          git commit -m "Deploy from GitHub Actions: commit ${{ github.sha }}" --allow-empty
+          git commit -m "Deploy: clean and push" --allow-empty
           git push --force
