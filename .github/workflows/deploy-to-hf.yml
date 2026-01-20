@@ -19,7 +19,7 @@ jobs:
           echo "Config updated: Data source set to absolute path '/data/'"
           grep "dataUrl" src/config.js
 
-      # 2. 从阿里云下载数据 (整文件夹下载)
+      # 2. 从阿里云下载数据
       - name: Download Data from Aliyun
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
@@ -29,12 +29,10 @@ jobs:
           mkdir -p hf-data
           
           echo "--> Starting Download from Aliyun..."
-          # 【关键修改】直接下载整个 my_model_galaxy 文件夹到 hf-data 目录下
-          # 结果会在 hf-data/my_model_galaxy/ 里，结构非常清晰
+          # 下载整个 my_model_galaxy 文件夹
           sshpass -e scp -o StrictHostKeyChecking=no -r root@8.159.137.183:/var/www/galaxy_data/my_model_galaxy hf-data/
           
           echo "--> Data Structure Check:"
-          # 打印目录结构，确认 manifest.json 在正确的位置
           ls -R hf-data | grep manifest.json || echo "WARNING: manifest.json not found!"
 
       # 3. 推送到 Hugging Face
@@ -47,18 +45,24 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           
+          # 克隆
           git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME /tmp/hf_space
           
+          # 清理旧文件 (保留 .git 和 .gitattributes)
           cd /tmp/hf_space
           find . -maxdepth 1 ! -name '.git' ! -name '.gitattributes' ! -name 'README.md' ! -name '.' -exec rm -rf {} +
           
-          git lfs install
-          # 追踪 hf-data 下的所有大文件
-          git lfs track "hf-data/**"
-          
-          # 复制新代码
+          # 【关键修改】先复制新文件（让硬盘上有文件）
+          echo "--> Copying new files..."
           cp -r $GITHUB_WORKSPACE/* .
           
+          # 【关键修改】然后再配置 LFS（这时候文件都在，就不会报错了）
+          echo "--> Configuring LFS..."
+          git lfs install
+          # 追踪 hf-data 目录下的所有文件
+          git lfs track "hf-data/**"
+          
+          # 删除不需要的 PDF 和 git 嵌套
           rm -f "初赛PPT.pdf" "复赛PPT.pdf"
           rm -rf .git/modules
 
@@ -80,6 +84,8 @@ jobs:
           fi
           rm README_HEADER.md
 
+          # 提交
+          echo "--> Committing and Pushing..."
           git add .
-          git commit -m "Deploy: fixed folder structure" --allow-empty
+          git commit -m "Deploy: fixed LFS order" --allow-empty
           git push --force
