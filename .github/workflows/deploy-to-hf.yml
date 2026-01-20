@@ -9,14 +9,12 @@ jobs:
   sync-to-hf:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出代码
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           lfs: true
 
-      # 2. 修改配置文件 (注入后端地址)
       - name: Configure for Production
         run: |
           if [ -n "${{ secrets.PROD_DATA_URL }}" ]; then
@@ -26,44 +24,52 @@ jobs:
             echo "Warning: PROD_DATA_URL secret is not set."
           fi
 
-      # 3. 推送代码到 Hugging Face (带文件过滤)
       - name: Push to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          # 填入你报错信息里的用户名和Space名
           HF_USERNAME: "MrYaoYaozhu"
           HF_SPACE_NAME: "ModelGalaxy"
         run: |
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           
-          # --- 关键修改开始 ---
-          
-          # A. 先把 Hugging Face 的仓库克隆下来
+          # 1. 克隆 HF 仓库
           git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME /tmp/hf_space
           
-          # B. 进入 HF 仓库目录
+          # 2. 清理旧文件 (保留 .git)
           cd /tmp/hf_space
+          find . -maxdepth 1 ! -name '.git' ! -name '.gitattributes' ! -name '.' -exec rm -rf {} +
           
-          # C. 清理旧文件（保留 README 和 .git）
-          # 这样可以防止之前残留的垃圾文件导致构建失败
-          find . -maxdepth 1 ! -name '.git' ! -name 'README.md' ! -name '.gitattributes' ! -name '.' -exec rm -rf {} +
-          
-          # D. 把 GitHub 里的代码复制过来
-          # $GITHUB_WORKSPACE 是 GitHub Action 下载你代码的地方
+          # 3. 复制新代码
           cp -r $GITHUB_WORKSPACE/* .
           
-          # E. 【核心步骤】删除导致报错的大文件！
-          # 在提交之前把 PDF 删掉，这样 Hugging Face 就收不到它们了
+          # 4. 删除大文件
           rm -f "初赛PPT.pdf" "复赛PPT.pdf"
-          
-          # F. 也要删除 .git 文件夹（因为复制过来时可能带过来了，我们不需要嵌套的 git）
           rm -rf .git/modules
-          # 注意：不要删掉根目录的 .git，那是 HF 仓库自己的
+
+          # --- 关键修改：自动生成带配置的 README.md ---
+          # 这一步会创建一个临时的头部文件，然后把你原来的 README 接在后面
+          echo "---
+          title: Model Galaxy
+          emoji: 🌌
+          colorFrom: blue
+          colorTo: purple
+          sdk: docker
+          pinned: false
+          ---" > README_HEADER.md
           
-          # --- 关键修改结束 ---
+          # 如果原项目有 README.md，就拼接到配置后面；如果没有，就只保留配置
+          if [ -f "README.md" ]; then
+            cat README_HEADER.md README.md > README_NEW.md
+            mv README_NEW.md README.md
+          else
+            mv README_HEADER.md README.md
+          fi
           
-          # G. 提交并强制推送
+          rm -f README_HEADER.md
+          # ------------------------------------------
+
+          # 5. 提交并推送
           git add .
-          git commit -m "Deploy: removed large PDFs to fix push error" --allow-empty
+          git commit -m "Deploy: auto-inject readme config" --allow-empty
           git push --force
