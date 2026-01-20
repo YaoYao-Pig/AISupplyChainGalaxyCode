@@ -25,7 +25,8 @@ RUN cp -r src/styles build/styles
 RUN mkdir -p build/data
 # 【关键修改】hf-data/my_model_galaxy 是上一步 scp 下来的文件夹
 # 我们把它拷贝到 build/data/my_model_galaxy
-COPY hf-data/my_model_galaxy build/data/my_model_galaxy
+# 注意：源路径多加一层 /my_model_galaxy
+COPY hf-data/my_model_galaxy/my_model_galaxy build/data/my_model_galaxy
 
 # D. 【构建自检】确保 manifest.json 真的存在！
 # 如果这一步报错 (No such file)，说明数据没拷对，构建会直接失败，方便排查
