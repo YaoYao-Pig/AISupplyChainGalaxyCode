@@ -47,8 +47,8 @@ jobs:
       - name: Push to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_USERNAME: "你的HF用户名"
-          HF_SPACE_NAME: "你的Space名称"
+          HF_USERNAME: "MrYaoYaozhu"
+          HF_SPACE_NAME: "ModelGalaxy"
         run: |
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
