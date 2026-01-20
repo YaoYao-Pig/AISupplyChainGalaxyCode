@@ -49,7 +49,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_USERNAME: "MrYaoYaozhu"
           HF_SPACE_NAME: "ModelGalaxy"
-      run: |
+        run: |
           # 1. 配置 Git 身份
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
