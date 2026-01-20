@@ -9,38 +9,35 @@ jobs:
   sync-to-hf:
     runs-on: ubuntu-latest
     steps:
-      # 1. 检出代码
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # 2. 修改前端配置 (指向本地 data/)
+      # 1. 修改 Config (使用绝对路径 /data/)
+      # 这样无论 URL 是 /galaxy 还是 /foo/bar，它都会去根目录找 data
       - name: Configure Data Source
         run: |
-          sed -i "s|http://localhost:9090/|data/|g" src/config.js
-          echo "Config updated: Data source set to 'data/'"
+          sed -i "s|http://localhost:9090/|/data/|g" src/config.js
+          echo "Config updated: Data source set to absolute path '/data/'"
+          grep "dataUrl" src/config.js
 
-      # 3. 【核心步骤】从阿里云下载数据
+      # 2. 从阿里云下载数据 (带调试)
       - name: Download Data from Aliyun
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
-          # A. 安装 sshpass (用于在命令行输入密码)
-          sudo apt-get update
-          sudo apt-get install -y sshpass
-
-          # B. 创建存放目录
+          sudo apt-get update && sudo apt-get install -y sshpass
           mkdir -p hf-data/galaxy_output_data
-
-          # C. 使用 SCP 拉取数据 (反向操作)
-          # -o StrictHostKeyChecking=no: 跳过 SSH 首次连接的 yes/no 确认
-          # -r: 递归下载文件夹
-          echo "Starting download from Aliyun (approx 2GB)..."
+          
+          echo "--> Test connection and list remote files:"
+          sshpass -e ssh -o StrictHostKeyChecking=no root@8.159.137.183 "ls -lh /var/www/galaxy_data/my_model_galaxy/ | head -n 5"
+          
+          echo "--> Starting Download..."
           sshpass -e scp -o StrictHostKeyChecking=no -r root@8.159.137.183:/var/www/galaxy_data/my_model_galaxy/* hf-data/galaxy_output_data/
           
-          # D. 检查一下是否下载成功
+          echo "--> Local Data Check (Top 5 files):"
           ls -lh hf-data/galaxy_output_data/ | head -n 5
 
-      # 4. 推送到 Hugging Face
+      # 3. 推送到 Hugging Face
       - name: Push to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -50,27 +47,20 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           
-          # A. 克隆 HF 仓库
           git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME /tmp/hf_space
           
-          # B. 清理旧文件 (全清理，准备覆盖)
           cd /tmp/hf_space
           find . -maxdepth 1 ! -name '.git' ! -name '.gitattributes' ! -name 'README.md' ! -name '.' -exec rm -rf {} +
           
-          # C. 开启 Git LFS (重要！因为数据有 2G)
           git lfs install
-          # 追踪所有 json 文件 (假设你的数据是 json，如果是其他格式请修改，或者直接追踪整个文件夹)
           git lfs track "hf-data/galaxy_output_data/**"
           
-          # D. 复制新代码 + 刚刚下载的数据
-          # 注意：$GITHUB_WORKSPACE 里现在已经包含了 hf-data 文件夹
+          # 复制新代码 (包含刚刚下载的 hf-data)
           cp -r $GITHUB_WORKSPACE/* .
           
-          # E. 再次清理不需要的 PPT
           rm -f "初赛PPT.pdf" "复赛PPT.pdf"
           rm -rf .git/modules
 
-          # F. 自动生成 README 配置
           echo "---
           title: Model Galaxy
           emoji: 🌌
@@ -88,7 +78,6 @@ jobs:
           fi
           rm README_HEADER.md
 
-          # G. 提交并推送
           git add .
-          git commit -m "Deploy: auto-fetched aliyun data" --allow-empty
+          git commit -m "Deploy: fixed paths and data" --allow-empty
           git push --force
