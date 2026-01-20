@@ -48,8 +48,8 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           # 修改下面的变量为你自己的 Hugging Face 用户名和 Space 名称
-          HF_USERNAME: "你的HF用户名"     # 例如: jarrodbarnes
-          HF_SPACE_NAME: "你的Space名称"  # 例如: my-react-app
+          HF_USERNAME: "MrYaoYaozhu"     # 例如: jarrodbarnes
+          HF_SPACE_NAME: "ModelGalaxy"  # 例如: my-react-app
         run: |
           # 配置 Git 信息
           git config --global user.email "action@github.com"
