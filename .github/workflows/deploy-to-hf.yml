@@ -1,0 +1,69 @@
+name: Deploy to Hugging Face Space
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      # 2. 设置 Node.js 环境 (保持和你原有的 deploy.yml 一致)
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # 3. 安装依赖
+      - name: Install Dependencies
+        run: npm install
+
+      # 4. 修改配置文件 (保留你原有的逻辑，替换 localhost 为生产地址)
+      # 确保你在 GitHub Secrets 里配置了 PROD_DATA_URL
+      - name: Configure for Production
+        run: |
+          if [ -n "${{ secrets.PROD_DATA_URL }}" ]; then
+            sed -i "s|http://localhost:9090/|${{ secrets.PROD_DATA_URL }}|g" src/config.js
+            echo "Successfully updated config.js with production URL."
+          else
+            echo "Warning: PROD_DATA_URL secret is not set. Skipping config replacement."
+          fi
+
+      # 5. 构建项目 (生成 build 文件夹)
+      - name: Build Project
+        run: npm run build
+
+      # 6. 推送到 Hugging Face Space
+      - name: Push to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          # 修改下面的变量为你自己的 Hugging Face 用户名和 Space 名称
+          HF_USERNAME: "你的HF用户名"     # 例如: jarrodbarnes
+          HF_SPACE_NAME: "你的Space名称"  # 例如: my-react-app
+        run: |
+          # 配置 Git 信息
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          
+          # 克隆 HF Space 仓库到临时目录
+          git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME /tmp/hf_space
+          
+          # 关键步骤：只复制 build 目录下的内容到 Space 根目录
+          # 因为 Static Space 需要 index.html 在根目录下
+          cp -r build/* /tmp/hf_space/
+          
+          # 提交并推送
+          cd /tmp/hf_space
+          git add .
+          git commit -m "Deploy from GitHub Actions: commit ${{ github.sha }}" --allow-empty
+          git push --force
