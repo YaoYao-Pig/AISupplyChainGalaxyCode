@@ -1,4 +1,4 @@
-name: Deploy to Hugging Face Space (Full Auto)
+name: Deploy to Hugging Face Space (Clean Force)
 
 on:
   push:
@@ -12,30 +12,28 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # 1. 修改 Config (使用绝对路径 /data/)
+      # 1. 修改 Config (绝对路径)
       - name: Configure Data Source
         run: |
           sed -i "s|http://localhost:9090/|/data/|g" src/config.js
           echo "Config updated: Data source set to absolute path '/data/'"
-          grep "dataUrl" src/config.js
 
-      # 2. 从阿里云下载数据
+      # 2. 从阿里云下载数据 (结构: hf-data/my_model_galaxy)
       - name: Download Data from Aliyun
         env:
           SSHPASS: ${{ secrets.SSH_PASSWORD }}
         run: |
           sudo apt-get update && sudo apt-get install -y sshpass
-          # 创建父目录
           mkdir -p hf-data
           
           echo "--> Starting Download from Aliyun..."
-          # 下载整个 my_model_galaxy 文件夹
+          # 直接下载 my_model_galaxy 文件夹到 hf-data 目录下
           sshpass -e scp -o StrictHostKeyChecking=no -r root@8.159.137.183:/var/www/galaxy_data/my_model_galaxy hf-data/
           
-          echo "--> Data Structure Check:"
-          ls -R hf-data | grep manifest.json || echo "WARNING: manifest.json not found!"
+          echo "--> Verifying Data..."
+          ls -R hf-data | grep manifest.json || echo "WARNING: manifest.json missing!"
 
-      # 3. 推送到 Hugging Face
+      # 3. 推送到 Hugging Face (使用孤儿分支策略)
       - name: Push to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -45,28 +43,32 @@ jobs:
           git config --global user.email "action@github.com"
           git config --global user.name "GitHub Action"
           
-          # 克隆
+          # A. 克隆仓库 (仅用于获取远程地址和权限)
           git clone https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE_NAME /tmp/hf_space
-          
-          # 清理旧文件 (保留 .git 和 .gitattributes)
           cd /tmp/hf_space
-          find . -maxdepth 1 ! -name '.git' ! -name '.gitattributes' ! -name 'README.md' ! -name '.' -exec rm -rf {} +
           
-          # 【关键修改】先复制新文件（让硬盘上有文件）
+          # B. 【核心绝招】切换到孤儿分支 (Orphan Branch)
+          # 这会创建一个没有任何历史记录的全新分支，相当于一张白纸
+          git checkout --orphan clean-deploy
+          
+          # C. 清空暂存区和工作区 (彻底清除所有旧文件的幽灵)
+          git rm -rf .
+          
+          # D. 复制新文件进来
+          # 现在目录是空的，我们把 GitHub 里的新代码和数据搬进来
           echo "--> Copying new files..."
           cp -r $GITHUB_WORKSPACE/* .
           
-          # 【关键修改】然后再配置 LFS（这时候文件都在，就不会报错了）
-          echo "--> Configuring LFS..."
-          git lfs install
-          # 追踪 hf-data 目录下的所有文件
-          git lfs track "hf-data/**"
-          
-          # 删除不需要的 PDF 和 git 嵌套
+          # E. 清理不需要的文件
           rm -f "初赛PPT.pdf" "复赛PPT.pdf"
           rm -rf .git/modules
-
-          # 自动生成 README 配置
+          
+          # F. 重新初始化 LFS (在新环境下追踪)
+          git lfs install
+          # 追踪 hf-data 下的所有文件 (确保大文件被 LFS 管理)
+          git lfs track "hf-data/**"
+          
+          # G. 生成配置文件
           echo "---
           title: Model Galaxy
           emoji: 🌌
@@ -83,9 +85,11 @@ jobs:
             mv README_HEADER.md README.md
           fi
           rm README_HEADER.md
-
-          # 提交
-          echo "--> Committing and Pushing..."
+          
+          # H. 提交并强制推送到 main
           git add .
-          git commit -m "Deploy: fixed LFS order" --allow-empty
-          git push --force
+          git commit -m "Deploy: clean force push with new data structure"
+          
+          # 强制把这个全新的孤儿分支推送到远程的 main 分支
+          # 这会覆盖掉远程所有的旧历史，彻底根除 LFS 报错
+          git push --force origin clean-deploy:main
