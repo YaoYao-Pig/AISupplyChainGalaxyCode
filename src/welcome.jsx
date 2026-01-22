@@ -1,89 +1,173 @@
 import React from "react";
-import Destination from './destination.jsx';
 
 export default class WelcomePage extends React.Component {
   render() {
+    // 纯黑极简风格样式定义
+    const styles = {
+      pageContainer: {
+        backgroundColor: '#000000',
+        minHeight: '100vh',
+        color: '#e0e0e0',
+        fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+        overflowX: 'hidden'
+      },
+      // 顶部导航
+      topNav: {
+        padding: '20px 40px',
+        display: 'flex',
+        justifyContent: 'flex-end',
+        fontSize: '14px',
+        borderBottom: '1px solid #222'
+      },
+      navLink: {
+        color: '#888',
+        textDecoration: 'none',
+        marginLeft: '30px',
+        transition: 'color 0.3s'
+      },
+      // 核心区域
+      heroSection: {
+        textAlign: 'center',
+        padding: '80px 20px 60px',
+      },
+      mainTitle: {
+        fontSize: '48px',
+        fontWeight: '700',
+        color: '#ffffff',
+        marginBottom: '20px',
+        letterSpacing: '2px'
+      },
+      subTitle: {
+        fontSize: '20px',
+        color: '#666',
+        fontWeight: '300',
+        marginBottom: '50px'
+      },
+      // 按钮样式
+      enterButton: {
+        display: 'inline-block',
+        padding: '15px 50px',
+        fontSize: '18px',
+        color: '#000',
+        backgroundColor: '#fff',
+        border: '1px solid #fff',
+        borderRadius: '2px', // 稍微硬朗一点的圆角
+        textDecoration: 'none',
+        fontWeight: 'bold',
+        transition: 'all 0.3s ease',
+        marginTop: '20px'
+      },
+      // 分栏区域
+      featuresSection: {
+        padding: '60px 0',
+        backgroundColor: '#050505', // 比背景稍亮一点区分区块
+        borderTop: '1px solid #1a1a1a',
+        borderBottom: '1px solid #1a1a1a',
+        flexGrow: 1
+      },
+      featureCol: {
+        textAlign: 'left',
+        padding: '20px'
+      },
+      featureIcon: {
+        fontSize: '24px',
+        marginBottom: '15px',
+        color: '#fff',
+        border: '1px solid #333',
+        display: 'inline-block',
+        width: '50px',
+        height: '50px',
+        lineHeight: '50px',
+        textAlign: 'center',
+        borderRadius: '50%'
+      },
+      featureTitle: {
+        fontSize: '20px',
+        fontWeight: '600',
+        color: '#fff',
+        marginBottom: '15px'
+      },
+      featureDesc: {
+        fontSize: '15px',
+        lineHeight: '1.8',
+        color: '#888'
+      },
+      footer: {
+        textAlign: 'center',
+        padding: '30px',
+        fontSize: '12px',
+        color: '#444'
+      }
+    };
+
     return (
-      <div className='container'>
-        <h1>Welcome to the Code Galaxies, Commander</h1>
-        <h2>Choose your destination:</h2>
-        <div className='media-list'>
-          <Destination description='Client side JavaScript package manager'
-                      href='#/galaxy/bower?l=1'
-                      media='bower_fly_first.png'
-                      name='Bower'/>
+      <div style={styles.pageContainer}>
+        {/* Top Navigation */}
+        <div style={styles.topNav}>
+          <a href="https://github.com/YaoYao-Pig/AISupplyChainGalaxyCode" target="_blank" style={styles.navLink}>GITHUB</a>
+          <a href="https://github.com/YaoYao-Pig" style={styles.navLink}>CONTACT</a>
+        </div>
 
-          <Destination description='Package manager for PHP'
-                      href='#/galaxy/composer?l=1'
-                      media='composer_fly_first.png'
-                      name='Composer'/>
+        {/* Hero Title Area */}
+        <div style={styles.heroSection}>
+          <h1 style={styles.mainTitle}> Model Galaxy </h1>
+          <p style={styles.subTitle}>Mapping the Genealogy and Dependencies of Artificial Intelligence</p>
+          
+          <a href='#/galaxy/my_model_galaxy?cx=0&cy=0&cz=0&l=1' style={styles.enterButton}>
+            ENTER GALAXY
+          </a>
+        </div>
 
-          <Destination description='Package manager for Ruby'
-                      href='#/galaxy/rubygems?l=1'
-                      media='ruby_fly_first.png'
-                      name='RubyGems'/>
+        {/* 3-Column Feature Introduction */}
+        <div style={styles.featuresSection}>
+          <div className='container'>
+            <div className='row'>
+              
+              {/* Column 1: Visualization */}
+              <div className='col-md-4' style={styles.featureCol}>
+                <div style={styles.featureIcon}>✦</div>
+                <h3 style={styles.featureTitle}>Global Visualization</h3>
+                <p style={styles.featureDesc}>
+                  Provides a 3D interactive map of the AI ecosystem. 
+                  Every node represents a model, visualizing the complex structure of the open-source community like a universe of stars.
+                  <br/><br/>
+                  <strong>全景可视化：</strong> 将 AI 开源社区构建为三维星系，直观展示海量模型的分布与聚类。
+                </p>
+              </div>
 
-          <Destination description='JavaScript package manager'
-                      href='#/galaxy/npm?cx=-1345&cy=-7006&cz=-6553&lx=0.621700613972938&ly=-0.6458651572907126&lz=0.30983196944957914&lw=0.31678177960626197&l=1'
-                      media='npm_fly_first.png'
-                      name='npm'/>
+              {/* Column 2: Supply Chain */}
+              <div className='col-md-4' style={styles.featureCol}>
+                <div style={styles.featureIcon}>☍</div>
+                <h3 style={styles.featureTitle}>Supply Chain Traceability</h3>
+                <p style={styles.featureDesc}>
+                  Tracks the lineage of models (Base Model -> Fine-tuned Model). 
+                  Understand where a model comes from, its dependencies, and potential license risks in the supply chain.
+                  <br/><br/>
+                  <strong>供应链溯源：</strong> 深度解析模型间的“父子”微调关系，追踪模型血缘，识别供应链上下游依赖。
+                </p>
+              </div>
 
-          <Destination description='Packages from Go language (based on go-search.org)'
-                      href='#/galaxy/gosearch?l=1'
-                      media='go_fly_first.png'
-                      name='Go Search'/>
+              {/* Column 3: Data Driven */}
+              <div className='col-md-4' style={styles.featureCol}>
+                <div style={styles.featureIcon}>💾</div>
+                <h3 style={styles.featureTitle}>Data Driven</h3>
+                <p style={styles.featureDesc}>
+                  Powered by real-time data from Hugging Face and other open platforms. 
+                  We analyze metadata to construct an accurate graph of the evolving AI landscape.
+                  <br/><br/>
+                  <strong>数据驱动：</strong> 基于 Hugging Face 等平台的实时数据，通过算法构建动态更新的模型演化图谱。
+                </p>
+              </div>
 
-          <Destination description='Python Package Index'
-                      href='#/galaxy/python?cx=-2700&cy=377&cz=5622&lx=-0.0869&ly=-0.2315&lz=-0.0338&lw=0.9684&ml=150&s=1.75&l=1&v=2015-09-27T13-00-00Z'
-                      media='composer_fly_first.png'
-                      name='Python (PyPI)'/>
+            </div>
+          </div>
+        </div>
 
-          <Destination description='Packages from .NET world'
-                      href='#/galaxy/nuget?l=1'
-                      media='nuget_fly_first.png'
-                      name='NuGet'/>
-
-          <Destination description='CRAN - network of R packages'
-                      href='#/galaxy/cran?cx=-2482&cy=-5685&cz=-291&lx=0.2264&ly=-0.6790&lz=0.4330&lw=0.5480&ml=200&s=2.75&l=1'
-                      media='cran_fly_first.png'
-                      name='R Language'/>
-
-          <Destination description='Debian Package Manager'
-                      href='#/galaxy/debian?cx=-201&cy=-6170&cz=-6841&lx=0.5676&ly=-0.7456&lz=0.2400&lw=0.2536&ml=150&s=1.75&l=1'
-                      media='debian_fly_first.png'
-                      name='Debian'/>
-
-          <Destination description='Fedora Packages'
-                      href='#/galaxy/fedora?cx=1539&cy=409&cz=7141&lx=0.0164&ly=0.1453&lz=-0.0027&lw=0.9892&ml=150&s=1.75&l=1&v=2015-09-02T00-00-00Z'
-                      media='debian_fly_first.png'
-                      name='Fedora'/>
-
-          <Destination description='Arch Linux packages without AUR'
-                      href='#/galaxy/arch?cx=870&cy=-3968&cz=-2010&lx=0.7695&ly=-0.3554&lz=0.3109&lw=0.4299&ml=150&s=1.75&l=1&v=no-aur'
-                      media='archlinux_fly_first.png'
-                      name='Arch Linux'/>
-
-          <Destination description='Arch Linux packages with AUR included'
-                      href='#/galaxy/arch?cx=2655&cy=859&cz=7898&lx=0.2160&ly=0.0620&lz=0.8560&lw=0.4656&ml=150&s=1.75&l=1&v=including-aur'
-                      media='archlinux_aur_fly_first.png'
-                      name='Arch Linux + AUR'/>
-
-          <Destination description='Homebrew is missing package manager for OSX'
-                      href='#/galaxy/brew?cx=-803&cy=-3622&cz=-1640&lx=0.3774&ly=-0.7360&lz=0.4338&lw=0.3573&ml=200&s=2.75&l=1'
-                      media='brew_fly_first.png'
-                      name='Brew'/>
-
-          <Destination description='Rust package repository (crates.io)'
-                      href='#/galaxy/crates?cx=6617&cy=467&cz=353&lx=0.0169&ly=0.7328&lz=0.0495&lw=0.6785&ml=200&s=1.75&l=1&v=2020-02-19T00-00-00Z'
-                      static='https://i.imgur.com/vAPK5lT.png'
-                      dynamic='https://i.imgur.com/BRcE24z.gif'
-                      name='Rust'/>
-
-          <Destination description='A delightful language'
-                      href='#/galaxy/elm?cx=-247&cy=-1794&cz=1804&lx=0.4062&ly=0.1564&lz=-0.3016&lw=0.8483&ml=150&s=1.75&l=1&v=2020-02-21T00-00-00Z'
-                      static='https://i.imgur.com/44Sj8Js.png'
-                      dynamic='https://i.imgur.com/zfQTac3.gif'
-                      name='Elm'/>
+        {/* Footer */}
+        <div style={styles.footer}>
+          &copy; Model Galaxy Project. Open Source & Non-Profit.
         </div>
       </div>
     );
