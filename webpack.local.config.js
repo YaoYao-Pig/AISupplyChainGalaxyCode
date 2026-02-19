@@ -39,7 +39,12 @@ module.exports = {
         path.join(__dirname, "node_modules/another-package-that-needs-compiling")
       ],
       loaders: ["react-hot", "babel-loader"]
-    }, {
+    },{
+      // --- 新增内容：处理 .md 文件 ---
+      test: /\.md$/,
+      loader: 'raw-loader'
+    }, 
+    {
       test: /\.less$/,
       loader: ExtractTextPlugin.extract('css!less')
     }, {

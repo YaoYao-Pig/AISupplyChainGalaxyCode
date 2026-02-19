@@ -106,6 +106,7 @@ export default class WelcomePage extends React.Component {
       <div style={styles.pageContainer}>
         {/* Top Navigation */}
         <div style={styles.topNav}>
+          <a href="#/docs" style={styles.navLink}>DOCUMENTATION</a> {/* 新增入口 */}
           <a href="https://github.com/YaoYao-Pig/AISupplyChainGalaxyCode" target="_blank" style={styles.navLink}>GITHUB</a>
           <a href="https://github.com/YaoYao-Pig" style={styles.navLink}>CONTACT</a>
         </div>
