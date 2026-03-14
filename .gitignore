@@ -33,6 +33,6 @@ images/
 
 *.parquet
 *.csv
-*.json
+./hf-data/dataTransfer/*.json
 
 hf-data/dataTransfer/*.json

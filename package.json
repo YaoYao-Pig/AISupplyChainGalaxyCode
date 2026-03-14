@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "mkdir -p ./build && cp ./src/index.html ./build/ && webpack -p --config webpack.production.config.js",
-    "start": "PORT=8081 node dev-server.js"
+    "start": "PORT=8081 node dev-server.js",
+    "check:boundaries": "node tools/quality/check-module-boundaries.js",
+    "check:vibe": "npm run check:boundaries"
   },
   "repository": {
     "type": "git",
@@ -77,3 +79,4 @@
     "webpack": "^1.9.11"
   }
 }
+

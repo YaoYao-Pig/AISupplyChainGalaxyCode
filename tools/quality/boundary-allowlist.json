@@ -1,0 +1,25 @@
+{
+  "violations": [
+    {
+      "file": "src/galaxy/native/sceneKeyboardBinding.js",
+      "from": "native",
+      "to": "nodeDetails",
+      "dep": "../nodeDetails/nodeDetailsStore.js",
+      "reason": "Legacy coupling: keyboard binding currently reads selected node state directly"
+    },
+    {
+      "file": "src/galaxy/service/graphLoader.js",
+      "from": "service",
+      "to": "native",
+      "dep": "../native/appConfig.js",
+      "reason": "Legacy coupling: graph loading depends on rendering related configuration"
+    },
+    {
+      "file": "src/galaxy/store/minimapStore.js",
+      "from": "store",
+      "to": "nodeDetails",
+      "dep": "../nodeDetails/nodeDetailsStore.js",
+      "reason": "Legacy coupling: minimap reacts to selected node details state"
+    }
+  ]
+}

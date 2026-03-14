@@ -19,6 +19,9 @@ module.exports = {
       exclude: /node_modules/,
       loader: "babel-loader"
     }, {
+      test: /\.md$/,
+      loader: 'raw-loader'
+    }, {
       test: /\.less$/,
       loader: ExtractTextPlugin.extract('css-loader!less-loader')
     }, {
