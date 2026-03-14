@@ -5,7 +5,7 @@ import DegreeWindowViewModel from './degreeWindowViewModel.js';
 import getBaseNodeViewModel from '../store/baseNodeViewModel.js';
 import eventify from 'ngraph.events';
 
-const searchResultsWindowId = 'search-results';
+const degreeWindowId = 'degree';
 
 export default nodeDetailsStore();
 
@@ -21,7 +21,6 @@ function nodeDetailsStore() {
     getSidebarData: () => sidebarData,
   };
 
-  // --- 所有事件监听器都应该在这里注册 ---
   appEvents.selectNode.on(updateDetails);
   appEvents.showDegree.on(updateDegreeDetails);
   appEvents.focusNextInChain.on(focusNextInChain);
@@ -33,18 +32,16 @@ function nodeDetailsStore() {
     if (chain.length === 0) return;
 
     chainFocusIndex = (chainFocusIndex + 1) % chain.length;
-    
+
     const nextNodeInChain = chain[chainFocusIndex];
     const nextNodeId = scene.getNodeIdByModelId(nextNodeInChain.model);
 
     if (nextNodeId !== undefined) {
         console.log(`Focusing on next in chain (index ${chainFocusIndex}): ${nextNodeInChain.model}`);
-        
-        // 调用 focusOnNode，并传递 false，告诉它不要触发 selectNode 事件
-        appEvents.focusOnNode.fire(nextNodeId, false); 
+        appEvents.focusOnNode.fire(nextNodeId, false);
     }
   }
-  // --- 核心修正: 将高亮链的监听器移动到这里 ---
+
   appEvents.highlightChain.on(chain => {
     if (!Array.isArray(chain)) return;
 
@@ -58,18 +55,14 @@ function nodeDetailsStore() {
             return { id: nodeId, license: license };
         })
         .filter(node => node !== null);
-    
+
     if (nodesToHighlight.length > 0) {
         appEvents.cls.fire();
         appEvents.highlightChainWithData.fire(nodesToHighlight);
-
-        // --- 新增: 触发相机聚焦事件，并传递节点ID列表 ---
         const nodeIds = nodesToHighlight.map(n => n.id);
         appEvents.focusOnArea.fire(nodeIds);
-        // --- 新增结束 ---
     }
   });
-  // --- 修正结束 ---
 
   eventify(api);
   return api;
@@ -85,8 +78,6 @@ function nodeDetailsStore() {
     if (nodeId === undefined || nodeId === null) {
       sidebarData = null;
     } else {
-      // --- 核心修复：在这里添加相机聚焦事件 ---
-      // 告诉相机移动过去，但不要再次触发 selectNode 事件 (第二个参数为 false)，以避免无限循环
       appEvents.focusOnNode.fire(nodeId, false);
 
       if (nodeId !== lastSelectedNodeId) {
@@ -101,25 +92,32 @@ function nodeDetailsStore() {
         };
       }
     }
-    
+
     lastSelectedNodeId = nodeId;
     currentNodeId = nodeId;
-    // 注意：这里的 updateDegreeDetails 逻辑是导致第一个报错的原因
-    // 我们在第一处修改中已经修复了它
-    updateDegreeDetails(currentNodeId, currentConnectionType);
+
+    if (currentConnectionType !== undefined && currentConnectionType !== null) {
+      updateDegreeDetails(currentNodeId, currentConnectionType);
+    } else {
+      degreeVisible = false;
+      appEvents.hideNodeListWindow.fire(degreeWindowId);
+    }
+
     api.fire('changed');
   }
+
   function updateDegreeDetails(id, connectionType) {
     currentNodeId = id;
-    degreeVisible = currentNodeId !== undefined;
+    currentConnectionType = connectionType;
+    degreeVisible = currentNodeId !== undefined && currentConnectionType !== undefined && currentConnectionType !== null;
+
     if (degreeVisible) {
-      currentConnectionType = connectionType;
       var rootInfo = scene.getNodeInfo(id);
       var conenctions = scene.getConnected(id, connectionType);
       var viewModel = new DegreeWindowViewModel(rootInfo.name, conenctions, connectionType, id);
-      appEvents.showNodeListWindow.fire(viewModel, 'degree');
+      appEvents.showNodeListWindow.fire(viewModel, degreeWindowId);
     } else {
-      appEvents.hideNodeListWindow.fire('degree');
+      appEvents.hideNodeListWindow.fire(degreeWindowId);
     }
     api.fire('changed');
   }

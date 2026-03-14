@@ -54,7 +54,7 @@ module.exports = require('maco')((x) => {
 
     const handleClose = () => {
         const viewModel = x.props.viewModel;
-        appEvents.hideNodeListWindow.fire(viewModel.id);
+        appEvents.hideNodeListWindow.fire(viewModel.windowId || viewModel.id);
     };
 
     x.componentDidMount = function() {
