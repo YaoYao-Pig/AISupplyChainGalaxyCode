@@ -6,7 +6,8 @@ import ReactList from 'react-list';
 import searchBoxModel from './searchBoxModel.js';
 import NodeInfoRow from '../windows/nodeInfoRow.jsx';
 import formatNumber from '../utils/formatNumber.js';
-import appEvents from '../service/appEvents.js'; 
+import appEvents from '../service/appEvents.js';
+import i18n from '../utils/i18n.js';
 
 module.exports = require('maco')(searchBar, React);
 
@@ -15,19 +16,25 @@ function searchBar(x) {
 
   x.state = {
     results: [],
-    visible: false 
+    visible: false
   };
 
   x.componentDidMount = function() {
     containerRef = findDOMNode(x);
     searchBoxModel.on('changed', updateResults);
     document.addEventListener('click', handleClickOutside, true);
+    i18n.onChange(handleLanguageChange);
   };
 
   x.componentWillUnmount = function() {
     searchBoxModel.off('changed', updateResults);
     document.removeEventListener('click', handleClickOutside, true);
+    i18n.offChange(handleLanguageChange);
   };
+
+  function handleLanguageChange() {
+    x.forceUpdate();
+  }
 
   function handleClickOutside(e) {
     if (containerRef && !containerRef.contains(e.target)) {
@@ -45,7 +52,7 @@ function searchBar(x) {
     });
   }
 
-  function renderItem(idx, key) {
+  function renderItem(idx) {
     const vm = x.state.results[idx];
     return <NodeInfoRow key={vm.id} viewModel={vm} />;
   }
@@ -54,19 +61,19 @@ function searchBar(x) {
     return 28;
   }
 
-  // --- 新增：打开路径查找窗口的函数 ---
   function showPathfinding() {
     appEvents.showPathfindingWindow.fire();
   }
 
   x.render = function () {
-    const { results, visible } = x.state;
+    const results = x.state.results;
+    const visible = x.state.visible;
     let resultsView = null;
 
     if (visible && results.length > 0) {
       resultsView = (
         <div className='search-results'>
-          <h4 className='search-results-title'>Found <strong>{formatNumber(results.length)}</strong> matches</h4>
+          <h4 className='search-results-title'>{i18n.t('search.results', { count: formatNumber(results.length) })}</h4>
           <div className='scroll-wrapper'>
             <ReactList
               itemRenderer={renderItem}
@@ -86,22 +93,21 @@ function searchBar(x) {
             <div className='input-group'>
               <input type='text'
                 ref='searchText'
-                className='form-control no-shadow' placeholder='enter a search term'
+                className='form-control no-shadow' placeholder={i18n.t('search.placeholder')}
                 onChange={runSearch}
                 onFocus={handleFocus}
                 />
                 <span className='input-group-btn'>
-                  <button className='btn' tabIndex='-1' type='button' onClick={runSubmit} title="Search">
+                  <button className='btn' tabIndex='-1' type='button' onClick={runSubmit} title={i18n.t('search.submit')}>
                     <span className='glyphicon glyphicon-search'></span>
                   </button>
-                  {/* --- 新增：路径查找按钮 --- */}
-                  <button 
-                    className='btn' 
-                    tabIndex='-1' 
-                    type='button' 
-                    onClick={showPathfinding} 
-                    title="Compliance Connection Explorer"
-                    style={{ borderLeft: '1px solid #555' }} // 加个分割线
+                  <button
+                    className='btn'
+                    tabIndex='-1'
+                    type='button'
+                    onClick={showPathfinding}
+                    title={i18n.t('search.pathfinding')}
+                    style={{ borderLeft: '1px solid #555' }}
                   >
                     <span className='glyphicon glyphicon-road'></span>
                   </button>

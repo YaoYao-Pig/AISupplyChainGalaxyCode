@@ -1547,3 +1547,147 @@ a.media {
   max-height: 340px;
 }
 
+
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(118, 145, 190, 0.35);
+  border-radius: 999px;
+  background: rgba(8, 14, 24, 0.72);
+}
+
+.language-switcher-label {
+  color: #96abcc;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.language-switcher-btn {
+  min-width: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #d9e7ff;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.language-switcher-btn.active {
+  background: #2e7dff;
+  color: #ffffff;
+}
+
+.scene-toolbar {
+  position: fixed;
+  top: 14px;
+  right: 18px;
+  z-index: 21;
+}
+
+.feature-intro-panel {
+  position: fixed;
+  top: 60px;
+  right: 18px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  z-index: 20;
+  padding: 16px 16px 14px;
+  border: 1px solid rgba(118, 145, 190, 0.35);
+  border-radius: 12px;
+  background: rgba(8, 13, 22, 0.92);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  color: #dbe8ff;
+}
+
+.feature-intro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.feature-intro-header h4 {
+  margin: 0;
+  color: #f4f8ff;
+}
+
+.feature-intro-close {
+  border: 0;
+  background: transparent;
+  color: #9db2d3;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.feature-intro-panel p {
+  margin: 0 0 10px;
+  color: #aac0e0;
+  line-height: 1.6;
+}
+
+.feature-intro-panel ul {
+  margin: 0 0 12px 18px;
+  padding: 0;
+  color: #cfddf5;
+}
+
+.feature-intro-panel li {
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.feature-intro-dismiss {
+  border: 1px solid rgba(92, 132, 196, 0.45);
+  border-radius: 8px;
+  background: rgba(46, 125, 255, 0.18);
+  color: #dce8ff;
+  padding: 8px 12px;
+  font-weight: 700;
+}
+
+.sidebar-intro-card {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid rgba(104, 133, 180, 0.28);
+  border-radius: 10px;
+  background: rgba(10, 16, 28, 0.72);
+}
+
+.sidebar-intro-card h4 {
+  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+.sidebar-intro-card p {
+  margin: 0 0 8px;
+  color: #a5bad8;
+  line-height: 1.55;
+}
+
+.sidebar-intro-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #cfddf5;
+}
+
+.sidebar-intro-card li {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+  .scene-toolbar {
+    top: 10px;
+    right: 10px;
+  }
+
+  .feature-intro-panel {
+    top: 52px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+  }
+}

@@ -5,7 +5,7 @@ import {findDOMNode} from 'react-dom';
 import HoverInfo from './hoverInfo.jsx';
 import NodeDetails from './nodeDetails/nodeDetailsView.jsx';
 import SidebarView from './SidebarView.jsx';
-import LeftSidebarView from './LeftSidebarView.jsx'; // 引入新的左侧栏组件
+import LeftSidebarView from './LeftSidebarView.jsx';
 import detailModel from './nodeDetails/nodeDetailsStore.js';
 import searchBoxModel from './search/searchBoxModel.js';
 import SteeringIndicator from './steeringIndicator.jsx';
@@ -30,18 +30,21 @@ import TimelineView from './TimelineView.jsx';
 import './store/rippleAnimationStore.js';
 import TaskTypeLegend from './TaskTypeLegend.jsx';
 import EdgeTypeLegend from './EdgeTypeLegend.jsx';
-
+import LanguageSwitcher from './LanguageSwitcher.jsx';
+import i18n from './utils/i18n.js';
 
 var webglEnabled = require('webgl-enabled')();
 module.exports = require('maco')(scene, React);
 
 function scene(x) {
   var nativeRenderer, keyboard, delegateClickHandler;
+  var featureIntroStorageKey = 'featureIntroDismissed';
 
   x.state = {
     sidebarData: null,
     activeTag: null,
-    showHelpToast: false
+    showHelpToast: false,
+    showFeatureIntro: shouldShowFeatureIntro()
   };
 
   x.render = function() {
@@ -49,25 +52,46 @@ function scene(x) {
       return <NoWebGL />;
     }
     const isMobile = window.orientation !== undefined;
-    const { sidebarData, activeTag } = x.state;
+    const sidebarData = x.state.sidebarData;
+    const activeTag = x.state.activeTag;
 
     return (
       <div>
         <div ref='graphContainer' className='graph-full-size'/>
-        {/* 仅在移动设备上渲染切换按钮 */}
-        { isMobile &&
+        {isMobile &&
           <button className='mobile-controls-toggle' onClick={this.toggleMobileControls}>
-            Switch Controls
+            {i18n.t('galaxy.mobileSwitch')}
           </button>
         }
-        {/* 摇杆的容器现在由 joystick.js 自己创建和管理 */}
+        <div className='scene-toolbar'>
+          <LanguageSwitcher className='scene-language-switcher' />
+        </div>
+        {x.state.showFeatureIntro && (
+          <div className='feature-intro-panel'>
+            <div className='feature-intro-header'>
+              <h4>{i18n.t('galaxy.featureIntro.title')}</h4>
+              <button type='button' className='feature-intro-close' onClick={dismissFeatureIntro} title={i18n.t('common.close')}>
+                &times;
+              </button>
+            </div>
+            <p>{i18n.t('galaxy.featureIntro.desc')}</p>
+            <ul>
+              <li>{i18n.t('galaxy.featureIntro.item1')}</li>
+              <li>{i18n.t('galaxy.featureIntro.item2')}</li>
+              <li>{i18n.t('galaxy.featureIntro.item3')}</li>
+            </ul>
+            <button type='button' className='feature-intro-dismiss' onClick={dismissFeatureIntro}>
+              {i18n.t('galaxy.featureIntro.dismiss')}
+            </button>
+          </div>
+        )}
         <LeftSidebarView />
         <HoverInfo />
         <NodeDetails />
-        
-        <SidebarView 
-            data={sidebarData} 
-            isOpen={!!sidebarData} 
+
+        <SidebarView
+            data={sidebarData}
+            isOpen={!!sidebarData}
             activeTag={activeTag}
         />
 
@@ -80,17 +104,19 @@ function scene(x) {
         <TimelineView />
         <TaskTypeLegend />
         <EdgeTypeLegend />
-{ x.state.showHelpToast && (
-    <div className='toast-notification'>
-        Press <kbd>H</kbd> for help | <kbd>Backspace</kbd> to go back
-    </div>
-)}
+        {x.state.showHelpToast && (
+          <div className='toast-notification'>
+            {i18n.t('galaxy.helpToast')}
+          </div>
+        )}
       </div>
     );
   };
+
   x.toggleMobileControls = function() {
     appEvents.toggleMobileControls.fire();
   };
+
   x.componentDidMount = function() {
     if (!webglEnabled) return;
     var container = findDOMNode(x.refs.graphContainer);
@@ -105,32 +131,51 @@ function scene(x) {
     appEvents.showGlobalLicenseStats.on(showGlobalLicenseStats);
     appEvents.showGlobalComplianceStats.on(showGlobalComplianceStats);
     appEvents.showGlobalLicenseReport.on(showGlobalLicenseReport);
+    i18n.onChange(handleLanguageChange);
 
-
-    // 等待3秒，确保用户已经看到主界面
-      setTimeout(() => {
-        x.setState({ showHelpToast: true });
-      // 再过7秒后自动隐藏
-        setTimeout(() => {
-          x.setState({ showHelpToast: false });
-        }, 7000);
-        localStorage.setItem('helpToastShown', 'true');
-      }, 3000);
-
+    setTimeout(function () {
+      x.setState({ showHelpToast: true });
+      setTimeout(function () {
+        x.setState({ showHelpToast: false });
+      }, 7000);
+      localStorage.setItem('helpToastShown', 'true');
+    }, 3000);
   };
 
   x.componentWillUnmount = function() {
     if (nativeRenderer) nativeRenderer.destroy();
     if (keyboard) keyboard.destroy();
     if (delegateClickHandler) delegateClickHandler.removeEventListener('click', handleDelegateClick);
-    
+
     detailModel.off('changed', updateSidebar);
     appEvents.activeTagChanged.off(updateActiveTag);
-    appEvents.showLicenseReport.off(showLicenseReportWindow); 
+    appEvents.showLicenseReport.off(showLicenseReportWindow);
     appEvents.showGlobalLicenseStats.off(showGlobalLicenseStats);
     appEvents.showGlobalComplianceStats.off(showGlobalComplianceStats);
     appEvents.showGlobalLicenseReport.off(showGlobalLicenseReport);
+    i18n.offChange(handleLanguageChange);
   };
+
+  function handleLanguageChange() {
+    x.forceUpdate();
+  }
+
+  function shouldShowFeatureIntro() {
+    try {
+      return localStorage.getItem(featureIntroStorageKey) !== '1';
+    } catch (e) {
+      return true;
+    }
+  }
+
+  function dismissFeatureIntro() {
+    x.setState({ showFeatureIntro: false });
+    try {
+      localStorage.setItem(featureIntroStorageKey, '1');
+    } catch (e) {
+      // Ignore storage failures.
+    }
+  }
 
   function showGlobalLicenseStats() {
     const licenseData = licenseStore.getLicenseData();
@@ -161,23 +206,24 @@ function scene(x) {
         return;
     }
 
-    const { selectedNode, outgoing } = sidebarData;
+    const selectedNode = sidebarData.selectedNode;
+    const outgoing = sidebarData.outgoing;
     const addedNodeIds = new Set();
     const nodes = [];
     const edges = [];
     let edgeCounter = 0;
 
-    const addNode = (node) => {
+    const addNode = function (node) {
         if (!addedNodeIds.has(node.id)) {
             nodes.push(node);
             addedNodeIds.add(node.id);
         }
     };
-    
+
     if (selectedNode.inheritanceChain && selectedNode.inheritanceChain.length > 0) {
         const chain = selectedNode.inheritanceChain;
-        
-        chain.forEach(item => {
+
+        chain.forEach(function (item) {
             addNode({
                 id: item.model,
                 label: item.model,
@@ -188,7 +234,7 @@ function scene(x) {
         for (let i = 0; i < chain.length - 1; i++) {
             const child = chain[i];
             const parent = chain[i + 1];
-            
+
             edges.push({
                 id: `e${edgeCounter++}`,
                 source: child.model,
@@ -202,7 +248,7 @@ function scene(x) {
     }
 
     if (outgoing && outgoing.length > 0) {
-        outgoing.forEach(childNodeInfo => {
+        outgoing.forEach(function (childNodeInfo) {
             const childViewModel = getBaseNodeViewModel(childNodeInfo.id);
 
             addNode({
@@ -210,7 +256,7 @@ function scene(x) {
                 label: childViewModel.name,
                 color: '#FF9800'
             });
-            
+
             edges.push({
                 id: `e${edgeCounter++}`,
                 source: selectedNode.name,
@@ -223,9 +269,9 @@ function scene(x) {
         });
     }
 
-    const localGraphData = { nodes, edges };
+    const localGraphData = { nodes: nodes, edges: edges };
     const viewModel = new ComplianceGraphViewModel(localGraphData);
-    
+
     appEvents.showNodeListWindow.fire(viewModel, viewModel.id);
   }
 
@@ -245,9 +291,9 @@ function scene(x) {
       var connectionType = classList.contains('in-degree') ? 'in' : 'out';
       appEvents.showDegree.fire(nodeId, connectionType);
     }
-    
+
     if (classList.contains('node-focus')) {
-      e.preventDefault(); 
+      e.preventDefault();
       nodeId = parseInt(clickedEl.id, 10);
       appEvents.focusOnNode.fire(nodeId);
     }

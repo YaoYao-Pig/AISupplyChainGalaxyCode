@@ -6,6 +6,7 @@ import complianceStore from './store/licenseComplianceStore.js';
 import timelineStore from './store/timelineStore.js';
 import detailModel from './nodeDetails/nodeDetailsStore.js';
 import InsightsListWindowViewModel from './windows/InsightsListWindowViewModel.js';
+import i18n from './utils/i18n.js';
 
 const scene = require('./store/sceneStore.js');
 
@@ -28,6 +29,7 @@ module.exports = require('maco')((x) => {
     appEvents.simulationStatusUpdate.on(updateSimulationStatus);
     appEvents.cls.on(handleCls);
     appEvents.timelineChanged.on(handleTimelineUpdate);
+    i18n.onChange(handleLanguageChange);
   };
 
   x.componentWillUnmount = function() {
@@ -35,7 +37,10 @@ module.exports = require('maco')((x) => {
     appEvents.simulationStatusUpdate.off(updateSimulationStatus);
     appEvents.timelineChanged.off(handleTimelineUpdate);
     appEvents.cls.off(handleCls);
+    i18n.offChange(handleLanguageChange);
   };
+
+  const handleLanguageChange = () => x.forceUpdate();
 
   const handleCls = () => {
     x.setState({
@@ -78,7 +83,9 @@ module.exports = require('maco')((x) => {
   const handleGlobalComplianceStats = () => appEvents.showGlobalComplianceStats.fire();
 
   const handleHighlightClick = () => {
-    const conflictNodeIds = complianceStore.getConflictList().map(c => c.nodeId);
+    const conflictNodeIds = complianceStore.getConflictList().map(function (item) {
+      return item.nodeId;
+    });
     appEvents.highlightLicenseConflicts.fire(conflictNodeIds);
   };
 
@@ -92,20 +99,18 @@ module.exports = require('maco')((x) => {
   };
 
   const handleShowKeyNodeRanking = () => {
-    const topN = 50;
-    const topByCentrality = scene.getTopNModelsByCentrality(topN);
+    const topByCentrality = scene.getTopNModelsByCentrality(50);
     const topByRisk = scene.getTopNModelsByRisk(20);
-
     const merged = [];
     const seen = new Set();
 
-    topByRisk.forEach(node => {
+    topByRisk.forEach(function (node) {
       if (seen.has(node.id)) return;
       seen.add(node.id);
       merged.push({ id: node.id, name: `[Risk ${node.riskCount}] ${node.name}`, in: node.in || 0, out: node.out || 0 });
     });
 
-    topByCentrality.forEach(node => {
+    topByCentrality.forEach(function (node) {
       if (seen.has(node.id)) return;
       seen.add(node.id);
       merged.push({ id: node.id, name: `[Core] ${node.name}`, in: node.in || 0, out: node.out || 0 });
@@ -113,7 +118,7 @@ module.exports = require('maco')((x) => {
 
     const viewModel = new InsightsListWindowViewModel({
       id: 'key-node-ranking',
-      title: 'Key Nodes (Risk + Centrality)',
+      title: i18n.t('leftSidebar.window.keyNodes'),
       list: merged
     });
 
@@ -123,14 +128,14 @@ module.exports = require('maco')((x) => {
   const handleShowImpactScope = () => {
     const selected = detailModel.getSelectedNode();
     if (!selected || selected.id === undefined) {
-      console.warn('[ImpactScope] Select a node first.');
+      console.warn('[ImpactScope] ' + i18n.t('leftSidebar.warning.selectNode'));
       return;
     }
 
     const impact = scene.calculateImpactScope(selected.id, 3, 300);
     const title = impact.summary.truncated
-      ? `Impact Scope: ${impact.summary.startName} (${impact.summary.totalImpacted}+ nodes)`
-      : `Impact Scope: ${impact.summary.startName} (${impact.summary.totalImpacted} nodes)`;
+      ? i18n.t('leftSidebar.window.impactScopeTruncated', { name: impact.summary.startName, count: impact.summary.totalImpacted })
+      : i18n.t('leftSidebar.window.impactScope', { name: impact.summary.startName, count: impact.summary.totalImpacted });
 
     const viewModel = new InsightsListWindowViewModel({
       id: 'impact-scope-window',
@@ -203,24 +208,22 @@ module.exports = require('maco')((x) => {
   };
 
   x.render = function() {
-    const {
-      isOpen,
-      conflictCount,
-      selectedLicense,
-      isSimulating,
-      simulationProgress,
-      isCoreHighlighted,
-      isCommunityView,
-      isTaskTypeView,
-      isRiskHeatmap
-    } = x.state;
+    const isOpen = x.state.isOpen;
+    const conflictCount = x.state.conflictCount;
+    const selectedLicense = x.state.selectedLicense;
+    const isSimulating = x.state.isSimulating;
+    const simulationProgress = x.state.simulationProgress;
+    const isCoreHighlighted = x.state.isCoreHighlighted;
+    const isCommunityView = x.state.isCommunityView;
+    const isTaskTypeView = x.state.isTaskTypeView;
+    const isRiskHeatmap = x.state.isRiskHeatmap;
 
     const containerClass = isOpen ? 'left-sidebar-container open' : 'left-sidebar-container';
     const licenses = ['MIT', 'Apache-2.0', 'GPL-3.0', 'AGPL-3.0'];
-    const coreButtonText = isCoreHighlighted ? 'Show All Models' : 'Highlight Core Models';
-    const communityButtonText = isCommunityView ? 'Show Default View' : 'Show Communities';
-    const taskTypeButtonText = isTaskTypeView ? 'Show Default View' : 'Task Type View';
-    const riskHeatButtonText = isRiskHeatmap ? 'Disable Risk Heatmap' : 'Risk Heatmap';
+    const coreButtonText = isCoreHighlighted ? i18n.t('leftSidebar.button.showAllModels') : i18n.t('leftSidebar.button.highlightCore');
+    const communityButtonText = isCommunityView ? i18n.t('leftSidebar.button.defaultView') : i18n.t('leftSidebar.button.showCommunities');
+    const taskTypeButtonText = isTaskTypeView ? i18n.t('leftSidebar.button.defaultView') : i18n.t('leftSidebar.button.taskTypeView');
+    const riskHeatButtonText = isRiskHeatmap ? i18n.t('leftSidebar.button.disableRiskHeatmap') : i18n.t('leftSidebar.button.riskHeatmap');
 
     return (
       <div
@@ -229,17 +232,27 @@ module.exports = require('maco')((x) => {
         onMouseLeave={handleMouseLeave}
       >
         <div className='left-sidebar-content'>
-          <h4>Data Insight</h4>
-          <button onClick={handleGlobalStats} className='analysis-btn'>License Stats</button>
-          <button onClick={handleGlobalReport} className='analysis-btn'>Compliance Report</button>
-          <button onClick={handleGlobalComplianceStats} className='analysis-btn'>Compliance Stats</button>
+          <div className='sidebar-intro-card'>
+            <h4>{i18n.t('leftSidebar.featureGuide.title')}</h4>
+            <p>{i18n.t('leftSidebar.featureGuide.desc')}</p>
+            <ul>
+              <li>{i18n.t('leftSidebar.featureGuide.item1')}</li>
+              <li>{i18n.t('leftSidebar.featureGuide.item2')}</li>
+              <li>{i18n.t('leftSidebar.featureGuide.item3')}</li>
+            </ul>
+          </div>
+
+          <h4>{i18n.t('leftSidebar.section.dataInsight')}</h4>
+          <button onClick={handleGlobalStats} className='analysis-btn'>{i18n.t('leftSidebar.button.licenseStats')}</button>
+          <button onClick={handleGlobalReport} className='analysis-btn'>{i18n.t('leftSidebar.button.complianceReport')}</button>
+          <button onClick={handleGlobalComplianceStats} className='analysis-btn'>{i18n.t('leftSidebar.button.complianceStats')}</button>
           <button onClick={handleToggleRiskHeatmap} className='analysis-btn'>{riskHeatButtonText}</button>
-          <button onClick={handleShowKeyNodeRanking} className='analysis-btn'>Key Node Ranking</button>
-          <button onClick={handleShowImpactScope} className='analysis-btn'>Impact Scope (Selected)</button>
+          <button onClick={handleShowKeyNodeRanking} className='analysis-btn'>{i18n.t('leftSidebar.button.keyNodeRanking')}</button>
+          <button onClick={handleShowImpactScope} className='analysis-btn'>{i18n.t('leftSidebar.button.impactScope')}</button>
 
           <hr className='sidebar-separator' />
 
-          <h4>View Switch</h4>
+          <h4>{i18n.t('leftSidebar.section.viewSwitch')}</h4>
           <button onClick={handleShowTaskTypeView} className='analysis-btn'>{taskTypeButtonText}</button>
           <button onClick={handleHighlightCore} className='analysis-btn'>{coreButtonText}</button>
           <button onClick={handleShowCommunities} className='analysis-btn'>{communityButtonText}</button>
@@ -248,18 +261,20 @@ module.exports = require('maco')((x) => {
             className='analysis-btn highlight'
             disabled={conflictCount === 0}
           >
-            Highlight Conflicts ({conflictCount})
+            {i18n.t('leftSidebar.button.highlightConflicts', { count: conflictCount })}
           </button>
-          <button onClick={handleToggleTimeline} className='analysis-btn'>Toggle Timeline</button>
+          <button onClick={handleToggleTimeline} className='analysis-btn'>{i18n.t('leftSidebar.button.toggleTimeline')}</button>
 
           <hr className='sidebar-separator' />
 
-          <h4>License</h4>
+          <h4>{i18n.t('leftSidebar.section.license')}</h4>
           <div className='simulator-controls'>
-            <p>License Simulator</p>
+            <p>{i18n.t('leftSidebar.licenseSimulator')}</p>
             <select value={selectedLicense} onChange={handleLicenseChange} disabled={isSimulating}>
-              <option value='none'>-- Select a License --</option>
-              {licenses.map(l => <option key={l} value={l}>{l}</option>)}
+              <option value='none'>{i18n.t('leftSidebar.licensePlaceholder')}</option>
+              {licenses.map(function (license) {
+                return <option key={license} value={license}>{license}</option>;
+              })}
             </select>
 
             {isSimulating ? (
@@ -269,7 +284,7 @@ module.exports = require('maco')((x) => {
               </div>
             ) : (
               <button onClick={handleSimulate} className='analysis-btn' disabled={isSimulating}>
-                {selectedLicense === 'none' ? 'Reset View' : 'Simulate'}
+                {selectedLicense === 'none' ? i18n.t('leftSidebar.button.resetView') : i18n.t('leftSidebar.button.simulate')}
               </button>
             )}
           </div>

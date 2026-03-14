@@ -1,4 +1,6 @@
 import React from 'react';
+import LanguageSwitcher from './galaxy/LanguageSwitcher.jsx';
+import i18n from './galaxy/utils/i18n.js';
 
 const globalCss = `
   .home-page {
@@ -213,101 +215,112 @@ const styles = {
     padding: '18px 12px 24px',
     color: '#6d87ac',
     fontSize: '12px'
+  },
+  languageHint: {
+    marginTop: '10px',
+    color: '#7f96bb',
+    fontSize: '12px'
   }
 };
 
 export default class WelcomePage extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleLanguageChange = this.handleLanguageChange.bind(this);
+  }
+
+  componentDidMount() {
+    i18n.onChange(this.handleLanguageChange);
+  }
+
+  componentWillUnmount() {
+    i18n.offChange(this.handleLanguageChange);
+  }
+
+  handleLanguageChange() {
+    this.forceUpdate();
+  }
+
   render() {
     return (
-      <div className="home-page" style={styles.page}>
+      <div className='home-page' style={styles.page}>
         <style dangerouslySetInnerHTML={{ __html: globalCss }} />
 
-        <div className="home-topbar" style={styles.topbar}>
-          <div style={styles.brand}>MODEL GALAXY / AI SUPPLY CHAIN</div>
+        <div className='home-topbar' style={styles.topbar}>
+          <div style={styles.brand}>{i18n.t('welcome.brand')}</div>
           <div style={styles.navWrap}>
-            <a className="home-nav-link" href="#/docs" style={styles.navLink}>DOCS</a>
-            <a className="home-nav-link" href="#/galaxy/my_model_galaxy?cx=0&cy=0&cz=0&l=1" style={styles.navLink}>EXPLORE</a>
-            <a className="home-nav-link" href="https://github.com/YaoYao-Pig/AISupplyChainGalaxyCode" target="_blank" rel="noopener noreferrer" style={styles.navLink}>GITHUB</a>
+            <LanguageSwitcher />
+            <a className='home-nav-link' href='#/docs' style={styles.navLink}>{i18n.t('welcome.nav.docs')}</a>
+            <a className='home-nav-link' href='#/galaxy/my_model_galaxy?cx=0&cy=0&cz=0&l=1' style={styles.navLink}>{i18n.t('welcome.nav.explore')}</a>
+            <a className='home-nav-link' href='https://github.com/YaoYao-Pig/AISupplyChainGalaxyCode' target='_blank' rel='noopener noreferrer' style={styles.navLink}>{i18n.t('welcome.nav.github')}</a>
           </div>
         </div>
 
-        <div className="home-main" style={styles.main}>
-          <div className="home-card" style={styles.hero}>
-            <h1 className="home-hero-title" style={styles.title}>AI Supply Chain Galaxy</h1>
-            <p className="home-hero-sub" style={styles.subtitle}>
-              对开源 AI 模型进行谱系追踪、依赖分析和风险观测的交互式星系系统。
-              支持图谱漫游、节点检索、路径分析和文档化协作，帮助团队更稳定地进行 VibeCoding 迭代。
-            </p>
+        <div className='home-main' style={styles.main}>
+          <div className='home-card' style={styles.hero}>
+            <h1 className='home-hero-title' style={styles.title}>{i18n.t('welcome.title')}</h1>
+            <p className='home-hero-sub' style={styles.subtitle}>{i18n.t('welcome.subtitle')}</p>
 
-            <div className="home-actions" style={styles.actions}>
-              <a className="home-btn" href="#/galaxy/my_model_galaxy?cx=0&cy=0&cz=0&l=1" style={styles.primaryBtn}>进入星系</a>
-              <a className="home-btn" href="#/docs" style={styles.ghostBtn}>阅读文档</a>
-              <a className="home-btn" href="https://github.com/YaoYao-Pig/AISupplyChainGalaxyCode" target="_blank" rel="noopener noreferrer" style={styles.ghostBtn}>查看源码</a>
+            <div className='home-actions' style={styles.actions}>
+              <a className='home-btn' href='#/galaxy/my_model_galaxy?cx=0&cy=0&cz=0&l=1' style={styles.primaryBtn}>{i18n.t('welcome.enterGalaxy')}</a>
+              <a className='home-btn' href='#/docs' style={styles.ghostBtn}>{i18n.t('welcome.readDocs')}</a>
+              <a className='home-btn' href='https://github.com/YaoYao-Pig/AISupplyChainGalaxyCode' target='_blank' rel='noopener noreferrer' style={styles.ghostBtn}>{i18n.t('welcome.viewSource')}</a>
             </div>
+
+            <div style={styles.languageHint}>{i18n.t('language.autoHint')}</div>
           </div>
 
-          <div className="row" style={{ marginTop: '4px' }}>
-            <div className="col-md-4" style={{ marginBottom: '14px' }}>
-              <div className="home-feature" style={styles.featureCard}>
-                <h3 style={styles.featureTitle}>图谱可视化</h3>
-                <p style={styles.featureDesc}>
-                  多层次呈现模型、依赖和生态关系，支持大图场景的平移、缩放与定位。
-                </p>
+          <div className='row' style={{ marginTop: '4px' }}>
+            <div className='col-md-4' style={{ marginBottom: '14px' }}>
+              <div className='home-feature' style={styles.featureCard}>
+                <h3 style={styles.featureTitle}>{i18n.t('welcome.feature.visual.title')}</h3>
+                <p style={styles.featureDesc}>{i18n.t('welcome.feature.visual.desc')}</p>
               </div>
             </div>
 
-            <div className="col-md-4" style={{ marginBottom: '14px' }}>
-              <div className="home-feature" style={styles.featureCard}>
-                <h3 style={styles.featureTitle}>供应链溯源</h3>
-                <p style={styles.featureDesc}>
-                  从基础模型到微调分支，追踪关键链路并辅助定位潜在合规与继承风险。
-                </p>
+            <div className='col-md-4' style={{ marginBottom: '14px' }}>
+              <div className='home-feature' style={styles.featureCard}>
+                <h3 style={styles.featureTitle}>{i18n.t('welcome.feature.trace.title')}</h3>
+                <p style={styles.featureDesc}>{i18n.t('welcome.feature.trace.desc')}</p>
               </div>
             </div>
 
-            <div className="col-md-4" style={{ marginBottom: '14px' }}>
-              <div className="home-feature" style={styles.featureCard}>
-                <h3 style={styles.featureTitle}>协作开发</h3>
-                <p style={styles.featureDesc}>
-                  通过模块边界检查与 Think-Execute 循环，使功能迭代更可控、更可验证。
-                </p>
+            <div className='col-md-4' style={{ marginBottom: '14px' }}>
+              <div className='home-feature' style={styles.featureCard}>
+                <h3 style={styles.featureTitle}>{i18n.t('welcome.feature.collab.title')}</h3>
+                <p style={styles.featureDesc}>{i18n.t('welcome.feature.collab.desc')}</p>
               </div>
             </div>
           </div>
 
-          <div className="home-card" style={styles.panel}>
-            <h2 style={styles.sectionTitle}>项目快览</h2>
-            <p style={styles.featureDesc}>
-              主页用于快速进入业务路径：探索图谱、阅读文档、回到源码。文档页支持完整 Markdown 浏览，
-              含标题锚点、目录导航、表格、代码块、引用、任务列表和图片展示。
-            </p>
+          <div className='home-card' style={styles.panel}>
+            <h2 style={styles.sectionTitle}>{i18n.t('welcome.overview.title')}</h2>
+            <p style={styles.featureDesc}>{i18n.t('welcome.overview.desc')}</p>
 
-            <div className="row home-stat-grid" style={styles.statWrap}>
-              <div className="col-sm-4">
+            <div className='row home-stat-grid' style={styles.statWrap}>
+              <div className='col-sm-4'>
                 <div style={styles.statCard}>
                   <div style={styles.statValue}>3D</div>
-                  <div style={styles.statLabel}>Galaxy Navigation</div>
+                  <div style={styles.statLabel}>{i18n.t('welcome.stat.navigation')}</div>
                 </div>
               </div>
-              <div className="col-sm-4">
+              <div className='col-sm-4'>
                 <div style={styles.statCard}>
                   <div style={styles.statValue}>MD</div>
-                  <div style={styles.statLabel}>Full Documentation Viewer</div>
+                  <div style={styles.statLabel}>{i18n.t('welcome.stat.docs')}</div>
                 </div>
               </div>
-              <div className="col-sm-4">
+              <div className='col-sm-4'>
                 <div style={styles.statCard}>
                   <div style={styles.statValue}>TE</div>
-                  <div style={styles.statLabel}>Think-Execute Workflow</div>
+                  <div style={styles.statLabel}>{i18n.t('welcome.stat.workflow')}</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div style={styles.footer}>
-          AISupplyChainGalaxyCode · Open Source Research Project
-        </div>
+        <div style={styles.footer}>{i18n.t('welcome.footer')}</div>
       </div>
     );
   }
