@@ -5,6 +5,8 @@ import detailModel from './nodeDetailsStore.js';
 import specialNodeDetails from './templates/all.js';
 import scene from '../store/sceneStore.js';
 import i18n from '../utils/i18n.js';
+import complianceStore from '../store/licenseComplianceStore.js';
+import appEvents from '../service/appEvents.js';
 
 module.exports = require('maco')(detailedNodeView, React);
 
@@ -20,7 +22,7 @@ function detailedNodeView(x) {
     var NodeDetails = getNodeDetails(selectedNode);
     var graph = scene.getGraph();
     var risks = selectedNode.compliance && selectedNode.compliance.risks ? selectedNode.compliance.risks : [];
-    var visibleRisks = x.state.showAllRisks ? risks : risks.slice(0, 3);
+    var groupedRisks = getGroupedRisks(selectedNode, risks);
 
     const alertStyle = {
       padding: '8px 12px',
@@ -63,11 +65,8 @@ function detailedNodeView(x) {
               )}
             </div>
             <div className={'compliance-alerts-list' + (x.state.showAllRisks ? ' expanded' : '')}>
-              {visibleRisks.map((risk, idx) => (
-                <div key={idx} style={risk.level === 'Error' ? styles.Error : styles.Warning}>
-                  <strong>[{risk.level}] {risk.type}: </strong> {risk.reason}
-                </div>
-              ))}
+              {renderRiskGroup('Error', groupedRisks.Error, styles.Error)}
+              {renderRiskGroup('Warning', groupedRisks.Warning, styles.Warning)}
             </div>
           </div>
         )}
@@ -81,21 +80,90 @@ function detailedNodeView(x) {
         </div>
       </div>
     );
+
+    function renderRiskGroup(level, items, style) {
+      if (!items || items.length === 0) return null;
+      return (
+        <div className='compliance-alert-group' key={level}>
+          <div className={'compliance-alert-group-title ' + level.toLowerCase()}>
+            {level === 'Error' ? i18n.t('nodeDetails.risks.errorGroup') : i18n.t('nodeDetails.risks.warningGroup')}
+            <span className='compliance-alert-group-count'>{items.length}</span>
+          </div>
+          {items.map((item, idx) => (
+            <div key={level + idx} style={style} className='compliance-alert-item'>
+              <div className='compliance-alert-text'>
+                <strong>[{item.level}] {item.type}: </strong> {item.reason}
+              </div>
+              {item.relatedNodeId !== undefined && (
+                <button
+                  type='button'
+                  className='compliance-alert-jump'
+                  onClick={() => focusNode(item.relatedNodeId)}
+                >
+                  {i18n.t('nodeDetails.risks.focusParent')}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
   };
 
   x.componentDidMount = function() {
     detailModel.on('changed', updateView);
     i18n.onChange(updateView);
+    complianceStore.on('changed', updateView);
   };
 
   x.componentWillUnmount = function () {
     detailModel.off('changed', updateView);
     i18n.offChange(updateView);
+    complianceStore.off('changed', updateView);
   };
 
   function getNodeDetails(viewModel) {
     var Template = specialNodeDetails[scene.getGraphName()] || specialNodeDetails.default;
     return Template;
+  }
+
+  function getGroupedRisks(selectedNode, risks) {
+    var visibleRisks = x.state.showAllRisks ? risks : risks.slice(0, 3);
+    var conflictMatches = complianceStore.getConflictList().filter(function (conflict) {
+      return conflict.nodeId === selectedNode.id;
+    });
+
+    return visibleRisks.reduce(function (acc, risk) {
+      var item = {
+        level: risk.level || 'Warning',
+        type: risk.type || 'Risk',
+        reason: risk.reason || ''
+      };
+
+      var relatedConflict = findMatchingConflict(conflictMatches, risk);
+      if (relatedConflict) {
+        item.relatedNodeId = scene.getNodeIdByModelId(relatedConflict.parentModel);
+      }
+
+      if (item.level === 'Error') {
+        acc.Error.push(item);
+      } else {
+        acc.Warning.push(item);
+      }
+      return acc;
+    }, { Error: [], Warning: [] });
+  }
+
+  function findMatchingConflict(conflicts, risk) {
+    if (!conflicts || conflicts.length === 0) return null;
+    return conflicts.find(function (conflict) {
+      return typeof risk.reason === 'string' && risk.reason.indexOf(conflict.parentModel) >= 0;
+    }) || conflicts[0];
+  }
+
+  function focusNode(nodeId) {
+    if (nodeId === undefined || nodeId === null) return;
+    appEvents.selectNode.fire(nodeId);
   }
 
   function toggleRiskList() {

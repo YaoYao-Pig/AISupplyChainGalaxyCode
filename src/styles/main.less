@@ -1987,3 +1987,64 @@ a.media {
 .insight-list-window .window-list-content {
   min-height: 180px;
 }
+.compliance-alert-group {
+  margin-bottom: 10px;
+}
+
+.compliance-alert-group:last-child {
+  margin-bottom: 0;
+}
+
+.compliance-alert-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.compliance-alert-group-title.error {
+  color: #ffb3b3;
+}
+
+.compliance-alert-group-title.warning {
+  color: #ffe28a;
+}
+
+.compliance-alert-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef4ff;
+  font-size: 11px;
+}
+
+.compliance-alert-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.compliance-alert-text {
+  flex: 1;
+}
+
+.compliance-alert-jump {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: inherit;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
