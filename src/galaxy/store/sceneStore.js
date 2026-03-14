@@ -41,7 +41,6 @@ function sceneStore() {
     },
 
     getTopNModelsByCentrality: (n) => {
-        // ... (保持原样)
         if (!graph) return [];
         const allNodes = [];
         const labels = graph.getRawData ? graph.getRawData().labels : [];
@@ -49,11 +48,113 @@ function sceneStore() {
         for (let i = 0; i < labels.length; i++) {
             const nodeInfo = graph.getNodeInfo(i);
             if (nodeInfo) {
-            const centrality = (nodeInfo.in || 0) + (nodeInfo.out || 0);
-            allNodes.push({ id: i, name: nodeInfo.name, centrality: centrality });
+              const inDegree = nodeInfo.in || 0;
+              const outDegree = nodeInfo.out || 0;
+              allNodes.push({
+                id: i,
+                name: nodeInfo.name,
+                in: inDegree,
+                out: outDegree,
+                centrality: inDegree + outDegree
+              });
             }
         }
         return allNodes.sort((a, b) => b.centrality - a.centrality).slice(0, n);
+    },
+
+    getTopNModelsByRisk: (n) => {
+        if (!graph || typeof graph.getComplianceDetails !== 'function') return [];
+        const allNodes = [];
+        const labels = graph.getRawData ? graph.getRawData().labels : [];
+        if (labels.length === 0) return [];
+
+        for (let i = 0; i < labels.length; i++) {
+            const nodeInfo = graph.getNodeInfo(i);
+            if (!nodeInfo) continue;
+
+            const compliance = graph.getComplianceDetails(i) || {};
+            const risks = Array.isArray(compliance.risks) ? compliance.risks : [];
+            if (risks.length === 0) continue;
+
+            allNodes.push({
+              id: i,
+              name: nodeInfo.name,
+              in: nodeInfo.in || 0,
+              out: nodeInfo.out || 0,
+              riskCount: risks.length,
+              centrality: (nodeInfo.in || 0) + (nodeInfo.out || 0)
+            });
+        }
+
+        return allNodes
+          .sort((a, b) => {
+            if (b.riskCount !== a.riskCount) return b.riskCount - a.riskCount;
+            return b.centrality - a.centrality;
+          })
+          .slice(0, n);
+    },
+
+    calculateImpactScope: (startNodeId, maxDepth = 3, maxNodes = 300) => {
+        if (!graph || startNodeId === undefined || startNodeId === null) {
+          return { nodes: [], summary: { totalImpacted: 0, truncated: false, maxDepth: maxDepth } };
+        }
+
+        const rawData = graph.getRawData ? graph.getRawData() : null;
+        const outLinks = rawData && rawData.outLinks ? rawData.outLinks : [];
+
+        const queue = [{ id: startNodeId, depth: 0 }];
+        const visited = new Set([startNodeId]);
+        const impacted = [];
+        let truncated = false;
+
+        while (queue.length > 0) {
+          const current = queue.shift();
+          if (current.depth >= maxDepth) continue;
+
+          const neighbors = outLinks[current.id] || [];
+          for (let i = 0; i < neighbors.length; i++) {
+            const nextId = neighbors[i];
+            if (visited.has(nextId)) continue;
+
+            visited.add(nextId);
+            const nextDepth = current.depth + 1;
+            queue.push({ id: nextId, depth: nextDepth });
+
+            const info = graph.getNodeInfo(nextId);
+            if (info) {
+              impacted.push({
+                id: nextId,
+                name: `[D${nextDepth}] ${info.name}`,
+                in: info.in || 0,
+                out: info.out || 0,
+                depth: nextDepth
+              });
+            }
+
+            if (impacted.length >= maxNodes) {
+              truncated = true;
+              queue.length = 0;
+              break;
+            }
+          }
+        }
+
+        impacted.sort((a, b) => {
+          if (a.depth !== b.depth) return a.depth - b.depth;
+          return (b.in + b.out) - (a.in + a.out);
+        });
+
+        const startInfo = graph.getNodeInfo(startNodeId) || { name: String(startNodeId) };
+        return {
+          nodes: impacted,
+          summary: {
+            startNodeId: startNodeId,
+            startName: startInfo.name,
+            totalImpacted: impacted.length,
+            truncated: truncated,
+            maxDepth: maxDepth
+          }
+        };
     },
 
     getCommunities: () => communities,

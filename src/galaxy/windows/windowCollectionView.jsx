@@ -23,6 +23,7 @@ const windowContentMap = {
   'license-distribution': LicenseListView,
   'license-report-global': LicenseReportWindow,
   'compliance-stats': ComplianceStatsWindow,
+  'insight-list-window': NodeListView,
   
   // --- 修复点：确保 id 和 class 都能匹配到组件 ---
   'inheritance-risk-window': InheritanceRiskWindow, // 匹配 viewModel.class

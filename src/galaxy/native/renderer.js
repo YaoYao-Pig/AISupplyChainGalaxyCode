@@ -50,8 +50,8 @@ let preHoverColors = new Map();
 
 let clusterLabels = []; 
 let clusterLabelsVisible = true;
-let isTaskTypeViewActive = false; 
-
+let isTaskTypeViewActive = false;
+let riskHeatmapActive = false; 
 function sceneRenderer(container) {
   var renderer, positions, graphModel, touchControl;
   var hitTest, lastHighlight, lastHighlightSize, cameraPosition;
@@ -91,7 +91,7 @@ function sceneRenderer(container) {
   appEvents.showCommunities.on(showCommunitiesHandler); 
   appEvents.showTaskTypeView.on(showTaskTypeView);
   appEvents.navigateBack.on(handleNavigateBack);
-appEvents.showCommunities.on(showCommunitiesHandler);
+  appEvents.toggleRiskHeatmap.on(toggleRiskHeatmapHandler);
   // --- 新增：监听 edgeFilterStore ---
   edgeFilterStore.on('changed', onFilterChanged);
   taskFilterStore.on('changed', () => {
@@ -519,6 +519,97 @@ function showLicenseContaminationHandler(startModelName) {
   view.colors(colors);
 }
 
+
+function toggleRiskHeatmapHandler(forceState) {
+  if (!renderer) return;
+
+  const nextState = typeof forceState === 'boolean' ? forceState : !riskHeatmapActive;
+  if (!nextState) {
+    cls();
+    return;
+  }
+
+  applyRiskHeatmap();
+}
+
+function applyRiskHeatmap() {
+  if (!renderer) return;
+
+  const graph = scene.getGraph();
+  if (!graph || !graph.getRawData || typeof graph.getComplianceDetails !== 'function') {
+    console.warn('[RiskHeatmap] Graph data is not ready.');
+    return;
+  }
+
+  cls();
+
+  const rawData = graph.getRawData();
+  const labels = rawData && rawData.labels ? rawData.labels : [];
+  if (!labels.length) return;
+
+  const riskCounts = new Array(labels.length);
+  let maxRisk = 0;
+
+  for (let i = 0; i < labels.length; i++) {
+    const compliance = graph.getComplianceDetails(i) || {};
+    const risks = Array.isArray(compliance.risks) ? compliance.risks : [];
+    const riskCount = risks.length;
+    riskCounts[i] = riskCount;
+    if (riskCount > maxRisk) maxRisk = riskCount;
+  }
+
+  const view = renderer.getParticleView();
+  const colors = view.colors();
+  const sizes = view.sizes();
+
+  for (let i = 0; i < labels.length; i++) {
+    const riskCount = riskCounts[i];
+    const baseSize = sizes[i] || 30;
+    if (!originalNodeSizes.has(i)) {
+      originalNodeSizes.set(i, baseSize);
+    }
+
+    if (!riskCount || maxRisk === 0) {
+      colorNode(i * 3, colors, packColor(74, 104, 145, 135));
+      sizes[i] = originalNodeSizes.get(i) * 0.9;
+      continue;
+    }
+
+    const ratio = Math.min(1, riskCount / maxRisk);
+    const color = getRiskColor(ratio);
+    colorNode(i * 3, colors, color);
+    sizes[i] = originalNodeSizes.get(i) * (1 + Math.min(riskCount, 6) * 0.15);
+  }
+
+  view.colors(colors);
+  view.sizes(sizes);
+  riskHeatmapActive = true;
+  lineViewNeedsUpdate = true;
+}
+
+function getRiskColor(t) {
+  if (t <= 0.5) {
+    const k = t / 0.5;
+    return packColor(
+      Math.round(64 + (248 - 64) * k),
+      Math.round(180 + (202 - 180) * k),
+      Math.round(90 + (72 - 90) * k),
+      245
+    );
+  }
+
+  const k = (t - 0.5) / 0.5;
+  return packColor(
+    Math.round(248 + (232 - 248) * k),
+    Math.round(202 + (84 - 202) * k),
+    Math.round(72 + (68 - 72) * k),
+    245
+  );
+}
+
+function packColor(r, g, b, a) {
+  return ((r & 0xff) << 24) | ((g & 0xff) << 16) | ((b & 0xff) << 8) | (a & 0xff);
+}
 function clearPathHighlight() {
     cls();
     if (pathLine) {
@@ -1092,13 +1183,14 @@ function handleClick(e) {
     if (!renderer) return;
     var view = renderer.getParticleView();
     var colors = view.colors();
-    var sizes = view.sizes(); 
+    var sizes = view.sizes();
     isTaskTypeViewActive = false;
+    riskHeatmapActive = false;
     lineViewNeedsUpdate = true;
     for (var i = 0; i < colors.length/4; i++) {
       colorNode(i * 3, colors, defaultNodeColor);
       if (originalNodeSizes.has(i)) {
-          sizes[i] = originalNodeSizes.get(i);
+        sizes[i] = originalNodeSizes.get(i);
       }
     }
     view.colors(colors);
@@ -1108,11 +1200,24 @@ function handleClick(e) {
     licenseLabels.forEach(label => renderer.scene().remove(label));
     licenseLabels = [];
     if (chainLine) {
-        renderer.scene().remove(chainLine);
-        if (chainLine.geometry) chainLine.geometry.dispose();
-        if (chainLine.material) chainLine.material.dispose();
-        chainLine = null;
+      renderer.scene().remove(chainLine);
+      if (chainLine.geometry) chainLine.geometry.dispose();
+      if (chainLine.material) chainLine.material.dispose();
+      chainLine = null;
     }
+
+    communityBubbles.forEach(mesh => {
+      renderer.scene().remove(mesh);
+      if (mesh.geometry) mesh.geometry.dispose();
+      if (mesh.material) mesh.material.dispose();
+      if (Array.isArray(mesh.children)) {
+        mesh.children.forEach(child => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+        });
+      }
+    });
+    communityBubbles = [];
   }
 
   function toNativeIndex(i) {
@@ -1264,40 +1369,6 @@ function showCommunitiesHandler(communityData) {
       });
   }
 
-  function cls() {
-    if (!renderer) return;
-    // ... (保留原有的 cls 逻辑)
-    var view = renderer.getParticleView();
-    var colors = view.colors();
-    var sizes = view.sizes(); 
-    isTaskTypeViewActive = false;
-    lineViewNeedsUpdate = true;
-    for (var i = 0; i < colors.length/4; i++) {
-      colorNode(i * 3, colors, defaultNodeColor);
-      if (originalNodeSizes.has(i)) {
-          sizes[i] = originalNodeSizes.get(i);
-      }
-    }
-    view.colors(colors);
-    view.sizes(sizes);
-    originalNodeSizes.clear();
-
-    licenseLabels.forEach(label => renderer.scene().remove(label));
-    licenseLabels = [];
-    if (chainLine) {
-        renderer.scene().remove(chainLine);
-        // ... dispose logic
-        chainLine = null;
-    }
-
-    // *** 新增：清理气泡 ***
-    communityBubbles.forEach(mesh => {
-        renderer.scene().remove(mesh);
-        if(mesh.geometry) mesh.geometry.dispose();
-        if(mesh.material) mesh.material.dispose();
-    });
-    communityBubbles = [];
-  }
   function destroy() {
     var input = renderer.input();
     if (input) input.off('move', clearHover);
@@ -1305,6 +1376,7 @@ function showCommunitiesHandler(communityData) {
     appEvents.positionsDownloaded.off(setPositions);
     appEvents.linksDownloaded.off(setLinks);
     appEvents.graphDownloaded.off(createClusterLabels);
+    appEvents.toggleRiskHeatmap.off(toggleRiskHeatmapHandler);
     if (touchControl) touchControl.destroy();
 
     // --- 新增：取消订阅 ---
