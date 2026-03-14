@@ -31,4 +31,8 @@ hf-data/node_modules/
 hf-data/*.json
 images/
 
+*.parquet
+*.csv
+*.json
+
 hf-data/dataTransfer/*.json
