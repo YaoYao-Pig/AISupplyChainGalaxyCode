@@ -93,7 +93,9 @@ module.exports = require('maco')((x) => {
                     <h4>{viewModel.title}</h4>
                     <button onClick={handleClose} className='window-close-btn' title={i18n.t('common.close')}>&times;</button>
                 </div>
-                {children}
+                <div className='window-body'>
+                    {children}
+                </div>
             </div>
         );
     };
