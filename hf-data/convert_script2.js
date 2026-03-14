@@ -9,14 +9,14 @@ const JSONStream = require('JSONStream');
 const through2 = require('through2');
 
 // --- 配置项 ---
-const INPUT_JSON_PATH = './output_graph_filtered.json';
-const OUTPUT_DIR = './galaxy_output_data';
+const INPUT_JSON_PATH = path.resolve(__dirname, 'output_graph_filtered.json');
+const OUTPUT_DIR = path.resolve(__dirname, 'galaxy_output_data');
 const GRAPH_NAME = 'my_model_galaxy';
 const VERSION_NAME = 'v1_updated_links'; // 可以用新版本名区分
 // const LAYOUT_ITERATIONS = 500; // 如果不重新计算布局，这个用不到
 
 const USE_EXISTING_POSITIONS = true; // <--- 新增配置：是否使用已有的positions.bin
-const EXISTING_POSITIONS_PATH = './data/positions.bin'; // <--- 新增配置：已有的positions.bin路径
+const EXISTING_POSITIONS_PATH = path.resolve(__dirname, 'data', 'positions.bin'); // <--- 新增配置：已有的positions.bin路径
 // 注意：上面的 EXISTING_POSITIONS_PATH 假设了之前的输出目录结构和版本名是 'v1'
 
 const LOG_INTERVAL = 20000;
@@ -279,3 +279,4 @@ console.log(`💾 Saved link_data.bin`);
 }
 
 convertData();
+

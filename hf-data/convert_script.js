@@ -10,8 +10,8 @@ const through2 = require('through2');
 
 // --- 1. 基础配置项 ---
 const CONFIG = {
-    INPUT_PATH: './output_graph_filtered.json',
-    OUTPUT_DIR: './galaxy_output_data',
+    INPUT_PATH: path.resolve(__dirname, 'output_graph_filtered.json'),
+    OUTPUT_DIR: path.resolve(__dirname, 'galaxy_output_data'),
     GRAPH_NAME: 'my_model_galaxy',
     VERSION_NAME: 'v1_updated_links',
     LAYOUT_ITERATIONS: 19005,
@@ -61,17 +61,19 @@ function runComplianceAnalysis(graph) {
 
     // --- 0. 预计算传播图结构 (Pre-computation) ---
     // 建立一个只包含 "传播边" 的轻量级邻接表，避免 BFS 时重复检查边类型
-    const propChildren = new Map(); // Parent -> [Children]
-    const propParents = new Map();  // Child -> [Parents]
+    const childToParents = new Map();  // Child -> [Parents]
+    const parentToChildren = new Map(); // Parent -> [Children]
 
     graph.forEachLink(link => {
         if (link.data && link.data.type && CONFIG.PROPAGATION_TYPES.has(link.data.type)) {
-            // Forward
-            if (!propChildren.has(link.fromId)) propChildren.set(link.fromId, []);
-            propChildren.get(link.fromId).push(link.toId);
-            // Backward
-            if (!propParents.has(link.toId)) propParents.set(link.toId, []);
-            propParents.get(link.toId).push(link.fromId);
+            const childId = link.fromId;
+            const parentId = link.toId;
+
+            if (!childToParents.has(childId)) childToParents.set(childId, []);
+            childToParents.get(childId).push(parentId);
+
+            if (!parentToChildren.has(parentId)) parentToChildren.set(parentId, []);
+            parentToChildren.get(parentId).push(childId);
         }
     });
 
@@ -148,7 +150,7 @@ function runComplianceAnalysis(graph) {
             if (sourceConditionFn(node)) sources.push(node);
         });
 
-        // 2. 对每个源进行 BFS (利用预计算的 propChildren)
+        // 2. 对每个源进行 BFS，沿 parent -> child 的真实下游方向传播
         sources.forEach(sourceNode => {
             const sourceLic = sourceNode.data.fixed_license;
             const sourceIdStr = safeString(sourceNode.data.model_id);
@@ -169,7 +171,7 @@ function runComplianceAnalysis(graph) {
                 }
 
                 // 获取预计算的子节点
-                const children = propChildren.get(currId);
+                const children = parentToChildren.get(currId);
                 if (children) {
                     for (let i = 0; i < children.length; i++) {
                         const childId = children[i];
@@ -220,7 +222,7 @@ function runComplianceAnalysis(graph) {
     // --- Step 5: FSF Conflict (Upstream Check) ---
     graph.forEachNode(node => {
         if (RISK_LISTS.c_Source.has(node.data.fixed_license)) {
-            const parents = propParents.get(node.id); // 使用预计算的 parents
+            const parents = childToParents.get(node.id);
             if (!parents) return;
 
             const conflictParents = [];
@@ -260,7 +262,7 @@ function runComplianceAnalysis(graph) {
         
         while(queue.length > 0) {
             const uId = queue.shift();
-            const children = propChildren.get(uId);
+            const children = parentToChildren.get(uId);
             if (children) {
                 for (const vId of children) {
                     if (!validFamilyIds.has(vId)) {
@@ -275,7 +277,7 @@ function runComplianceAnalysis(graph) {
         const lineageSources = [];
         graph.forEachNode(node => {
             if (node.data.fixed_license === licenseKey) {
-                const parents = propParents.get(node.id);
+                const parents = childToParents.get(node.id);
                 if (parents) {
                     let isInvalid = false;
                     const invalidParentNames = [];

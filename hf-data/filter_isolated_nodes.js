@@ -7,8 +7,8 @@ const JSONStream = require('JSONStream');
 const through2 = require('through2');
 
 // --- 配置项 ---
-const INPUT_JSON_PATH = './output_graph.json';
-const OUTPUT_JSON_PATH = './output_graph_filtered.json';
+const INPUT_JSON_PATH = path.resolve(__dirname, 'output_graph.json');
+const OUTPUT_JSON_PATH = path.resolve(__dirname, 'output_graph_filtered.json');
 const ISOLATED_NODE_SURVIVAL_RATE = 0.1; 
 const LOG_INTERVAL = 50000;
 // --- 配置结束 ---

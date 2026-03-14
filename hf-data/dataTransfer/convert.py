@@ -1,11 +1,13 @@
 import json
 import uuid
 import time
+from pathlib import Path
 from datetime import datetime, timezone
 
 # ================= 配置区域 =================
-INPUT_FILE = 'source.json'
-OUTPUT_FILE = 'output_graph.json'
+BASE_DIR = Path(__file__).resolve().parent
+INPUT_FILE = BASE_DIR / 'source.json'
+OUTPUT_FILE = BASE_DIR / 'output_graph.json'
 # ===========================================
 
 def convert_timestamp_to_iso(timestamp_ms):
