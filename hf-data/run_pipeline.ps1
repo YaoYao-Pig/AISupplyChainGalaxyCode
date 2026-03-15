@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [string]$DataParquetPath,
-    [switch]$SkipConvertScript2
+    [switch]$SkipConvertScript2,
+    [int]$NodeHeapMb = 8192
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,6 +34,7 @@ function Invoke-Step([string]$Command, [string[]]$Arguments, [string]$WorkingDir
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $dataTransferDir = Join-Path $scriptDir 'dataTransfer'
+$nodeMemoryArgs = @("--max-old-space-size=$NodeHeapMb")
 
 Assert-Command 'python'
 Assert-Command 'node'
@@ -70,16 +72,16 @@ if (-not (Test-Path $generatedGraphPath)) {
 
 Copy-Item -Path $generatedGraphPath -Destination (Join-Path $scriptDir 'output_graph.json') -Force
 
-Write-Step 'Filter isolated nodes'
-Invoke-Step 'node' @('filter_isolated_nodes.js') $scriptDir
+Write-Step "Filter isolated nodes (Node heap: ${NodeHeapMb} MB)"
+Invoke-Step 'node' ($nodeMemoryArgs + @('filter_isolated_nodes.js')) $scriptDir
 
-Write-Step 'Generate layout and compliance artifacts'
-Invoke-Step 'node' @('convert_script.js') $scriptDir
+Write-Step "Generate layout and compliance artifacts (Node heap: ${NodeHeapMb} MB)"
+Invoke-Step 'node' ($nodeMemoryArgs + @('convert_script.js')) $scriptDir
 
 $convertScript2Path = Join-Path $scriptDir 'convert_script2.js'
 if (-not $SkipConvertScript2 -and (Test-Path $convertScript2Path)) {
-    Write-Step 'Run secondary conversion stage'
-    Invoke-Step 'node' @('convert_script2.js') $scriptDir
+    Write-Step "Run secondary conversion stage (Node heap: ${NodeHeapMb} MB)"
+    Invoke-Step 'node' ($nodeMemoryArgs + @('convert_script2.js')) $scriptDir
 }
 
 Write-Host ""

@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATA_TRANSFER_DIR="$SCRIPT_DIR/dataTransfer"
 DATA_PARQUET_PATH="${1:-}"
 SKIP_CONVERT_SCRIPT2="${SKIP_CONVERT_SCRIPT2:-0}"
+NODE_HEAP_MB="${NODE_HEAP_MB:-8192}"
+NODE_MEMORY_ARGS=("--max-old-space-size=${NODE_HEAP_MB}")
 
 log_step() {
   printf '\n==> %s\n' "$1"
@@ -64,15 +66,15 @@ fi
 
 cp "$DATA_TRANSFER_DIR/output_graph.json" "$SCRIPT_DIR/output_graph.json"
 
-log_step 'Filter isolated nodes'
-run_step "$SCRIPT_DIR" node filter_isolated_nodes.js
+log_step "Filter isolated nodes (Node heap: ${NODE_HEAP_MB} MB)"
+run_step "$SCRIPT_DIR" node "${NODE_MEMORY_ARGS[@]}" filter_isolated_nodes.js
 
-log_step 'Generate layout and compliance artifacts'
-run_step "$SCRIPT_DIR" node convert_script.js
+log_step "Generate layout and compliance artifacts (Node heap: ${NODE_HEAP_MB} MB)"
+run_step "$SCRIPT_DIR" node "${NODE_MEMORY_ARGS[@]}" convert_script.js
 
 if [[ "$SKIP_CONVERT_SCRIPT2" != "1" && -f "$SCRIPT_DIR/convert_script2.js" ]]; then
-  log_step 'Run secondary conversion stage'
-  run_step "$SCRIPT_DIR" node convert_script2.js
+  log_step "Run secondary conversion stage (Node heap: ${NODE_HEAP_MB} MB)"
+  run_step "$SCRIPT_DIR" node "${NODE_MEMORY_ARGS[@]}" convert_script2.js
 fi
 
 printf '\nPipeline finished.\n'
