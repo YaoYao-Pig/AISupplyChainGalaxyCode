@@ -2,7 +2,8 @@
 param(
     [string]$DataParquetPath,
     [switch]$SkipConvertScript2,
-    [int]$NodeHeapMb = 8192
+    [int]$NodeHeapMb = 8192,
+    [switch]$KeepIntermediates
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,9 +33,24 @@ function Invoke-Step([string]$Command, [string[]]$Arguments, [string]$WorkingDir
     }
 }
 
+function Remove-IntermediateFiles([string[]]$Paths) {
+    foreach ($path in $Paths) {
+        if (Test-Path $path) {
+            Remove-Item -Path $path -Force
+            Write-Host "Removed intermediate: $path" -ForegroundColor DarkGray
+        }
+    }
+}
+
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $dataTransferDir = Join-Path $scriptDir 'dataTransfer'
 $nodeMemoryArgs = @("--max-old-space-size=$NodeHeapMb")
+$intermediateFiles = @(
+    (Join-Path $dataTransferDir 'source.json'),
+    (Join-Path $dataTransferDir 'output_graph.json'),
+    (Join-Path $scriptDir 'output_graph.json'),
+    (Join-Path $scriptDir 'output_graph_filtered.json')
+)
 
 Assert-Command 'python'
 Assert-Command 'node'
@@ -59,31 +75,39 @@ foreach ($requiredFile in $requiredFiles) {
     }
 }
 
-Write-Step 'Python parquet -> source.json'
-Invoke-Step 'python' @('transfer.py') $dataTransferDir
+try {
+    Write-Step 'Python parquet -> source.json'
+    Invoke-Step 'python' @('transfer.py') $dataTransferDir
 
-Write-Step 'Python source.json -> output_graph.json'
-Invoke-Step 'python' @('convert.py') $dataTransferDir
+    Write-Step 'Python source.json -> output_graph.json'
+    Invoke-Step 'python' @('convert.py') $dataTransferDir
 
-$generatedGraphPath = Join-Path $dataTransferDir 'output_graph.json'
-if (-not (Test-Path $generatedGraphPath)) {
-    throw "Expected generated file not found: $generatedGraphPath"
+    $generatedGraphPath = Join-Path $dataTransferDir 'output_graph.json'
+    if (-not (Test-Path $generatedGraphPath)) {
+        throw "Expected generated file not found: $generatedGraphPath"
+    }
+
+    Copy-Item -Path $generatedGraphPath -Destination (Join-Path $scriptDir 'output_graph.json') -Force
+
+    Write-Step "Filter isolated nodes (Node heap: ${NodeHeapMb} MB)"
+    Invoke-Step 'node' ($nodeMemoryArgs + @('filter_isolated_nodes.js')) $scriptDir
+
+    Write-Step "Generate layout and compliance artifacts (Node heap: ${NodeHeapMb} MB)"
+    Invoke-Step 'node' ($nodeMemoryArgs + @('convert_script.js')) $scriptDir
+
+    $convertScript2Path = Join-Path $scriptDir 'convert_script2.js'
+    if (-not $SkipConvertScript2 -and (Test-Path $convertScript2Path)) {
+        Write-Step "Run secondary conversion stage (Node heap: ${NodeHeapMb} MB)"
+        Invoke-Step 'node' ($nodeMemoryArgs + @('convert_script2.js')) $scriptDir
+    }
+
+    Write-Host ""
+    Write-Host 'Pipeline finished.' -ForegroundColor Green
+    Write-Host "Output: $(Join-Path $scriptDir 'galaxy_output_data')" -ForegroundColor Green
 }
-
-Copy-Item -Path $generatedGraphPath -Destination (Join-Path $scriptDir 'output_graph.json') -Force
-
-Write-Step "Filter isolated nodes (Node heap: ${NodeHeapMb} MB)"
-Invoke-Step 'node' ($nodeMemoryArgs + @('filter_isolated_nodes.js')) $scriptDir
-
-Write-Step "Generate layout and compliance artifacts (Node heap: ${NodeHeapMb} MB)"
-Invoke-Step 'node' ($nodeMemoryArgs + @('convert_script.js')) $scriptDir
-
-$convertScript2Path = Join-Path $scriptDir 'convert_script2.js'
-if (-not $SkipConvertScript2 -and (Test-Path $convertScript2Path)) {
-    Write-Step "Run secondary conversion stage (Node heap: ${NodeHeapMb} MB)"
-    Invoke-Step 'node' ($nodeMemoryArgs + @('convert_script2.js')) $scriptDir
+finally {
+    if (-not $KeepIntermediates) {
+        Write-Step 'Cleanup intermediates'
+        Remove-IntermediateFiles $intermediateFiles
+    }
 }
-
-Write-Host ""
-Write-Host 'Pipeline finished.' -ForegroundColor Green
-Write-Host "Output: $(Join-Path $scriptDir 'galaxy_output_data')" -ForegroundColor Green

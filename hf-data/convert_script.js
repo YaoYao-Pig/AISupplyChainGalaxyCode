@@ -411,15 +411,23 @@ async function convertData() {
         const layout = createLayout(graph, { dimensions: 3, iterations: CONFIG.LAYOUT_ITERATIONS });
         
         // 布局进度条
+        // 不同版本的 ngraph.offline.layout 暴露的 API 不完全一致。
+        // 优先使用 step() 以显示进度；如果不存在则退回 run()。
         const layoutBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
         layoutBar.start(CONFIG.LAYOUT_ITERATIONS, 0);
-        
-        // 分批执行布局以更新进度
-        const batchSize = 100;
-        for (let i = 0; i < CONFIG.LAYOUT_ITERATIONS; i += batchSize) {
-            const steps = Math.min(batchSize, CONFIG.LAYOUT_ITERATIONS - i);
-            for(let j=0; j<steps; j++) layout.step();
-            layoutBar.increment(steps);
+
+        if (typeof layout.step === 'function') {
+            const batchSize = 100;
+            for (let i = 0; i < CONFIG.LAYOUT_ITERATIONS; i += batchSize) {
+                const steps = Math.min(batchSize, CONFIG.LAYOUT_ITERATIONS - i);
+                for (let j = 0; j < steps; j++) layout.step();
+                layoutBar.increment(steps);
+            }
+        } else if (typeof layout.run === 'function') {
+            layout.run();
+            layoutBar.update(CONFIG.LAYOUT_ITERATIONS);
+        } else {
+            throw new TypeError('Unsupported ngraph.offline.layout API: missing step() and run().');
         }
         layoutBar.stop();
         
@@ -438,9 +446,10 @@ async function convertData() {
 
         // Save Positions
         const positionsArray = new Int32Array(graph.getNodesCount() * 3);
-        const finalPositions = layout.getLayout();
         for (let id = 0; id < graph.getNodesCount(); id++) {
-            const pos = finalPositions[id];
+            const pos = typeof layout.getNodePosition === 'function'
+                ? layout.getNodePosition(id)
+                : (typeof layout.getLayout === 'function' ? layout.getLayout()[id] : null);
             if (pos) {
                 positionsArray[id * 3] = Math.round(pos.x);
                 positionsArray[id * 3 + 1] = Math.round(pos.y);
@@ -489,3 +498,4 @@ async function convertData() {
 }
 
 convertData();
+

@@ -7,7 +7,14 @@ DATA_TRANSFER_DIR="$SCRIPT_DIR/dataTransfer"
 DATA_PARQUET_PATH="${1:-}"
 SKIP_CONVERT_SCRIPT2="${SKIP_CONVERT_SCRIPT2:-0}"
 NODE_HEAP_MB="${NODE_HEAP_MB:-8192}"
+KEEP_INTERMEDIATES="${KEEP_INTERMEDIATES:-0}"
 NODE_MEMORY_ARGS=("--max-old-space-size=${NODE_HEAP_MB}")
+INTERMEDIATE_FILES=(
+  "$DATA_TRANSFER_DIR/source.json"
+  "$DATA_TRANSFER_DIR/output_graph.json"
+  "$SCRIPT_DIR/output_graph.json"
+  "$SCRIPT_DIR/output_graph_filtered.json"
+)
 
 log_step() {
   printf '\n==> %s\n' "$1"
@@ -28,6 +35,16 @@ run_step() {
     cd "$workdir"
     "$@"
   )
+}
+
+cleanup_intermediates() {
+  local path
+  for path in "${INTERMEDIATE_FILES[@]}"; do
+    if [[ -f "$path" ]]; then
+      rm -f "$path"
+      printf 'Removed intermediate: %s\n' "$path"
+    fi
+  done
 }
 
 require_command python
@@ -52,6 +69,15 @@ for required_file in "${required_files[@]}"; do
     exit 1
   fi
 done
+
+cleanup_on_exit() {
+  if [[ "$KEEP_INTERMEDIATES" != "1" ]]; then
+    log_step 'Cleanup intermediates'
+    cleanup_intermediates
+  fi
+}
+
+trap cleanup_on_exit EXIT
 
 log_step 'Python parquet -> source.json'
 run_step "$DATA_TRANSFER_DIR" python transfer.py
