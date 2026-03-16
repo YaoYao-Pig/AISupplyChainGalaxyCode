@@ -799,10 +799,12 @@ a.media {
 /* --- Left Sidebar Styles --- */
 .left-sidebar-container {
   position: absolute;
-  top: 50%;
+  top: 16px;
+  bottom: 16px;
   left: 0;
-  transform: translate(-95%, -50%); /* 默认状态下只露出一小部分边缘 */
-  width: 220px;
+  transform: translateX(calc(-100% + 26px)); /* 默认状态下保留一条可见边缘 */
+  width: clamp(220px, 24vw, 320px);
+  max-width: calc(100vw - 20px);
   background-color: rgba(20, 20, 25, 0.9);
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   border-top-right-radius: 8px;
@@ -811,12 +813,22 @@ a.media {
   z-index: 30; /* 确保在最上层 */
   box-shadow: 5px 0 25px rgba(0,0,0,0.5);
   transition: transform 0.3s ease-in-out;
-  padding: 10px;
-  padding-left: 20px; /* 给左侧留出更多空间 */
+  padding: 14px 12px 14px 20px;
+  box-sizing: border-box;
+  display: flex;
+  overflow: hidden;
 }
 
 .left-sidebar-container.open {
-  transform: translate(0, -50%); /* 展开状态 */
+  transform: translateX(0); /* 展开状态 */
+}
+
+.left-sidebar-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 6px;
 }
 
 .left-sidebar-content h4 {
@@ -848,14 +860,6 @@ a.media {
   color: white;
 }
 
-
-// src/styles/main.less (在 .left-sidebar-container .analysis-btn:hover 规则后添加)
-
-.left-sidebar-container .analysis-btn:hover {
-  background-color: #4a7294;
-  color: white;
-}
-
 /* --- 新增：为高亮按钮添加特殊样式 --- */
 .left-sidebar-container .analysis-btn.highlight {
   background-color: #c0392b; /* 使用醒目的红色 */
@@ -870,6 +874,50 @@ a.media {
   background-color: #555;
   color: #999;
   cursor: not-allowed;
+}
+
+@media (max-width: 1200px) {
+  .left-sidebar-container {
+    width: clamp(210px, 28vw, 280px);
+  }
+}
+
+@media (max-width: 768px) {
+  .left-sidebar-container {
+    top: 68px;
+    bottom: 12px;
+    width: min(280px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    transform: translateX(calc(-100% + 22px));
+    padding: 12px 10px 12px 16px;
+  }
+
+  .left-sidebar-content {
+    padding-right: 4px;
+  }
+
+  .left-sidebar-container .analysis-btn {
+    padding: 9px 10px;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+}
+
+@media (max-height: 820px) {
+  .left-sidebar-container {
+    top: 12px;
+    bottom: 12px;
+  }
+
+  .left-sidebar-content h4 {
+    margin-bottom: 10px;
+  }
+
+  .left-sidebar-container .analysis-btn {
+    margin-bottom: 8px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
 }
 
 .toast-notification {
