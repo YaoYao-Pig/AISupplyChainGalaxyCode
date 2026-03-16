@@ -31,7 +31,10 @@ class ModuleRulesConfig:
 @dataclass(slots=True)
 class RuntimeConfig:
     max_steps: int = 5
-    default_action_type: str = "mock_action"
+    default_action_type: str = "task_bootstrap"
+    state_store_dir: str = "docs/generated/runtime_state"
+    runtime_snapshot_path: str = "docs/generated/runtime_snapshot.{task_id}.json"
+    required_entrypoint: str = "python tools/agentkit/run_task.py start"
 
 
 @dataclass(slots=True)

@@ -7,6 +7,11 @@
 - Reflect：记录经验与后续优化。
 
 ## 2. 标准流程
+0. Bootstrap
+- 先运行 `python tools/agentkit/run_task.py start --title "<task title>" --goal "<task goal>"`。
+- 确认 `docs/generated/runtime_state/<task_id>.json` 已生成。
+- 确认 `docs/generated/task_model.md` 已被 AgentKit 更新。
+
 1. Think
 - 复述需求（目标、非目标）。
 - 标注影响文件与模块。
@@ -22,6 +27,7 @@
 - 运行 `npm run check:vibe`。
 - 手动验证核心交互链路。
 - 记录失败项与原因。
+- 如需回看状态，运行 `python tools/agentkit/run_task.py status <task_id>`。
 
 4. Reflect
 - 记录本次有效模式（可复用模板）。
@@ -29,6 +35,11 @@
 
 ## 3. 任务模板
 ```md
+## Bootstrap
+- Task command:
+- Task ID:
+- Persisted state:
+
 ## Think
 - Goal:
 - Non-goals:
@@ -55,3 +66,4 @@
 - 搜索可定位节点。
 - 至少一个分析窗口可正常打开并更新。
 - 控制台无新增高频报错。
+- AgentKit runtime state、task_model、handoff_note 与最终实现一致。

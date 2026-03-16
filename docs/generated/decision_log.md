@@ -15,3 +15,38 @@
 - Step: 3
 - Decision: Replace inheritance risk inline styles with stylesheet classes.
 - Rationale: That popup was the most visually isolated component and inline styles made future consistency harder.
+
+
+## Decision Log Entry
+- Task ID: agentkit-mandatory-bootstrap
+- Step: 2
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Make repository tasks enter AgentKit pipeline before implementation begins
+
+
+## Decision Log Entry
+- Task ID: starter-task-001
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Action executed successfully.
+
+
+## Decision Log Entry
+- Task ID: agentkit-mandatory-bootstrap
+- Step: 3
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Make repository tasks enter AgentKit pipeline before implementation begins
+
+
+## Decision Log Entry
+- Task ID: agentkit-mandatory-entrypoint
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Make repository tasks enter AgentKit pipeline before implementation begins
+
+
+## Decision Log Entry
+- Task ID: progress-bar-for-loading-overlay
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Replace startup numeric loading indicator with a progress bar and move it to an adaptive top-left position that avoids the search box

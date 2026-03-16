@@ -30,7 +30,7 @@ def _build_project_charter(payload: RuntimeDocumentInput) -> dict[str, object]:
         "task_id": payload.task.id,
         "mission": payload.task.title,
         "goal": payload.task.goal,
-        "scope": "Reusable runtime, configs, and docs",
+        "scope": "Reusable runtime, configs, docs",
         "constraints": _list_to_markdown(payload.task.constraints),
         "success_criteria": _list_to_markdown(payload.task.success_criteria),
     }
@@ -74,7 +74,7 @@ def _build_risk_register(payload: RuntimeDocumentInput) -> dict[str, object]:
 def _build_milestone_report(payload: RuntimeDocumentInput) -> dict[str, object]:
     return {
         "task_id": payload.task.id,
-        "milestone_name": "starter_milestone",
+        "milestone_name": "task_bootstrapped",
         "status": payload.state.status.value,
         "record_count": len(payload.state.records),
         "evidence_count": len(payload.state.evidence_refs),
@@ -87,7 +87,7 @@ def _build_handoff_note(payload: RuntimeDocumentInput) -> dict[str, object]:
         "task_id": payload.task.id,
         "status": payload.state.status.value,
         "summary": latest_summary,
-        "follow_ups": "- Replace mock executor\n- Add persistent state store",
+        "follow_ups": "- Start implementation only after confirming impacted modules and risks\n- Keep runtime state and generated docs aligned with actual execution",
     }
 
 

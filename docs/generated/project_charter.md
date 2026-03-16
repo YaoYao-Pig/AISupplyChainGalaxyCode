@@ -1,16 +1,18 @@
 # AISupplyChainGalaxyCode AgentKit Project Charter
 
-- Task ID: starter-task-001
-- Mission: Bootstrap downstream project
-- Goal: Create initial runtime state and docs
+- Task ID: progress-bar-for-loading-overlay
+- Mission: Progress Bar For Loading Overlay
+- Goal: Replace startup numeric loading indicator with a progress bar and move it to an adaptive top-left position that avoids the search box
 
 ## Scope
-Reusable runtime, configs, and docs
+Reusable runtime, configs, docs
 
 ## Constraints
-- No domain-specific logic
-- Config-driven behavior
+- Preserve src/galaxy business behavior
+- Do not add new module-boundary violations
 
 ## Success Criteria
-- Runtime completes
-- Documents generated
+- Persist runtime state
+- Update generated docs
+- Loading indicator becomes a progress bar
+- Top-left placement avoids search box overlap

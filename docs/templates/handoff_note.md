@@ -24,4 +24,5 @@ output_path: docs/generated/handoff_note.md
 
 ## Existing Project Constraints
 - Preserve current React/WebGL business code under `src/galaxy/`
-- Keep original `README.md` and `AGENTS.md`; use starter variants for comparison
+- Bootstrap each new task through `tools/agentkit/run_task.py` before implementation
+- Keep popup behavior, stores, and services aligned with existing module boundaries

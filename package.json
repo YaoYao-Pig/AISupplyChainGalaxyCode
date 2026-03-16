@@ -9,7 +9,8 @@
     "start": "PORT=8081 node dev-server.js",
     "check:boundaries": "node tools/quality/check-module-boundaries.js",
     "check:vibe": "npm run check:boundaries",
-    "data:pipeline": "pwsh -File .\\hf-data\\run_pipeline.ps1"
+    "data:pipeline": "pwsh -File .\\hf-data\\run_pipeline.ps1",
+    "agentkit:task": "python tools/agentkit/run_task.py"
   },
   "repository": {
     "type": "git",
@@ -80,3 +81,4 @@
     "webpack": "^1.9.11"
   }
 }
+

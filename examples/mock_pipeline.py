@@ -22,6 +22,16 @@ from agentkit.runtime.layers.validation import SimpleValidator
 from agentkit.runtime.models import Task
 
 
+MOCK_OUTPUT_OVERRIDES = {
+    "project_charter": "docs/generated/mock_pipeline/project_charter.md",
+    "task_model": "docs/generated/mock_pipeline/task_model.md",
+    "decision_log": "docs/generated/mock_pipeline/decision_log.md",
+    "risk_register": "docs/generated/mock_pipeline/risk_register.md",
+    "milestone_report": "docs/generated/mock_pipeline/milestone_report.md",
+    "handoff_note": "docs/generated/mock_pipeline/handoff_note.md",
+}
+
+
 def main() -> None:
     config = load_full_config("configs")
 
@@ -30,7 +40,7 @@ def main() -> None:
             profile={"name": config.system_profile.agent_name, "role": config.system_profile.role}
         ),
         capability_registry=StaticCapabilityRegistry(action_types=["mock_action", "external_write"]),
-        planner=MinimalPlanner(default_action_type=config.runtime.default_action_type),
+        planner=MinimalPlanner(default_action_type="mock_action"),
         executor=MockExecutor(),
         validator=SimpleValidator(blocked_action_types=set(config.policy_rules.blocked_action_types)),
         state_store=InMemoryStateStore(),
@@ -49,7 +59,7 @@ def main() -> None:
 
     outcome = engine.run(task)
 
-    registry = load_registry_from_templates("docs/templates")
+    registry = load_registry_from_templates("docs/templates", output_path_overrides=MOCK_OUTPUT_OVERRIDES)
     docs_service = DocumentService(
         registry=registry,
         loader=MarkdownTemplateLoader(),

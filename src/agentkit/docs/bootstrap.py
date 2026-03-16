@@ -17,6 +17,8 @@ def load_registry_from_templates(
 
     registry = DocumentRegistry()
     for path in sorted(Path(template_dir).glob("*.md")):
+        if ".starter." in path.name:
+            continue
         template = loader.load(str(path))
         metadata = template.metadata
         definition = DocumentDefinition(

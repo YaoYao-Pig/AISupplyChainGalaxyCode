@@ -5,12 +5,34 @@ import i18n from './utils/i18n.js';
 module.exports = require('maco')(loadingIndicator, React);
 
 function loadingIndicator(x) {
-  var loadingMessage = '';
+  var loadingState = getDefaultState();
 
   x.render = function() {
-    return scene.isLoading() ?
-        <div className='label loading'>{loadingMessage || i18n.t('common.loading')}</div> :
-        null;
+    if (!scene.isLoading()) return null;
+
+    var message = loadingState.message || i18n.t('common.loading');
+    var details = loadingState.details;
+    var percent = loadingState.percent;
+    var barClassName = 'loading-progress-fill';
+    var barStyle = {};
+
+    if (percent === null) {
+      barClassName += ' is-indeterminate';
+    } else {
+      barStyle.width = percent + '%';
+    }
+
+    return (
+      <div className='loading loading-panel'>
+        <div className='loading-panel-header'>
+          <span className='loading-title'>{message}</span>
+          {details ? <span className='loading-value'>{details}</span> : null}
+        </div>
+        <div className='loading-progress-track'>
+          <div className={barClassName} style={barStyle}></div>
+        </div>
+      </div>
+    );
   };
 
   x.componentDidMount = function() {
@@ -28,14 +50,42 @@ function loadingIndicator(x) {
   }
 
   function updateLoadingIndicator(progress) {
-    if (!progress || (!progress.message && progress.completed === undefined)) {
-      loadingMessage = i18n.t('common.loading');
-    } else {
-      loadingMessage = i18n.t('loading.progress', {
-        message: progress.message || i18n.t('common.loading'),
-        completed: progress.completed === undefined ? '' : progress.completed
-      });
-    }
+    loadingState = normalizeProgress(progress);
     x.forceUpdate();
+  }
+
+  function normalizeProgress(progress) {
+    if (!progress || (!progress.message && progress.completed === undefined)) {
+      return getDefaultState();
+    }
+
+    var details = progress.completed === undefined ? '' : String(progress.completed);
+    return {
+      message: progress.message || i18n.t('common.loading'),
+      details: details,
+      percent: parsePercent(details)
+    };
+  }
+
+  function getDefaultState() {
+    return {
+      message: i18n.t('common.loading'),
+      details: '',
+      percent: null
+    };
+  }
+
+  function parsePercent(value) {
+    if (!value) return null;
+
+    var match = /(-?\d+(?:\.\d+)?)\s*%/.exec(value);
+    if (!match) return null;
+
+    var percent = Number(match[1]);
+    if (!isFinite(percent)) return null;
+
+    if (percent < 0) return 0;
+    if (percent > 100) return 100;
+    return percent;
   }
 }

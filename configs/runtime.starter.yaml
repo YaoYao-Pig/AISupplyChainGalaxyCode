@@ -1,2 +1,5 @@
 max_steps: 6
-default_action_type: mock_action
+default_action_type: task_bootstrap
+state_store_dir: docs/generated/runtime_state
+runtime_snapshot_path: docs/generated/runtime_snapshot.{task_id}.json
+required_entrypoint: python tools/agentkit/run_task.py start
