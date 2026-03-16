@@ -1,0 +1,69 @@
+{
+  "task_id": "restore-bottom-left-node-detail-placement",
+  "status": "COMPLETED",
+  "current_phase": "planning",
+  "summaries": [
+    {
+      "step_id": "restore-bottom-left-node-detail-placement-step-1",
+      "content": "Task bootstrapped through AgentKit pipeline: Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar",
+      "created_at": "2026-03-16T16:12:41.393400+00:00"
+    }
+  ],
+  "evidence_refs": [
+    {
+      "path": "runtime://task_bootstrap/restore-bottom-left-node-detail-placement",
+      "lines": null,
+      "note": "Repository task registered and approved for implementation entry."
+    }
+  ],
+  "records": [
+    {
+      "step_id": 1,
+      "action": {
+        "id": "restore-bottom-left-node-detail-placement-step-1",
+        "action_type": "task_bootstrap",
+        "params": {
+          "goal": "Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar"
+        }
+      },
+      "policy_result": {
+        "decision": "allow",
+        "reason": "post-check passed",
+        "risk_level": "low"
+      },
+      "result": {
+        "action_id": "restore-bottom-left-node-detail-placement-step-1",
+        "status": "success",
+        "summary": {
+          "step_id": "restore-bottom-left-node-detail-placement-step-1",
+          "content": "Task bootstrapped through AgentKit pipeline: Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar",
+          "created_at": "2026-03-16T16:12:41.393400+00:00"
+        },
+        "evidence": [
+          {
+            "path": "runtime://task_bootstrap/restore-bottom-left-node-detail-placement",
+            "lines": null,
+            "note": "Repository task registered and approved for implementation entry."
+          }
+        ],
+        "output": {
+          "task_goal": "Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar",
+          "phase": "planning",
+          "task_id": "restore-bottom-left-node-detail-placement"
+        }
+      },
+      "created_at": "2026-03-16T16:12:41.393400+00:00"
+    }
+  ],
+  "retries": 0,
+  "metadata": {
+    "identity": {
+      "name": "starter_agent",
+      "role": "pipeline_runtime"
+    },
+    "capabilities": [
+      "task_bootstrap",
+      "external_write"
+    ]
+  }
+}

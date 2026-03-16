@@ -57,3 +57,10 @@
 - Step: 1
 - Decision: COMPLETED
 - Rationale: Task bootstrapped through AgentKit pipeline: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it
+
+
+## Decision Log Entry
+- Task ID: restore-bottom-left-node-detail-placement
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar

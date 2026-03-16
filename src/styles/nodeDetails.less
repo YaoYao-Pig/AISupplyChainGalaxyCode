@@ -2,18 +2,13 @@
 @line-height: 1.4;
 @lines-to-show: 2;
 
-.node-details-container {
-  position: relative;
-  z-index: 20;
-}
-
 .node-details {
   width: 395px;
   left: 16px;
   bottom: 12px;
   padding: 12px;
-  position: absolute;
-  z-index: 1;
+  position: fixed;
+  z-index: 25;
   transition: left 0.26s ease, right 0.26s ease, width 0.26s ease;
 
   font-family: 'PT Sans', sans-serif;
@@ -51,15 +46,8 @@
     left: 12px;
     right: 12px;
     width: auto;
-    .info-block {
-      padding-left: 0;
-      a {
-        margin: 0 7px;
-        text-overflow: ellipsis;
-        overflow: hidden;
-      }
-    }
   }
+
   .info-block {
     a {
       font-size: @font-size;
@@ -76,6 +64,16 @@
     left: 12px;
     right: 12px;
     width: auto;
+  }
+
+  .node-details .info-block {
+    padding-left: 0;
+
+    a {
+      margin: 0 7px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
   }
 }
 

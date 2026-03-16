@@ -1,10 +1,10 @@
 # Handoff Note
 
-- Task ID: avoid-node-detail-panel-overlap
+- Task ID: restore-bottom-left-node-detail-placement
 - Status: COMPLETED
 
 ## Summary
-Task bootstrapped through AgentKit pipeline: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it
+Task bootstrapped through AgentKit pipeline: Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar
 
 ## Follow-ups
 - Start implementation only after confirming impacted modules and risks

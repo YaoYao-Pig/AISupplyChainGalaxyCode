@@ -1,8 +1,8 @@
 # AISupplyChainGalaxyCode AgentKit Project Charter
 
-- Task ID: avoid-node-detail-panel-overlap
-- Mission: Avoid Node Detail Panel Overlap
-- Goal: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it
+- Task ID: restore-bottom-left-node-detail-placement
+- Mission: Restore Bottom Left Node Detail Placement
+- Goal: Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar
 
 ## Scope
 Reusable runtime, configs, docs
@@ -14,4 +14,5 @@ Reusable runtime, configs, docs
 ## Success Criteria
 - Persist runtime state
 - Update generated docs
-- Node detail panel no longer overlaps with the left sidebar
+- Node detail panel stays bottom-left
+- Left sidebar no longer covers the panel
