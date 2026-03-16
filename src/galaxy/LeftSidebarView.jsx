@@ -12,7 +12,8 @@ const scene = require('./store/sceneStore.js');
 
 module.exports = require('maco')((x) => {
   x.state = {
-    isOpen: false,
+    isPanelOpen: false,
+    activeSection: 'guide',
     conflictCount: 0,
     selectedLicense: 'none',
     isSimulating: false,
@@ -75,8 +76,22 @@ module.exports = require('maco')((x) => {
     });
   };
 
-  const handleMouseEnter = () => x.setState({ isOpen: true });
-  const handleMouseLeave = () => x.setState({ isOpen: false });
+  const handleSectionToggle = (sectionId) => {
+    x.setState(function (state) {
+      if (state.isPanelOpen && state.activeSection === sectionId) {
+        return { isPanelOpen: false };
+      }
+
+      return {
+        isPanelOpen: true,
+        activeSection: sectionId
+      };
+    });
+  };
+
+  const handleClosePanel = () => {
+    x.setState({ isPanelOpen: false });
+  };
 
   const handleGlobalStats = () => appEvents.showGlobalLicenseStats.fire();
   const handleGlobalReport = () => appEvents.showGlobalLicenseReport.fire();
@@ -207,86 +222,146 @@ module.exports = require('maco')((x) => {
     x.setState({ isTaskTypeView: !isTaskTypeView });
   };
 
-  x.render = function() {
-    const isOpen = x.state.isOpen;
+  function renderGuideSection() {
+    return (
+      <div className='sidebar-intro-card'>
+        <h4>{i18n.t('leftSidebar.featureGuide.title')}</h4>
+        <p>{i18n.t('leftSidebar.featureGuide.desc')}</p>
+        <ul>
+          <li>{i18n.t('leftSidebar.featureGuide.item1')}</li>
+          <li>{i18n.t('leftSidebar.featureGuide.item2')}</li>
+          <li>{i18n.t('leftSidebar.featureGuide.item3')}</li>
+        </ul>
+      </div>
+    );
+  }
+
+  function renderInsightSection() {
+    const riskHeatButtonText = x.state.isRiskHeatmap ? i18n.t('leftSidebar.button.disableRiskHeatmap') : i18n.t('leftSidebar.button.riskHeatmap');
+
+    return (
+      <div className='left-sidebar-section-body'>
+        <button onClick={handleGlobalStats} className='analysis-btn'>{i18n.t('leftSidebar.button.licenseStats')}</button>
+        <button onClick={handleGlobalReport} className='analysis-btn'>{i18n.t('leftSidebar.button.complianceReport')}</button>
+        <button onClick={handleGlobalComplianceStats} className='analysis-btn'>{i18n.t('leftSidebar.button.complianceStats')}</button>
+        <button onClick={handleToggleRiskHeatmap} className='analysis-btn'>{riskHeatButtonText}</button>
+        <button onClick={handleShowKeyNodeRanking} className='analysis-btn'>{i18n.t('leftSidebar.button.keyNodeRanking')}</button>
+        <button onClick={handleShowImpactScope} className='analysis-btn'>{i18n.t('leftSidebar.button.impactScope')}</button>
+      </div>
+    );
+  }
+
+  function renderViewSection() {
     const conflictCount = x.state.conflictCount;
+    const coreButtonText = x.state.isCoreHighlighted ? i18n.t('leftSidebar.button.showAllModels') : i18n.t('leftSidebar.button.highlightCore');
+    const communityButtonText = x.state.isCommunityView ? i18n.t('leftSidebar.button.defaultView') : i18n.t('leftSidebar.button.showCommunities');
+    const taskTypeButtonText = x.state.isTaskTypeView ? i18n.t('leftSidebar.button.defaultView') : i18n.t('leftSidebar.button.taskTypeView');
+
+    return (
+      <div className='left-sidebar-section-body'>
+        <button onClick={handleShowTaskTypeView} className='analysis-btn'>{taskTypeButtonText}</button>
+        <button onClick={handleHighlightCore} className='analysis-btn'>{coreButtonText}</button>
+        <button onClick={handleShowCommunities} className='analysis-btn'>{communityButtonText}</button>
+        <button
+          onClick={handleHighlightClick}
+          className='analysis-btn highlight'
+          disabled={conflictCount === 0}
+        >
+          {i18n.t('leftSidebar.button.highlightConflicts', { count: conflictCount })}
+        </button>
+        <button onClick={handleToggleTimeline} className='analysis-btn'>{i18n.t('leftSidebar.button.toggleTimeline')}</button>
+      </div>
+    );
+  }
+
+  function renderLicenseSection() {
     const selectedLicense = x.state.selectedLicense;
     const isSimulating = x.state.isSimulating;
     const simulationProgress = x.state.simulationProgress;
-    const isCoreHighlighted = x.state.isCoreHighlighted;
-    const isCommunityView = x.state.isCommunityView;
-    const isTaskTypeView = x.state.isTaskTypeView;
-    const isRiskHeatmap = x.state.isRiskHeatmap;
-
-    const containerClass = isOpen ? 'left-sidebar-container open' : 'left-sidebar-container';
     const licenses = ['MIT', 'Apache-2.0', 'GPL-3.0', 'AGPL-3.0'];
-    const coreButtonText = isCoreHighlighted ? i18n.t('leftSidebar.button.showAllModels') : i18n.t('leftSidebar.button.highlightCore');
-    const communityButtonText = isCommunityView ? i18n.t('leftSidebar.button.defaultView') : i18n.t('leftSidebar.button.showCommunities');
-    const taskTypeButtonText = isTaskTypeView ? i18n.t('leftSidebar.button.defaultView') : i18n.t('leftSidebar.button.taskTypeView');
-    const riskHeatButtonText = isRiskHeatmap ? i18n.t('leftSidebar.button.disableRiskHeatmap') : i18n.t('leftSidebar.button.riskHeatmap');
 
     return (
-      <div
-        className={containerClass}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div className='left-sidebar-content'>
-          <div className='sidebar-intro-card'>
-            <h4>{i18n.t('leftSidebar.featureGuide.title')}</h4>
-            <p>{i18n.t('leftSidebar.featureGuide.desc')}</p>
-            <ul>
-              <li>{i18n.t('leftSidebar.featureGuide.item1')}</li>
-              <li>{i18n.t('leftSidebar.featureGuide.item2')}</li>
-              <li>{i18n.t('leftSidebar.featureGuide.item3')}</li>
-            </ul>
+      <div className='simulator-controls'>
+        <p>{i18n.t('leftSidebar.licenseSimulator')}</p>
+        <select value={selectedLicense} onChange={handleLicenseChange} disabled={isSimulating}>
+          <option value='none'>{i18n.t('leftSidebar.licensePlaceholder')}</option>
+          {licenses.map(function (license) {
+            return <option key={license} value={license}>{license}</option>;
+          })}
+        </select>
+
+        {isSimulating ? (
+          <div className='progress-bar-container'>
+            <div className='progress-bar' style={{ width: `${simulationProgress}%` }} />
+            <span className='progress-label'>{Math.round(simulationProgress)}%</span>
           </div>
-
-          <h4>{i18n.t('leftSidebar.section.dataInsight')}</h4>
-          <button onClick={handleGlobalStats} className='analysis-btn'>{i18n.t('leftSidebar.button.licenseStats')}</button>
-          <button onClick={handleGlobalReport} className='analysis-btn'>{i18n.t('leftSidebar.button.complianceReport')}</button>
-          <button onClick={handleGlobalComplianceStats} className='analysis-btn'>{i18n.t('leftSidebar.button.complianceStats')}</button>
-          <button onClick={handleToggleRiskHeatmap} className='analysis-btn'>{riskHeatButtonText}</button>
-          <button onClick={handleShowKeyNodeRanking} className='analysis-btn'>{i18n.t('leftSidebar.button.keyNodeRanking')}</button>
-          <button onClick={handleShowImpactScope} className='analysis-btn'>{i18n.t('leftSidebar.button.impactScope')}</button>
-
-          <hr className='sidebar-separator' />
-
-          <h4>{i18n.t('leftSidebar.section.viewSwitch')}</h4>
-          <button onClick={handleShowTaskTypeView} className='analysis-btn'>{taskTypeButtonText}</button>
-          <button onClick={handleHighlightCore} className='analysis-btn'>{coreButtonText}</button>
-          <button onClick={handleShowCommunities} className='analysis-btn'>{communityButtonText}</button>
-          <button
-            onClick={handleHighlightClick}
-            className='analysis-btn highlight'
-            disabled={conflictCount === 0}
-          >
-            {i18n.t('leftSidebar.button.highlightConflicts', { count: conflictCount })}
+        ) : (
+          <button onClick={handleSimulate} className='analysis-btn' disabled={isSimulating}>
+            {selectedLicense === 'none' ? i18n.t('leftSidebar.button.resetView') : i18n.t('leftSidebar.button.simulate')}
           </button>
-          <button onClick={handleToggleTimeline} className='analysis-btn'>{i18n.t('leftSidebar.button.toggleTimeline')}</button>
+        )}
+      </div>
+    );
+  }
 
-          <hr className='sidebar-separator' />
+  function renderPanelContent(sectionId) {
+    if (sectionId === 'insight') return renderInsightSection();
+    if (sectionId === 'view') return renderViewSection();
+    if (sectionId === 'license') return renderLicenseSection();
+    return renderGuideSection();
+  }
 
-          <h4>{i18n.t('leftSidebar.section.license')}</h4>
-          <div className='simulator-controls'>
-            <p>{i18n.t('leftSidebar.licenseSimulator')}</p>
-            <select value={selectedLicense} onChange={handleLicenseChange} disabled={isSimulating}>
-              <option value='none'>{i18n.t('leftSidebar.licensePlaceholder')}</option>
-              {licenses.map(function (license) {
-                return <option key={license} value={license}>{license}</option>;
-              })}
-            </select>
+  x.render = function() {
+    const sections = [
+      { id: 'guide', label: i18n.t('leftSidebar.tab.guide'), title: i18n.t('leftSidebar.featureGuide.title') },
+      { id: 'insight', label: i18n.t('leftSidebar.tab.insight'), title: i18n.t('leftSidebar.section.dataInsight') },
+      { id: 'view', label: i18n.t('leftSidebar.tab.view'), title: i18n.t('leftSidebar.section.viewSwitch') },
+      { id: 'license', label: i18n.t('leftSidebar.tab.license'), title: i18n.t('leftSidebar.section.license') }
+    ];
+    const activeSection = x.state.activeSection;
+    const activeConfig = sections.find(function (section) {
+      return section.id === activeSection;
+    }) || sections[0];
+    const containerClass = x.state.isPanelOpen ? 'left-sidebar-container open' : 'left-sidebar-container';
 
-            {isSimulating ? (
-              <div className='progress-bar-container'>
-                <div className='progress-bar' style={{ width: `${simulationProgress}%` }} />
-                <span className='progress-label'>{Math.round(simulationProgress)}%</span>
-              </div>
-            ) : (
-              <button onClick={handleSimulate} className='analysis-btn' disabled={isSimulating}>
-                {selectedLicense === 'none' ? i18n.t('leftSidebar.button.resetView') : i18n.t('leftSidebar.button.simulate')}
+    return (
+      <div className={containerClass}>
+        <div className='left-sidebar-rail'>
+          {sections.map(function (section) {
+            const isActive = x.state.isPanelOpen && activeSection === section.id;
+            const buttonClass = isActive ? 'left-sidebar-tab active' : 'left-sidebar-tab';
+
+            return (
+              <button
+                key={section.id}
+                type='button'
+                className={buttonClass}
+                onClick={() => handleSectionToggle(section.id)}
+                title={section.title}
+              >
+                <span className='left-sidebar-tab-label'>{section.label}</span>
               </button>
-            )}
+            );
+          })}
+        </div>
+
+        <div className='left-sidebar-panel'>
+          <div className='left-sidebar-panel-header'>
+            <div>
+              <span className='left-sidebar-panel-kicker'>{activeConfig.label}</span>
+              <h4>{activeConfig.title}</h4>
+            </div>
+            <button
+              type='button'
+              className='left-sidebar-close'
+              onClick={handleClosePanel}
+              title={i18n.t('common.close')}
+            >
+              &times;
+            </button>
+          </div>
+          <div className='left-sidebar-content'>
+            {renderPanelContent(activeSection)}
           </div>
         </div>
       </div>

@@ -798,29 +798,120 @@ a.media {
 
 /* --- Left Sidebar Styles --- */
 .left-sidebar-container {
-  position: absolute;
-  top: 16px;
+  position: fixed;
+  top: 72px;
   bottom: 16px;
   left: 0;
-  transform: translateX(calc(-100% + 26px)); /* 默认状态下保留一条可见边缘 */
-  width: clamp(220px, 24vw, 320px);
-  max-width: calc(100vw - 20px);
-  background-color: rgba(20, 20, 25, 0.9);
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-  border-top-right-radius: 8px;
-  border-bottom-right-radius: 8px;
-  color: #eee;
-  z-index: 30; /* 确保在最上层 */
-  box-shadow: 5px 0 25px rgba(0,0,0,0.5);
-  transition: transform 0.3s ease-in-out;
-  padding: 14px 12px 14px 20px;
-  box-sizing: border-box;
-  display: flex;
-  overflow: hidden;
+  width: 64px;
+  z-index: 30;
 }
 
-.left-sidebar-container.open {
-  transform: translateX(0); /* 展开状态 */
+.left-sidebar-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 64px;
+  height: 100%;
+  padding: 12px 10px;
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
+  background: rgba(10, 15, 24, 0.92);
+  border: 1px solid rgba(126, 156, 205, 0.22);
+  box-shadow: 8px 0 24px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+}
+
+.left-sidebar-tab {
+  width: 100%;
+  min-height: 54px;
+  padding: 8px 6px;
+  border: 1px solid rgba(126, 156, 205, 0.16);
+  border-radius: 12px;
+  background: rgba(37, 53, 78, 0.75);
+  color: #dce8ff;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.left-sidebar-tab:hover {
+  background: rgba(63, 90, 126, 0.9);
+  border-color: rgba(150, 188, 244, 0.34);
+}
+
+.left-sidebar-tab.active {
+  background: linear-gradient(180deg, rgba(80, 122, 176, 0.96) 0%, rgba(48, 80, 124, 0.96) 100%);
+  border-color: rgba(170, 208, 255, 0.48);
+  transform: translateX(2px);
+}
+
+.left-sidebar-tab-label {
+  display: block;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 700;
+  text-align: center;
+  word-break: break-word;
+}
+
+.left-sidebar-panel {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 56px;
+  display: flex;
+  flex-direction: column;
+  width: clamp(200px, calc(100vw - 76px), 320px);
+  padding: 14px 14px 14px 16px;
+  border: 1px solid rgba(126, 156, 205, 0.24);
+  border-left: 0;
+  border-top-right-radius: 16px;
+  border-bottom-right-radius: 16px;
+  background: linear-gradient(180deg, rgba(15, 22, 36, 0.97) 0%, rgba(8, 13, 23, 0.97) 100%);
+  box-shadow: 14px 0 36px rgba(0, 0, 0, 0.36);
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(calc(-100% - 14px));
+  transition: transform 0.26s ease, opacity 0.18s ease;
+}
+
+.left-sidebar-container.open .left-sidebar-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+.left-sidebar-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.left-sidebar-panel-kicker {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: #8fabd9;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.left-sidebar-panel-header h4 {
+  margin: 0;
+  color: #f4f8ff;
+  font-size: 16px;
+}
+
+.left-sidebar-close {
+  border: 0;
+  background: transparent;
+  color: #9db2d3;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .left-sidebar-content {
@@ -828,7 +919,7 @@ a.media {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 6px;
+  padding-right: 4px;
 }
 
 .left-sidebar-content h4 {
@@ -840,12 +931,17 @@ a.media {
   padding-bottom: 5px;
 }
 
+.left-sidebar-section-body {
+  display: flex;
+  flex-direction: column;
+}
+
 .left-sidebar-container .analysis-btn {
   width: 100%;
   display: block;
   text-align: left;
   padding: 10px 12px;
-  margin-bottom: 10px; /* 按钮之间的间距 */
+  margin-bottom: 10px;
   background-color: #3a5a75;
   color: #d0eaff;
   border: none;
@@ -860,14 +956,13 @@ a.media {
   color: white;
 }
 
-/* --- 新增：为高亮按钮添加特殊样式 --- */
 .left-sidebar-container .analysis-btn.highlight {
-  background-color: #c0392b; /* 使用醒目的红色 */
+  background-color: #c0392b;
   color: white;
 }
 
 .left-sidebar-container .analysis-btn.highlight:hover {
-  background-color: #e74c3c; /* 鼠标悬停时颜色变亮 */
+  background-color: #e74c3c;
 }
 
 .left-sidebar-container .analysis-btn:disabled {
@@ -876,24 +971,32 @@ a.media {
   cursor: not-allowed;
 }
 
-@media (max-width: 1200px) {
-  .left-sidebar-container {
-    width: clamp(210px, 28vw, 280px);
-  }
-}
-
 @media (max-width: 768px) {
   .left-sidebar-container {
-    top: 68px;
+    top: 64px;
     bottom: 12px;
-    width: min(280px, calc(100vw - 16px));
-    max-width: calc(100vw - 16px);
-    transform: translateX(calc(-100% + 22px));
-    padding: 12px 10px 12px 16px;
+    width: 58px;
   }
 
-  .left-sidebar-content {
-    padding-right: 4px;
+  .left-sidebar-rail {
+    width: 58px;
+    padding: 10px 8px;
+    gap: 8px;
+  }
+
+  .left-sidebar-tab {
+    min-height: 48px;
+    padding: 6px 4px;
+  }
+
+  .left-sidebar-tab-label {
+    font-size: 10px;
+  }
+
+  .left-sidebar-panel {
+    left: 50px;
+    width: clamp(190px, calc(100vw - 62px), 280px);
+    padding: 12px;
   }
 
   .left-sidebar-container .analysis-btn {
@@ -905,11 +1008,21 @@ a.media {
 
 @media (max-height: 820px) {
   .left-sidebar-container {
-    top: 12px;
+    top: 60px;
     bottom: 12px;
   }
 
-  .left-sidebar-content h4 {
+  .left-sidebar-rail {
+    gap: 8px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .left-sidebar-tab {
+    min-height: 46px;
+  }
+
+  .left-sidebar-panel-header {
     margin-bottom: 10px;
   }
 
