@@ -1,0 +1,53 @@
+{
+  "task": {
+    "id": "avoid-node-detail-panel-overlap",
+    "title": "Avoid Node Detail Panel Overlap",
+    "goal": "Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it",
+    "constraints": [
+      "Preserve src/galaxy business behavior",
+      "Do not add new module-boundary violations"
+    ],
+    "success_criteria": [
+      "Persist runtime state",
+      "Update generated docs",
+      "Node detail panel no longer overlaps with the left sidebar"
+    ],
+    "input_sources": [
+      "AGENTS.md",
+      "src/galaxy/",
+      "src/styles/"
+    ]
+  },
+  "state": {
+    "task_id": "avoid-node-detail-panel-overlap",
+    "status": "COMPLETED",
+    "current_phase": "planning",
+    "retries": 0,
+    "record_count": 1,
+    "evidence_count": 1,
+    "metadata": {
+      "identity": {
+        "name": "starter_agent",
+        "role": "pipeline_runtime"
+      },
+      "capabilities": [
+        "task_bootstrap",
+        "external_write"
+      ]
+    },
+    "summaries": [
+      {
+        "step_id": "avoid-node-detail-panel-overlap-step-1",
+        "content": "Task bootstrapped through AgentKit pipeline: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it",
+        "created_at": "2026-03-16T15:49:28.264557+00:00"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "path": "runtime://task_bootstrap/avoid-node-detail-panel-overlap",
+        "lines": null,
+        "note": "Repository task registered and approved for implementation entry."
+      }
+    ]
+  }
+}

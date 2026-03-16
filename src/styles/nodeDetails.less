@@ -2,6 +2,11 @@
 @line-height: 1.4;
 @lines-to-show: 2;
 
+.node-details-container {
+  position: relative;
+  z-index: 20;
+}
+
 .node-details {
   width: 395px;
   left: 16px;
@@ -9,6 +14,7 @@
   padding: 12px;
   position: absolute;
   z-index: 1;
+  transition: left 0.26s ease, right 0.26s ease, width 0.26s ease;
 
   font-family: 'PT Sans', sans-serif;
 
@@ -30,8 +36,6 @@
   text-overflow: ellipsis;
     margin: 0;
     font-family: 'PT Sans', sans-serif;
-    // overflow: hidden;
-    // text-overflow: ellipsis;
   }
   h2 {
     margin: 0;
@@ -44,8 +48,9 @@
   }
 
   @media (max-width: @screen-sm-min) {
+    left: 12px;
     right: 12px;
-    width: inherit;
+    width: auto;
     .info-block {
       padding-left: 0;
       a {
@@ -59,6 +64,18 @@
     a {
       font-size: @font-size;
     }
+  }
+}
+
+.left-sidebar-container.open ~ .node-details-container .node-details {
+  left: calc(56px + clamp(200px, calc(100vw - 76px), 320px) + 20px);
+}
+
+@media (max-width: @screen-sm-min) {
+  .left-sidebar-container.open ~ .node-details-container .node-details {
+    left: 12px;
+    right: 12px;
+    width: auto;
   }
 }
 

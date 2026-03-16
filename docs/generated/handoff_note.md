@@ -1,10 +1,10 @@
 # Handoff Note
 
-- Task ID: progress-bar-for-loading-overlay
+- Task ID: avoid-node-detail-panel-overlap
 - Status: COMPLETED
 
 ## Summary
-Task bootstrapped through AgentKit pipeline: Replace startup numeric loading indicator with a progress bar and move it to an adaptive top-left position that avoids the search box
+Task bootstrapped through AgentKit pipeline: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it
 
 ## Follow-ups
 - Start implementation only after confirming impacted modules and risks

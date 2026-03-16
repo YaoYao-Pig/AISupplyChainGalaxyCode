@@ -1,8 +1,8 @@
 # AISupplyChainGalaxyCode AgentKit Project Charter
 
-- Task ID: progress-bar-for-loading-overlay
-- Mission: Progress Bar For Loading Overlay
-- Goal: Replace startup numeric loading indicator with a progress bar and move it to an adaptive top-left position that avoids the search box
+- Task ID: avoid-node-detail-panel-overlap
+- Mission: Avoid Node Detail Panel Overlap
+- Goal: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it
 
 ## Scope
 Reusable runtime, configs, docs
@@ -14,5 +14,4 @@ Reusable runtime, configs, docs
 ## Success Criteria
 - Persist runtime state
 - Update generated docs
-- Loading indicator becomes a progress bar
-- Top-left placement avoids search box overlap
+- Node detail panel no longer overlaps with the left sidebar

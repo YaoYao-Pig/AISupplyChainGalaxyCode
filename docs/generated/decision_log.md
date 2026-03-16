@@ -50,3 +50,10 @@
 - Step: 1
 - Decision: COMPLETED
 - Rationale: Task bootstrapped through AgentKit pipeline: Replace startup numeric loading indicator with a progress bar and move it to an adaptive top-left position that avoids the search box
+
+
+## Decision Log Entry
+- Task ID: avoid-node-detail-panel-overlap
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it

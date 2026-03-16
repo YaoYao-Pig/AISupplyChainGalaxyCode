@@ -1,0 +1,69 @@
+{
+  "task_id": "avoid-node-detail-panel-overlap",
+  "status": "COMPLETED",
+  "current_phase": "planning",
+  "summaries": [
+    {
+      "step_id": "avoid-node-detail-panel-overlap-step-1",
+      "content": "Task bootstrapped through AgentKit pipeline: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it",
+      "created_at": "2026-03-16T15:49:28.264557+00:00"
+    }
+  ],
+  "evidence_refs": [
+    {
+      "path": "runtime://task_bootstrap/avoid-node-detail-panel-overlap",
+      "lines": null,
+      "note": "Repository task registered and approved for implementation entry."
+    }
+  ],
+  "records": [
+    {
+      "step_id": 1,
+      "action": {
+        "id": "avoid-node-detail-panel-overlap-step-1",
+        "action_type": "task_bootstrap",
+        "params": {
+          "goal": "Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it"
+        }
+      },
+      "policy_result": {
+        "decision": "allow",
+        "reason": "post-check passed",
+        "risk_level": "low"
+      },
+      "result": {
+        "action_id": "avoid-node-detail-panel-overlap-step-1",
+        "status": "success",
+        "summary": {
+          "step_id": "avoid-node-detail-panel-overlap-step-1",
+          "content": "Task bootstrapped through AgentKit pipeline: Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it",
+          "created_at": "2026-03-16T15:49:28.264557+00:00"
+        },
+        "evidence": [
+          {
+            "path": "runtime://task_bootstrap/avoid-node-detail-panel-overlap",
+            "lines": null,
+            "note": "Repository task registered and approved for implementation entry."
+          }
+        ],
+        "output": {
+          "task_goal": "Keep the bottom-left node detail panel visible when the left sidebar is present so the sidebar no longer covers it",
+          "phase": "planning",
+          "task_id": "avoid-node-detail-panel-overlap"
+        }
+      },
+      "created_at": "2026-03-16T15:49:28.264557+00:00"
+    }
+  ],
+  "retries": 0,
+  "metadata": {
+    "identity": {
+      "name": "starter_agent",
+      "role": "pipeline_runtime"
+    },
+    "capabilities": [
+      "task_bootstrap",
+      "external_write"
+    ]
+  }
+}
