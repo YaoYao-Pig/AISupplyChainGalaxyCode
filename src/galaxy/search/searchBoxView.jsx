@@ -72,7 +72,7 @@ function searchBar(x) {
 
     if (visible && results.length > 0) {
       resultsView = (
-        <div className='search-results'>
+        <div className='search-results search-panel'>
           <h4 className='search-results-title'>{i18n.t('search.results', { count: formatNumber(results.length) })}</h4>
           <div className='scroll-wrapper'>
             <ReactList
@@ -88,7 +88,7 @@ function searchBar(x) {
 
     return (
       <div className='container row'>
-        <div className='search col-xs-12 col-sm-6 col-md-4'>
+        <div className='search search-shell col-xs-12 col-sm-6 col-md-4'>
           <form className='search-form' role='search' onSubmit={runSubmit}>
             <div className='input-group'>
               <input type='text'
@@ -98,16 +98,15 @@ function searchBar(x) {
                 onFocus={handleFocus}
                 />
                 <span className='input-group-btn'>
-                  <button className='btn' tabIndex='-1' type='button' onClick={runSubmit} title={i18n.t('search.submit')}>
+                  <button className='btn search-action-btn' tabIndex='-1' type='button' onClick={runSubmit} title={i18n.t('search.submit')}>
                     <span className='glyphicon glyphicon-search'></span>
                   </button>
                   <button
-                    className='btn'
+                    className='btn search-action-btn search-path-btn'
                     tabIndex='-1'
                     type='button'
                     onClick={showPathfinding}
                     title={i18n.t('search.pathfinding')}
-                    style={{ borderLeft: '1px solid #555' }}
                   >
                     <span className='glyphicon glyphicon-road'></span>
                   </button>

@@ -1,0 +1,5 @@
+agent_name: starter_agent
+role: pipeline_runtime
+boundaries:
+  - no domain-specific business logic
+  - no unauthorized file operations

@@ -1,0 +1,10 @@
+skills:
+  read_local_files:
+    purpose: read workspace files
+    risk_level: low
+  write_local_files:
+    purpose: write workspace files
+    risk_level: medium
+  run_tests:
+    purpose: run verification checks
+    risk_level: low

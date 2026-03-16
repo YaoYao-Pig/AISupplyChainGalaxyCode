@@ -1,0 +1,8 @@
+allowed_paths:
+  - src/
+  - configs/
+  - docs/
+  - tests/
+disallowed_dependencies:
+  - from: ui
+    to: persistence

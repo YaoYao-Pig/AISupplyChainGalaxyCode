@@ -77,6 +77,7 @@ module.exports = require('maco')((x) => {
         const viewModel = x.props.viewModel;
         const children = x.props.children;
         const position = x.state.position;
+        const windowClassName = viewModel.class || viewModel.className || '';
 
         let style = {};
         if (position) {
@@ -88,7 +89,7 @@ module.exports = require('maco')((x) => {
         }
 
         return (
-            <div className={'window-container ' + (viewModel.class || '')} style={style}>
+            <div className={'window-container window-surface ' + windowClassName} style={style}>
                 <div className='window-header' onMouseDown={onMouseDown}>
                     <h4>{viewModel.title}</h4>
                     <button onClick={handleClose} className='window-close-btn' title={i18n.t('common.close')}>&times;</button>

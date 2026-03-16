@@ -1,0 +1,63 @@
+allowed_paths:
+- src/
+- docs/
+- tools/
+- about/
+- hf-data/
+- configs/
+- tests/
+- examples/
+- skills/
+disallowed_dependencies:
+- from: store
+  to: windows
+- from: store
+  to: search
+- from: store
+  to: nodeDetails
+- from: store
+  to: runtime
+- from: store
+  to: native
+- from: service
+  to: windows
+- from: service
+  to: search
+- from: service
+  to: nodeDetails
+- from: service
+  to: runtime
+- from: service
+  to: native
+- from: service
+  to: store
+- from: runtime
+  to: windows
+- from: runtime
+  to: search
+- from: runtime
+  to: nodeDetails
+- from: runtime
+  to: native
+- from: native
+  to: windows
+- from: native
+  to: search
+- from: native
+  to: nodeDetails
+- from: native
+  to: runtime
+- from: utils
+  to: native
+- from: utils
+  to: service
+- from: utils
+  to: store
+- from: utils
+  to: runtime
+- from: utils
+  to: search
+- from: utils
+  to: nodeDetails
+- from: utils
+  to: windows

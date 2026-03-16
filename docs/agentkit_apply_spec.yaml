@@ -1,0 +1,101 @@
+configs:
+  module_rules:
+    allowed_paths:
+      - src/
+      - docs/
+      - tools/
+      - about/
+      - hf-data/
+      - configs/
+      - tests/
+      - examples/
+      - skills/
+    disallowed_dependencies:
+      - from: store
+        to: windows
+      - from: store
+        to: search
+      - from: store
+        to: nodeDetails
+      - from: store
+        to: runtime
+      - from: store
+        to: native
+      - from: service
+        to: windows
+      - from: service
+        to: search
+      - from: service
+        to: nodeDetails
+      - from: service
+        to: runtime
+      - from: service
+        to: native
+      - from: service
+        to: store
+      - from: runtime
+        to: windows
+      - from: runtime
+        to: search
+      - from: runtime
+        to: nodeDetails
+      - from: runtime
+        to: native
+      - from: native
+        to: windows
+      - from: native
+        to: search
+      - from: native
+        to: nodeDetails
+      - from: native
+        to: runtime
+      - from: utils
+        to: native
+      - from: utils
+        to: service
+      - from: utils
+        to: store
+      - from: utils
+        to: runtime
+      - from: utils
+        to: search
+      - from: utils
+        to: nodeDetails
+      - from: utils
+        to: windows
+
+  skills_index:
+    skills:
+      inspect_project_structure:
+        purpose: map repository modules, data flow, and existing constraints before edits
+        risk_level: low
+      maintain_module_boundaries:
+        purpose: run and interpret module boundary checks for galaxy domain code
+        risk_level: low
+      integrate_agentkit_scaffold:
+        purpose: add AgentKit runtime, configs, docs, and tests without replacing business code
+        risk_level: medium
+      update_starter_docs:
+        purpose: keep docs templates and generated starter documents aligned with repository changes
+        risk_level: low
+      run_frontend_quality_checks:
+        purpose: execute repository verification commands such as npm run check:vibe
+        risk_level: low
+
+templates:
+  project_charter:
+    metadata:
+      title: AISupplyChainGalaxyCode AgentKit Project Charter
+  task_model:
+    metadata:
+      title: AISupplyChainGalaxyCode Agent Integration Task Model
+  handoff_note:
+    metadata:
+      owner_agent: aisupplychain_delivery_agent
+    body_append: |
+      ## Existing Project Constraints
+      - Preserve current React/WebGL business code under `src/galaxy/`
+      - Keep original `README.md` and `AGENTS.md`; use starter variants for comparison
+
+docs:
+  regenerate: true

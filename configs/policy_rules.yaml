@@ -1,0 +1,5 @@
+blocked_action_types:
+  - destructive_delete
+review_action_types:
+  - external_write
+  - repo_push

@@ -1,0 +1,18 @@
+skills:
+  inspect_project_structure:
+    purpose: map repository modules, data flow, and existing constraints before edits
+    risk_level: low
+  maintain_module_boundaries:
+    purpose: run and interpret module boundary checks for galaxy domain code
+    risk_level: low
+  integrate_agentkit_scaffold:
+    purpose: add AgentKit runtime, configs, docs, and tests without replacing business
+      code
+    risk_level: medium
+  update_starter_docs:
+    purpose: keep docs templates and generated starter documents aligned with repository
+      changes
+    risk_level: low
+  run_frontend_quality_checks:
+    purpose: execute repository verification commands such as npm run check:vibe
+    risk_level: low
