@@ -4,6 +4,7 @@ const createGraphNgraph = require('ngraph.graph');
 const createLayout = require('ngraph.offline.layout');
 const fs = require('fs-extra');
 const path = require('path');
+const { once } = require('events');
 const cliProgress = require('cli-progress'); // 确保已安装: npm install cli-progress
 const JSONStream = require('JSONStream');
 const through2 = require('through2');
@@ -52,6 +53,66 @@ const safeString = (val) => {
     if (val == null) return "None"; // check both null and undefined
     return Array.isArray(val) ? (val.length > 0 ? String(val[0]) : "None") : String(val);
 };
+
+async function writeChunk(writeStream, chunk) {
+    if (!writeStream.write(chunk)) {
+        await Promise.race([
+            once(writeStream, 'drain'),
+            once(writeStream, 'error').then(([error]) => Promise.reject(error))
+        ]);
+    }
+}
+
+async function writeJsonObjectStream(outputPath, writeEntries) {
+    await fs.ensureDir(path.dirname(outputPath));
+    const writeStream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
+    const completed = Promise.race([
+        once(writeStream, 'finish'),
+        once(writeStream, 'error').then(([error]) => Promise.reject(error))
+    ]);
+
+    try {
+        await writeChunk(writeStream, '{\n');
+        let isFirstEntry = true;
+
+        const writeEntry = async (key, value) => {
+            const prefix = isFirstEntry ? '' : ',\n';
+            isFirstEntry = false;
+            await writeChunk(writeStream, `${prefix}${JSON.stringify(String(key))}: ${JSON.stringify(value)}`);
+        };
+
+        await writeEntries(writeEntry);
+        await writeChunk(writeStream, '\n}\n');
+        writeStream.end();
+        await completed;
+    } catch (error) {
+        writeStream.destroy();
+        throw error;
+    }
+}
+
+async function writeJsonArrayStream(outputPath, values) {
+    await fs.ensureDir(path.dirname(outputPath));
+    const writeStream = fs.createWriteStream(outputPath, { encoding: 'utf8' });
+    const completed = Promise.race([
+        once(writeStream, 'finish'),
+        once(writeStream, 'error').then(([error]) => Promise.reject(error))
+    ]);
+
+    try {
+        await writeChunk(writeStream, '[\n');
+        for (let i = 0; i < values.length; i++) {
+            const prefix = i === 0 ? '' : ',\n';
+            await writeChunk(writeStream, `${prefix}${JSON.stringify(values[i])}`);
+        }
+        await writeChunk(writeStream, '\n]\n');
+        writeStream.end();
+        await completed;
+    } catch (error) {
+        writeStream.destroy();
+        throw error;
+    }
+}
 
 // --- 4. 合规性分析核心函数 (优化版) ---
 function runComplianceAnalysis(graph) {
@@ -439,10 +500,15 @@ async function convertData() {
         await fs.ensureDir(versionPath);
 
         // Save Node Data & Labels
-        const nodeDataForSave = {};
-        graph.forEachNode(node => { nodeDataForSave[node.id] = node.data; });
-        await fs.writeJson(path.join(versionPath, 'nodeData.json'), nodeDataForSave);
-        await fs.writeJson(path.join(versionPath, 'labels.json'), displayLabels);
+        await writeJsonObjectStream(path.join(versionPath, 'nodeData.json'), async (writeEntry) => {
+            for (let id = 0; id < graph.getNodesCount(); id++) {
+                const node = graph.getNode(id);
+                if (node) {
+                    await writeEntry(node.id, node.data);
+                }
+            }
+        });
+        await writeJsonArrayStream(path.join(versionPath, 'labels.json'), displayLabels);
 
         // Save Positions
         const positionsArray = new Int32Array(graph.getNodesCount() * 3);
@@ -476,18 +542,19 @@ async function convertData() {
         
         // Manifest & Compliance
         await fs.writeJson(path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, 'manifest.json'), { all: [CONFIG.VERSION_NAME], last: CONFIG.VERSION_NAME });
-
-        const nodeComplianceData = {};
         let problemCount = 0;
-        graph.forEachNode(node => {
-            if (node.data.compliance?.risks?.length > 0) {
-                nodeComplianceData[node.id] = node.data.compliance;
-                // 添加冗余字段方便前端直接读取
-                nodeComplianceData[node.id].fixed_license = node.data.fixed_license;
-                problemCount++;
+        await writeJsonObjectStream(path.join(versionPath, 'compliance_data.json'), async (writeEntry) => {
+            for (let id = 0; id < graph.getNodesCount(); id++) {
+                const node = graph.getNode(id);
+                if (node?.data.compliance?.risks?.length > 0) {
+                    problemCount++;
+                    await writeEntry(node.id, {
+                        ...node.data.compliance,
+                        fixed_license: node.data.fixed_license
+                    });
+                }
             }
         });
-        await fs.writeJson(path.join(versionPath, 'compliance_data.json'), nodeComplianceData);
         
         console.log(`✅ Done. Found ${problemCount} nodes with risks.`);
 

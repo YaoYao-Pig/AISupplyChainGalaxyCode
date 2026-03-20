@@ -1,18 +1,16 @@
 # AISupplyChainGalaxyCode AgentKit Project Charter
 
-- Task ID: restore-bottom-left-node-detail-placement
-- Mission: Restore Bottom Left Node Detail Placement
-- Goal: Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar
+- Task ID: diagnose-pipeline-invalid-string-length
+- Mission: Diagnose pipeline invalid string length
+- Goal: Investigate hf-data pipeline failure with RangeError: Invalid string length after compliance analysis, identify root cause, and prepare a safe fix path.
 
 ## Scope
 Reusable runtime, configs, docs
 
 ## Constraints
-- Preserve src/galaxy business behavior
-- Do not add new module-boundary violations
+- Follow AGENTS.md and docs/VIBECODING instructions
+- Bootstrap through AgentKit before code changes
 
 ## Success Criteria
-- Persist runtime state
-- Update generated docs
-- Node detail panel stays bottom-left
-- Left sidebar no longer covers the panel
+- AgentKit pipeline state persisted
+- Required generated docs updated

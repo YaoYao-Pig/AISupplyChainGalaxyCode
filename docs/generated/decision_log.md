@@ -64,3 +64,17 @@
 - Step: 1
 - Decision: COMPLETED
 - Rationale: Task bootstrapped through AgentKit pipeline: Keep the node detail panel anchored at the bottom-left while still avoiding overlap with the left sidebar
+
+
+## Decision Log Entry
+- Task ID: diagnose-pipeline-invalid-string-length
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Investigate hf-data pipeline failure with RangeError: Invalid string length after compliance analysis, identify root cause, and prepare a safe fix path.
+
+
+## Decision Log Entry
+- Task ID: diagnose-pipeline-invalid-string-length
+- Step: 2
+- Decision: Replace one-shot JSON writes with streamed output for large node and compliance payloads.
+- Rationale: The failure occurs in JSON.stringify during fs.writeJson on oversized objects, so streaming removes the large intermediate string without changing the downstream file shape.
