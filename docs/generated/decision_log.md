@@ -149,3 +149,22 @@
 - Step: 3
 - Decision: 继续使用单一 `docs` 状态数组和现有 `activeIndex` / `doc=` 深链，只在渲染前按 `section` 分组。
 - Rationale: 这样可以复用现有搜索、选中、正文渲染和 TOC 逻辑，避免为了分组把文档浏览器内部状态整体重写。
+
+
+## Decision Log Entry
+- Task ID: frontend-docs-file-tree-display
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Make the project documentation frontend preserve and display per-file structure instead of a flattened list.
+
+## Decision Log Entry
+- Task ID: frontend-docs-file-tree-display
+- Step: 2
+- Decision: 在 `DocsPage` 渲染层按 section 内的相对路径构建目录树，而不是改动文档来源或新增 store。
+- Rationale: 当前文档数据本身已经保留 `filePath`，结构信息丢失发生在侧边栏渲染阶段；直接基于路径构树可以最小改动恢复层级，同时保留搜索、`doc=` 深链和正文 TOC。
+
+## Decision Log Entry
+- Task ID: frontend-docs-file-tree-display
+- Step: 3
+- Decision: 目录树默认展开，仅增加视觉层级，不引入新的折叠状态管理。
+- Rationale: 这轮目标是恢复文件结构感知，不是扩展新的交互状态；默认展开实现更稳，也避免额外状态影响移动端和深链选择行为。

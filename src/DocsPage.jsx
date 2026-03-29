@@ -183,6 +183,76 @@ function groupDocs(items) {
 
   return groups;
 }
+
+function getDocTreeSegments(doc) {
+  var parts = String(doc && doc.filePath || '').split('/').filter(Boolean);
+  if (parts.length <= 1) return parts;
+  return parts.slice(1);
+}
+
+function sortTreeNodes(nodes) {
+  nodes.sort(function(a, b) {
+    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+    return a.sortKey.localeCompare(b.sortKey);
+  });
+
+  nodes.forEach(function(node) {
+    if (node.type === 'dir' && node.children && node.children.length) {
+      sortTreeNodes(node.children);
+    }
+  });
+}
+
+function buildDocTree(items) {
+  var roots = [];
+
+  items.forEach(function(item) {
+    var segments = getDocTreeSegments(item.doc);
+    var cursor = roots;
+    var pathParts = [];
+
+    segments.forEach(function(segment, index) {
+      var isLeaf = index === segments.length - 1;
+      pathParts.push(segment);
+
+      if (isLeaf) {
+        cursor.push({
+          type: 'file',
+          key: item.doc.filePath,
+          sortKey: item.doc.filePath.toLowerCase(),
+          item: item
+        });
+        return;
+      }
+
+      var key = pathParts.join('/');
+      var next = null;
+
+      for (var i = 0; i < cursor.length; i += 1) {
+        if (cursor[i].type === 'dir' && cursor[i].key === key) {
+          next = cursor[i];
+          break;
+        }
+      }
+
+      if (!next) {
+        next = {
+          type: 'dir',
+          key: key,
+          name: segment,
+          sortKey: segment.toLowerCase(),
+          children: []
+        };
+        cursor.push(next);
+      }
+
+      cursor = next.children;
+    });
+  });
+
+  sortTreeNodes(roots);
+  return roots;
+}
 var globalCss = `
   .docs-root {
     --bg: #0a0f1a;
@@ -302,6 +372,43 @@ var globalCss = `
     color: #fff;
     background: rgba(75, 140, 255, 0.22);
     border-color: rgba(85, 144, 245, 0.58);
+  }
+
+  .docs-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .docs-folder {
+    margin-bottom: 2px;
+  }
+
+  .docs-folder-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px 4px;
+    color: #88a2ca;
+    font-size: 12px;
+  }
+
+  .docs-folder-row::before {
+    content: '▾';
+    color: #6284bf;
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .docs-folder-name {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    letter-spacing: 0.2px;
+  }
+
+  .docs-folder-children {
+    margin-left: 12px;
+    padding-left: 10px;
+    border-left: 1px solid rgba(66, 92, 135, 0.38);
   }
 
   .toc-header {
@@ -639,6 +746,39 @@ export default class DocsPage extends React.Component {
     }
   }
 
+  renderDocTree(nodes) {
+    if (!nodes || nodes.length === 0) return null;
+
+    return nodes.map(function(node) {
+      if (node.type === 'dir') {
+        return (
+          <div key={node.key} className="docs-folder">
+            <div className="docs-folder-row">
+              <span className="docs-folder-name">{node.name}</span>
+            </div>
+            <div className="docs-folder-children">
+              {this.renderDocTree(node.children)}
+            </div>
+          </div>
+        );
+      }
+
+      var isActive = node.item.idx === this.state.activeIndex;
+      var cls = 'docs-item' + (isActive ? ' active' : '');
+
+      return (
+        <div
+          key={node.item.doc.filePath}
+          className={cls}
+          onClick={this.selectDoc.bind(this, node.item.idx)}
+          title={node.item.doc.filePath}
+        >
+          {node.item.doc.title}
+        </div>
+      );
+    }, this);
+  }
+
   render() {
     var docs = this.state.docs;
     var activeIndex = this.state.activeIndex;
@@ -652,7 +792,12 @@ export default class DocsPage extends React.Component {
       return item.doc.title.toLowerCase().indexOf(q) >= 0 || item.doc.filePath.toLowerCase().indexOf(q) >= 0;
     });
 
-    var grouped = groupDocs(filtered);
+    var grouped = groupDocs(filtered).map(function(group) {
+      return {
+        name: group.name,
+        tree: buildDocTree(group.items)
+      };
+    });
     var currentDoc = docs[activeIndex];
     var markdownHtml = currentDoc ? renderMarkdown(currentDoc.content) : '';
 
@@ -691,21 +836,9 @@ export default class DocsPage extends React.Component {
                       }}>
                         {group.name}
                       </div>
-                      {group.items.map(function(item) {
-                        var isActive = item.idx === activeIndex;
-                        var cls = 'docs-item' + (isActive ? ' active' : '');
-
-                        return (
-                          <div
-                            key={item.doc.filePath}
-                            className={cls}
-                            onClick={this.selectDoc.bind(this, item.idx)}
-                            title={item.doc.filePath}
-                          >
-                            {item.doc.title}
-                          </div>
-                        );
-                      }, this)}
+                      <div className="docs-tree">
+                        {this.renderDocTree(group.tree)}
+                      </div>
                     </div>
                   );
                 }, this)
