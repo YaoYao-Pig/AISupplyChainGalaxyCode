@@ -1,8 +1,8 @@
 # AISupplyChainGalaxyCode AgentKit Project Charter
 
-- Task ID: diagnose-pipeline-invalid-string-length
-- Mission: Diagnose pipeline invalid string length
-- Goal: Investigate hf-data pipeline failure with RangeError: Invalid string length after compliance analysis, identify root cause, and prepare a safe fix path.
+- Task ID: group-doc-browser-sections
+- Mission: 文档浏览器分组显示
+- Goal: 让应用内文档浏览器按正式文档和历史文档分组展示，同时保留 docs 作为正式来源、src/docs 作为历史来源
 
 ## Scope
 Reusable runtime, configs, docs

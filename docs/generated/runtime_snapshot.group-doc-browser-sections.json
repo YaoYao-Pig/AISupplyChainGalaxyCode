@@ -1,0 +1,52 @@
+{
+  "task": {
+    "id": "group-doc-browser-sections",
+    "title": "文档浏览器分组显示",
+    "goal": "让应用内文档浏览器按正式文档和历史文档分组展示，同时保留 docs 作为正式来源、src/docs 作为历史来源",
+    "constraints": [
+      "Follow AGENTS.md and docs/VIBECODING instructions",
+      "Bootstrap through AgentKit before code changes"
+    ],
+    "success_criteria": [
+      "AgentKit pipeline state persisted",
+      "Required generated docs updated"
+    ],
+    "input_sources": [
+      "AGENTS.md",
+      "configs/",
+      "docs/templates/"
+    ]
+  },
+  "state": {
+    "task_id": "group-doc-browser-sections",
+    "status": "COMPLETED",
+    "current_phase": "planning",
+    "retries": 0,
+    "record_count": 1,
+    "evidence_count": 1,
+    "metadata": {
+      "identity": {
+        "name": "starter_agent",
+        "role": "pipeline_runtime"
+      },
+      "capabilities": [
+        "task_bootstrap",
+        "external_write"
+      ]
+    },
+    "summaries": [
+      {
+        "step_id": "group-doc-browser-sections-step-1",
+        "content": "Task bootstrapped through AgentKit pipeline: 让应用内文档浏览器按正式文档和历史文档分组展示，同时保留 docs 作为正式来源、src/docs 作为历史来源",
+        "created_at": "2026-03-29T06:50:14.850299+00:00"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "path": "runtime://task_bootstrap/group-doc-browser-sections",
+        "lines": null,
+        "note": "Repository task registered and approved for implementation entry."
+      }
+    ]
+  }
+}

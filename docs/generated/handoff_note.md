@@ -1,25 +1,26 @@
 # Handoff Note
 
-- Task ID: diagnose-pipeline-invalid-string-length
+- Task ID: group-doc-browser-sections
 - Status: COMPLETED
 
 ## Summary
-Patched hf-data/convert_script.js so large JSON outputs are written as streams instead of being assembled into one oversized string before JSON serialization.
+应用内文档浏览器现在会按两组显示文档：
+- 正式文档：来自仓库根目录 `docs/`
+- 历史文档：来自 `src/docs/`
 
 ## What Changed
-- Added streaming helpers for JSON object and array output.
-- Switched nodeData.json, labels.json, and compliance_data.json to streamed writes.
-- Left graph layout, compliance rules, and binary output formats unchanged.
+- 更新 `src/DocsPage.jsx`。
+- `loadDocs()` 现在同时加载正式文档和历史文档。
+- 文档对象新增 `section` 和 `sectionWeight`，用于分组和稳定排序。
+- 新增 `groupDocs()`，侧栏改为按“正式文档 / 历史文档”输出。
+- 保留搜索、深链、正文渲染和 TOC 行为。
+- 更新 `docs/generated/task_model.md`、`docs/generated/decision_log.md`、`docs/generated/handoff_note.md`。
 
-## Validation
-- Passed: node --check hf-data\convert_script.js
-- Not run: full pipeline rerun, because output_graph_filtered.json had already been removed by the cleanup step from the failing run.
+## Verification
+- 已执行 `node .\node_modules\webpack\bin\webpack.js --config webpack.production.config.js --bail`，通过。
+- 已执行 `npm run check:boundaries`，通过。
+- webpack 输出确认同时打包 `./docs/...` 和 `./src/docs` 两套 Markdown context。
 
-## Follow-ups
-- Regenerate the filtered input JSON and rerun the pipeline.
-- If the next failure moves to link output, stream link-related buffers as a second pass.
-
-## Existing Project Constraints
-- Preserve current React/WebGL business code under src/galaxy/
-- Bootstrap each new task through tools/agentkit/run_task.py before implementation
-- Keep popup behavior, stores, and services aligned with existing module boundaries
+## Remaining Notes
+- 现在历史文档仍保留在 `src/docs/`，只是展示上被单独分组。
+- 如果以后希望彻底统一文档来源，建议把历史文档迁入 `docs/legacy/`，再把前端侧白名单同步收敛到 `docs/` 一处。

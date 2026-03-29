@@ -469,7 +469,12 @@ async function convertData() {
         parseBar.stop();
 
         console.log(`\n🕸️  Running layout (${CONFIG.LAYOUT_ITERATIONS} iterations)...`);
-        const layout = createLayout(graph, { dimensions: 3, iterations: CONFIG.LAYOUT_ITERATIONS });
+        const layoutCacheDir = path.join(__dirname, 'data', CONFIG.GRAPH_NAME, CONFIG.VERSION_NAME);
+        const layout = createLayout(graph, {
+            dimensions: 3,
+            iterations: CONFIG.LAYOUT_ITERATIONS,
+            outDir: layoutCacheDir
+        });
         
         // 布局进度条
         // 不同版本的 ngraph.offline.layout 暴露的 API 不完全一致。
@@ -485,7 +490,8 @@ async function convertData() {
                 layoutBar.increment(steps);
             }
         } else if (typeof layout.run === 'function') {
-            layout.run();
+            console.log(`Resetting cached layout snapshots under ${layoutCacheDir} before generating a fresh layout.`);
+            layout.run(true);
             layoutBar.update(CONFIG.LAYOUT_ITERATIONS);
         } else {
             throw new TypeError('Unsupported ngraph.offline.layout API: missing step() and run().');

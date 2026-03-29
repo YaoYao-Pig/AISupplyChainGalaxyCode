@@ -1,0 +1,52 @@
+{
+  "task": {
+    "id": "task",
+    "title": "统一文档浏览器来源",
+    "goal": "让应用内文档浏览器直接展示 docs 目录下的正式项目文档，而不是只读取 src/docs",
+    "constraints": [
+      "Follow AGENTS.md and docs/VIBECODING instructions",
+      "Bootstrap through AgentKit before code changes"
+    ],
+    "success_criteria": [
+      "AgentKit pipeline state persisted",
+      "Required generated docs updated"
+    ],
+    "input_sources": [
+      "AGENTS.md",
+      "configs/",
+      "docs/templates/"
+    ]
+  },
+  "state": {
+    "task_id": "task",
+    "status": "COMPLETED",
+    "current_phase": "planning",
+    "retries": 0,
+    "record_count": 1,
+    "evidence_count": 1,
+    "metadata": {
+      "identity": {
+        "name": "starter_agent",
+        "role": "pipeline_runtime"
+      },
+      "capabilities": [
+        "task_bootstrap",
+        "external_write"
+      ]
+    },
+    "summaries": [
+      {
+        "step_id": "task-step-1",
+        "content": "Task bootstrapped through AgentKit pipeline: 根据现有源码和功能效果，按模块整理项目技术文档并写入 docs 目录，保持技术文档风格且贴近人工写作语气",
+        "created_at": "2026-03-28T15:36:21.387956+00:00"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "path": "runtime://task_bootstrap/task",
+        "lines": null,
+        "note": "Repository task registered and approved for implementation entry."
+      }
+    ]
+  }
+}

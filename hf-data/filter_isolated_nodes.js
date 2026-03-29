@@ -2,6 +2,7 @@
 
 const fs = require('fs-extra');
 const path = require('path');
+const crypto = require('crypto');
 const cliProgress = require('cli-progress');
 const JSONStream = require('JSONStream');
 const through2 = require('through2');
@@ -9,14 +10,21 @@ const through2 = require('through2');
 // --- 配置项 ---
 const INPUT_JSON_PATH = path.resolve(__dirname, 'output_graph.json');
 const OUTPUT_JSON_PATH = path.resolve(__dirname, 'output_graph_filtered.json');
-const ISOLATED_NODE_SURVIVAL_RATE = 0.1; 
+const ISOLATED_NODE_SURVIVAL_RATE = 0.1;
+const FILTER_SEED = process.env.FILTER_SEED || 'isolated-node-filter-v1';
 const LOG_INTERVAL = 50000;
 // --- 配置结束 ---
+
+function stableSampleForNode(nodeId) {
+    const digest = crypto.createHash('sha256').update(`${FILTER_SEED}:${String(nodeId)}`).digest();
+    return digest.readUInt32BE(0) / 0x100000000;
+}
 
 async function filterJsonFile() {
     let overallProgressBar = null;
     try {
         console.log(`🚀 (内存优化版) 开始预处理并过滤JSON文件: ${INPUT_JSON_PATH}`);
+        console.log(`🎲 孤立节点抽样已固定为确定性模式，seed: ${FILTER_SEED}`);
         
         // 关键优化：使用 Set 仅存储"有关系的节点ID"，不再存储对象
         const connectedNodeIds = new Set(); 
@@ -113,8 +121,8 @@ async function filterJsonFile() {
                         let shouldKeep = isConnected;
 
                         if (!isConnected) {
-                            // 它是孤立节点，进行轮盘赌
-                            if (Math.random() < ISOLATED_NODE_SURVIVAL_RATE) {
+                            // 它是孤立节点，使用基于节点ID和seed的稳定抽样，保证重复运行结果一致
+                            if (stableSampleForNode(node.id) < ISOLATED_NODE_SURVIVAL_RATE) {
                                 shouldKeep = true;
                             }
                         }

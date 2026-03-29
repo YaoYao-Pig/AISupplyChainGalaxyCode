@@ -115,6 +115,74 @@ function renderMarkdown(markdown) {
   });
 }
 
+function toTitleCase(text) {
+  return String(text || '')
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, function(ch) { return ch.toUpperCase(); });
+}
+
+function getDocTitle(normalizedPath) {
+  var withoutExt = normalizedPath.replace(/\.md$/i, '');
+  var parts = withoutExt.split('/');
+  var leaf = parts[parts.length - 1] || '';
+
+  if (leaf.toLowerCase() === 'readme' && parts.length > 1) {
+    leaf = parts[parts.length - 2];
+  }
+
+  return toTitleCase(leaf || 'Documentation');
+}
+
+function collectDocs(req, prefix, section, sectionWeight) {
+  return req.keys().map(function(filePath) {
+    var normalized = ((prefix ? prefix + '/' : '') + filePath.replace('./', '')).replace(/\\/g, '/');
+    var content = req(filePath);
+    var headings = createHeadingIndex(content);
+
+    return {
+      filePath: normalized,
+      title: getDocTitle(normalized),
+      content: content,
+      headings: headings,
+      id: slugify(normalized.replace(/\.md$/i, '')),
+      section: section,
+      sectionWeight: sectionWeight || 0
+    };
+  });
+}
+
+function loadDocs() {
+  var docs = [];
+
+  docs = docs.concat(collectDocs(require.context('../docs', false, /^\.\/(README|CUSTOMIZATION|MIGRATION_REPORT)\.md$/), 'docs', '正式文档', 0));
+  docs = docs.concat(collectDocs(require.context('../docs/architecture', true, /\.md$/), 'docs/architecture', '正式文档', 0));
+  docs = docs.concat(collectDocs(require.context('../docs/modules', true, /\.md$/), 'docs/modules', '正式文档', 0));
+  docs = docs.concat(collectDocs(require.context('../docs/features', true, /\.md$/), 'docs/features', '正式文档', 0));
+  docs = docs.concat(collectDocs(require.context('../docs/VIBECODING', true, /\.md$/), 'docs/VIBECODING', '正式文档', 0));
+  docs = docs.concat(collectDocs(require.context('./docs', true, /\.md$/), 'legacy', '历史文档', 1));
+
+  return docs.sort(function(a, b) {
+    if (a.sectionWeight !== b.sectionWeight) {
+      return a.sectionWeight - b.sectionWeight;
+    }
+    return a.filePath.localeCompare(b.filePath);
+  });
+}
+
+function groupDocs(items) {
+  var groups = [];
+
+  items.forEach(function(item) {
+    var lastGroup = groups.length > 0 ? groups[groups.length - 1] : null;
+    if (!lastGroup || lastGroup.name !== item.doc.section) {
+      groups.push({ name: item.doc.section, items: [item] });
+      return;
+    }
+    lastGroup.items.push(item);
+  });
+
+  return groups;
+}
 var globalCss = `
   .docs-root {
     --bg: #0a0f1a;
@@ -499,24 +567,7 @@ export default class DocsPage extends React.Component {
     this.handleHashChange = this.handleHashChange.bind(this);
     this.handleDocSearch = this.handleDocSearch.bind(this);
 
-    var req = require.context('./docs', true, /\.md$/);
-    var docs = req.keys().map(function(filePath) {
-      var normalized = filePath.replace('./', '');
-      var title = normalized.replace(/\.md$/i, '').split('/').pop().replace(/_/g, ' ');
-      var content = req(filePath);
-      var headings = createHeadingIndex(content);
-
-      return {
-        filePath: normalized,
-        title: title,
-        content: content,
-        headings: headings,
-        id: slugify(normalized.replace(/\.md$/i, ''))
-      };
-    }).sort(function(a, b) {
-      return a.title.localeCompare(b.title);
-    });
-
+    var docs = loadDocs();
     var initialIndex = this.resolveInitialDocIndex(docs);
 
     this.state = {
@@ -601,6 +652,7 @@ export default class DocsPage extends React.Component {
       return item.doc.title.toLowerCase().indexOf(q) >= 0 || item.doc.filePath.toLowerCase().indexOf(q) >= 0;
     });
 
+    var grouped = groupDocs(filtered);
     var currentDoc = docs[activeIndex];
     var markdownHtml = currentDoc ? renderMarkdown(currentDoc.content) : '';
 
@@ -613,7 +665,7 @@ export default class DocsPage extends React.Component {
             <div style={layoutStyles.sideHeader}>
               <a href="#/" className="docs-top-link">← BACK TO HOME</a>
               <h1 style={layoutStyles.sideTitle}>Documentation</h1>
-              <p style={layoutStyles.sideSubtitle}>Markdown Browser</p>
+              <p style={layoutStyles.sideSubtitle}>Formal + Legacy Docs Browser</p>
             </div>
 
             <input
@@ -627,18 +679,33 @@ export default class DocsPage extends React.Component {
               {filtered.length === 0 ? (
                 <div className="docs-empty">没有匹配文档</div>
               ) : (
-                filtered.map(function(item) {
-                  var isActive = item.idx === activeIndex;
-                  var cls = 'docs-item' + (isActive ? ' active' : '');
-
+                grouped.map(function(group) {
                   return (
-                    <div
-                      key={item.doc.filePath}
-                      className={cls}
-                      onClick={this.selectDoc.bind(this, item.idx)}
-                      title={item.doc.filePath}
-                    >
-                      {item.doc.title}
+                    <div key={group.name}>
+                      <div style={{
+                        padding: '10px 11px 6px',
+                        color: '#9ab0d0',
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.8px'
+                      }}>
+                        {group.name}
+                      </div>
+                      {group.items.map(function(item) {
+                        var isActive = item.idx === activeIndex;
+                        var cls = 'docs-item' + (isActive ? ' active' : '');
+
+                        return (
+                          <div
+                            key={item.doc.filePath}
+                            className={cls}
+                            onClick={this.selectDoc.bind(this, item.idx)}
+                            title={item.doc.filePath}
+                          >
+                            {item.doc.title}
+                          </div>
+                        );
+                      }, this)}
                     </div>
                   );
                 }, this)
@@ -661,7 +728,7 @@ export default class DocsPage extends React.Component {
               </article>
             ) : (
               <div className="docs-block">
-                <div className="docs-empty">No documentation found. Add markdown files under src/docs/</div>
+                <div className="docs-empty">No documentation found. Add markdown files under docs/</div>
               </div>
             )}
           </main>
@@ -694,4 +761,8 @@ export default class DocsPage extends React.Component {
     );
   }
 }
+
+
+
+
 
