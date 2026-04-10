@@ -11,10 +11,10 @@
 - Affected Modules: `hf-data/convert_script.js`, `src/galaxy/service/graph.js`, `src/galaxy/utils/resolveNodeLicense.js`.
 - Data Flow: `hf-data/dataTransfer/convert.py` emits source graph JSON -> `hf-data/convert_script.js` converts it into `nodeData.json`, `labels.json`, `compliance_data.json` -> `graphLoader` loads those files -> `graph.js` exposes normalized node/compliance data -> stores and renderer consume node metadata for license, conflict, and timeline features.
 - Risks: The compatibility fix must preserve older valid array exports while tolerating object-shaped `nodeData`; export changes must not alter compliance id mapping or layout outputs.
-- Validation Plan: Run `npm run check:vibe`; verify that the load-time graph model now normalizes object/array node data and stringifies export-time license values.
+- Validation Plan: Run `npm run check:vibe`; verify that the load-time graph model now normalizes object/array node data, stringifies export-time license values, and converts date fields into stable ISO strings.
 
 ## Execute
-- Added load-time normalization in `src/galaxy/service/graph.js` so existing broken exports are converted back into dense node arrays with scalar license fields.
+- Added load-time normalization in `src/galaxy/service/graph.js` so existing broken exports are converted back into dense node arrays with scalar license fields, plus normalized date strings for timeline consumers.
 - Tightened `src/galaxy/utils/resolveNodeLicense.js` so placeholder values like `license:None` do not override user-facing license text.
 - Updated `hf-data/convert_script.js` so future exports write string license fields and array-shaped `nodeData.json` again.
 
@@ -25,3 +25,5 @@
 
 ## Reflect
 - Treat `graph.js` as the compatibility boundary for data-shape drift; export scripts should still keep the stable on-disk contract to avoid pushing format assumptions into every store and renderer.
+
+

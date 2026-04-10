@@ -3,6 +3,7 @@
 import eventify from 'ngraph.events';
 import appEvents from '../service/appEvents.js';
 import scene from './sceneStore.js';
+import resolveNodeLicense from '../utils/resolveNodeLicense.js';
 
 const licenseStore = createLicenseStore();
 export default licenseStore;
@@ -20,7 +21,7 @@ function createLicenseStore() {
   return api;
 
   function processGraphData() {
-    console.log("Processing license distribution data...");
+    console.log('Processing license distribution data...');
     const graphModel = scene.getGraph();
     if (!graphModel || !graphModel.getRawData) {
       licenseData = [];
@@ -33,9 +34,9 @@ function createLicenseStore() {
     }
 
     const licenseCounts = new Map();
-    rawData.nodeData.forEach(node => {
+    rawData.nodeData.forEach((node, index) => {
       if (node) {
-        const license = getLicenseFromNode(node);
+        const license = resolveNodeLicense(node, graphModel.getComplianceDetails(index));
         const cleanLicense = (!license || license.toLowerCase() === 'none' || license.toLowerCase() === 'unknown') ? 'N/A' : license;
         licenseCounts.set(cleanLicense, (licenseCounts.get(cleanLicense) || 0) + 1);
       }
@@ -43,15 +44,9 @@ function createLicenseStore() {
 
     licenseData = Array.from(licenseCounts.entries())
       .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value); 
-    
-    console.log("License distribution data ready.");
-    api.fire('changed', licenseData);
-  }
+      .sort((a, b) => b.value - a.value);
 
-  function getLicenseFromNode(nodeData) {
-      if (!nodeData) return 'N/A';
-      const licenseTag = (nodeData.tags || []).find(t => typeof t === 'string' && t.startsWith('license:'));
-      return licenseTag ? licenseTag.substring(8) : (nodeData.license || 'N/A');
+    console.log('License distribution data ready.');
+    api.fire('changed', licenseData);
   }
 }

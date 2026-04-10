@@ -218,3 +218,15 @@
 - Step: 3
 - Decision: Restore the export contract in `hf-data/convert_script.js` by writing scalar license fields and array-shaped `nodeData.json`.
 - Rationale: The regression came from data contract drift, not UI intent; fixing the exporter prevents the same timeline/conflict/license breakage from recurring on the next export.
+
+## Decision Log Entry
+- Task ID: repair-export-pipeline-regressions
+- Step: 4
+- Decision: Route `licenseComplianceStore` and `licenseStore` through the shared license resolver instead of relying on their own legacy tag parsing.
+- Rationale: Load-time normalization alone was insufficient because conflict highlighting and license statistics still bypassed the compatibility path and kept reintroducing placeholder values.
+
+## Decision Log Entry
+- Task ID: repair-export-pipeline-regressions
+- Step: 5
+- Decision: Normalize `createdAt` and `lastModified` inside `graph.js` during node record hydration.
+- Rationale: Timeline and community-by-date logic compare JavaScript dates directly; old exports can contain numeric or numeric-string timestamps that need canonical ISO conversion at the compatibility boundary.

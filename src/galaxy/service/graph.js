@@ -178,6 +178,8 @@ function normalizeNodeRecord(record) {
     license: firstValue(record.license),
     license_name: firstValue(record.license_name),
     fixed_license: firstValue(record.fixed_license),
+    createdAt: normalizeDateValue(record.createdAt),
+    lastModified: normalizeDateValue(record.lastModified),
     tags: Array.isArray(record.tags) ? record.tags : []
   };
 }
@@ -187,4 +189,27 @@ function firstValue(value) {
     return value.length > 0 ? value[0] : null;
   }
   return value;
+}
+
+function normalizeDateValue(value) {
+  const first = firstValue(value);
+  if (first === null || first === undefined || first === '') return null;
+
+  if (typeof first === 'number') {
+    return new Date(first).toISOString();
+  }
+
+  const text = String(first).trim();
+  if (!text) return null;
+
+  if (/^\d+$/.test(text)) {
+    const numeric = Number(text);
+    if (!Number.isNaN(numeric)) {
+      const millis = text.length <= 10 ? numeric * 1000 : numeric;
+      return new Date(millis).toISOString();
+    }
+  }
+
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }

@@ -4,7 +4,7 @@
 - Status: COMPLETED
 
 ## Summary
-Repaired the export-driven data contract drift that was breaking three features at once: sidebar license display, conflict highlighting, and timeline filtering. Existing broken exports are now normalized at load time, and future exports are aligned back to the frontend's expected `nodeData` and `license` shapes.
+Repaired the export-driven data contract drift that was breaking three features at once: sidebar license display, conflict highlighting, and timeline filtering. Existing broken exports are now normalized at load time, and future exports are aligned back to the frontend's expected `nodeData`, `license`, and timeline date shapes.
 
 ## Changed Files
 - `src/galaxy/service/graph.js`
@@ -24,3 +24,4 @@ Repaired the export-driven data contract drift that was breaking three features 
 ## Remaining Risks
 - Existing exported datasets that were generated with the broken script should now load, but a fresh export is still recommended to restore the canonical on-disk format.
 - Any external tools that consumed the object-shaped `nodeData.json` written by the broken exporter would need to adjust back to the array contract after re-exporting.
+
