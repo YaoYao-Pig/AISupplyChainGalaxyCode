@@ -193,3 +193,9 @@
 - Step: 4
 - Decision: Change the shared resolver to prefer `license_name` over normalized `fixed_license` for sidebar display.
 - Rationale: `fixed_license` is produced for compliance analysis and can legitimately collapse many nodes to placeholders like `None`; the sidebar should show the user-facing license text instead.
+
+## Decision Log Entry
+- Task ID: fix-sidebar-license-metadata-missing
+- Step: 5
+- Decision: Treat placeholder license tags such as `license:None` as invalid display values and continue resolving from `license_name` / raw `license`.
+- Rationale: The Python export pipeline derives `license` from tags and writes `None` when no concrete license tag exists, while `license_name` can still contain the human-readable license text needed by the sidebar.

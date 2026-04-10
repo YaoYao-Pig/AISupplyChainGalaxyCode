@@ -21,6 +21,7 @@ Restored right-sidebar license metadata by fixing license resolution upstream in
 - Revert the changes in the three source files above to return to the prior license-resolution behavior.
 
 ## Remaining Risks
-- Other modules still reading `nodeData.license` directly may need the same display-oriented resolver if they should surface `license_name` instead of raw placeholders like `None`.
+- Other modules still reading `nodeData.license` or raw `license:` tags directly may need the same display-oriented resolver if they should surface `license_name` instead of placeholders like `license:None`.
+
 
 

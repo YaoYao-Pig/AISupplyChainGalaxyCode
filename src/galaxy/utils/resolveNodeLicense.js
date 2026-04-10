@@ -1,6 +1,18 @@
+function firstValue(value) {
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value[0] : null;
+  }
+  return value;
+}
+
+function normalizeLicenseValue(value) {
+  const first = firstValue(value);
+  if (first === null || first === undefined) return '';
+  return String(first).trim();
+}
+
 function isMeaningfulLicense(value) {
-  if (value === null || value === undefined) return false;
-  const normalized = String(value).trim();
+  const normalized = normalizeLicenseValue(value);
   if (!normalized) return false;
 
   const lower = normalized.toLowerCase();
@@ -11,25 +23,26 @@ export default function resolveNodeLicense(nodeData, compliance, fallback = 'N/A
   const safeNodeData = nodeData || {};
   const tags = Array.isArray(safeNodeData.tags) ? safeNodeData.tags : [];
   const licenseTag = tags.find(tag => typeof tag === 'string' && tag.startsWith('license:'));
+  const licenseFromTag = licenseTag ? licenseTag.substring('license:'.length).trim() : '';
 
-  if (licenseTag) {
-    return licenseTag.substring('license:'.length);
+  if (isMeaningfulLicense(licenseFromTag)) {
+    return normalizeLicenseValue(licenseFromTag);
   }
 
   if (isMeaningfulLicense(safeNodeData.license_name)) {
-    return String(safeNodeData.license_name).trim();
+    return normalizeLicenseValue(safeNodeData.license_name);
   }
 
   if (isMeaningfulLicense(safeNodeData.license)) {
-    return String(safeNodeData.license).trim();
+    return normalizeLicenseValue(safeNodeData.license);
   }
 
   if (isMeaningfulLicense(safeNodeData.fixed_license)) {
-    return String(safeNodeData.fixed_license).trim();
+    return normalizeLicenseValue(safeNodeData.fixed_license);
   }
 
   if (compliance && isMeaningfulLicense(compliance.fixed_license)) {
-    return String(compliance.fixed_license).trim();
+    return normalizeLicenseValue(compliance.fixed_license);
   }
 
   return fallback;
