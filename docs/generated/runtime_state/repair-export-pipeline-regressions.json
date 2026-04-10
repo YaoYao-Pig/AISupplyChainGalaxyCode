@@ -1,0 +1,107 @@
+{
+  "task_id": "repair-export-pipeline-regressions",
+  "status": "COMPLETED",
+  "current_phase": "verify",
+  "summaries": [
+    {
+      "step_id": "repair-export-pipeline-regressions-step-1",
+      "content": "Task bootstrapped through AgentKit pipeline: Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI.",
+      "created_at": "2026-04-10T15:49:11+00:00"
+    },
+    {
+      "step_id": "repair-export-pipeline-regressions-step-2",
+      "content": "Restored the graph data contract by normalizing object-shaped nodeData and array licenses at load time, and by fixing future exports to emit array nodeData with scalar license fields.",
+      "created_at": "2026-04-10T16:05:00+00:00"
+    }
+  ],
+  "evidence_refs": [
+    {
+      "path": "src/galaxy/service/graph.js",
+      "lines": [8, 58, 129],
+      "note": "Load-time graph normalization now converts object-shaped nodeData into dense arrays and scalar node fields."
+    },
+    {
+      "path": "hf-data/convert_script.js",
+      "lines": [419, 508, 515],
+      "note": "Export script now writes scalar license fields and array-shaped nodeData.json again."
+    },
+    {
+      "path": "src/galaxy/utils/resolveNodeLicense.js",
+      "lines": [13, 24, 28],
+      "note": "Display-side resolver ignores placeholder license tags and prefers meaningful user-facing license fields."
+    }
+  ],
+  "records": [
+    {
+      "step_id": 1,
+      "action": {
+        "id": "repair-export-pipeline-regressions-step-1",
+        "action_type": "task_bootstrap",
+        "params": {
+          "goal": "Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI."
+        }
+      },
+      "policy_result": {
+        "decision": "allow",
+        "reason": "post-check passed",
+        "risk_level": "low"
+      },
+      "result": {
+        "action_id": "repair-export-pipeline-regressions-step-1",
+        "status": "success",
+        "summary": {
+          "step_id": "repair-export-pipeline-regressions-step-1",
+          "content": "Task bootstrapped through AgentKit pipeline: Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI.",
+          "created_at": "2026-04-10T15:49:11+00:00"
+        },
+        "output": {
+          "task_goal": "Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI.",
+          "phase": "planning",
+          "task_id": "repair-export-pipeline-regressions"
+        }
+      },
+      "created_at": "2026-04-10T15:49:11+00:00"
+    },
+    {
+      "step_id": 2,
+      "action": {
+        "id": "repair-export-pipeline-regressions-step-2",
+        "action_type": "external_write",
+        "params": {
+          "goal": "Restore the graph export/load contract for nodeData and license fields."
+        }
+      },
+      "policy_result": {
+        "decision": "allow",
+        "reason": "manual fix validated with boundary checks",
+        "risk_level": "low"
+      },
+      "result": {
+        "action_id": "repair-export-pipeline-regressions-step-2",
+        "status": "success",
+        "summary": {
+          "step_id": "repair-export-pipeline-regressions-step-2",
+          "content": "Restored the graph data contract by normalizing object-shaped nodeData and array licenses at load time, and by fixing future exports to emit array nodeData with scalar license fields.",
+          "created_at": "2026-04-10T16:05:00+00:00"
+        },
+        "output": {
+          "task_goal": "Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI.",
+          "phase": "verify",
+          "task_id": "repair-export-pipeline-regressions"
+        }
+      },
+      "created_at": "2026-04-10T16:05:00+00:00"
+    }
+  ],
+  "retries": 0,
+  "metadata": {
+    "identity": {
+      "name": "starter_agent",
+      "role": "pipeline_runtime"
+    },
+    "capabilities": [
+      "task_bootstrap",
+      "external_write"
+    ]
+  }
+}

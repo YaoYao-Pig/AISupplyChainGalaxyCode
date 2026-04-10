@@ -417,8 +417,8 @@ async function convertData() {
                             originalId: node.id,
                             model_id: node.properties?.model_id,
                             author: node.properties?.author,
-                            license: node.properties?.license, 
-                            license_name: node.properties?.license_name,
+                            license: safeString(node.properties?.license), 
+                            license_name: safeString(node.properties?.license_name),
                             downloads: node.properties?.downloads,
                             likes: node.properties?.likes,
                             tags: node.properties?.tags,
@@ -506,14 +506,14 @@ async function convertData() {
         await fs.ensureDir(versionPath);
 
         // Save Node Data & Labels
-        await writeJsonObjectStream(path.join(versionPath, 'nodeData.json'), async (writeEntry) => {
-            for (let id = 0; id < graph.getNodesCount(); id++) {
-                const node = graph.getNode(id);
-                if (node) {
-                    await writeEntry(node.id, node.data);
-                }
+        const nodeDataForSave = new Array(graph.getNodesCount());
+        for (let id = 0; id < graph.getNodesCount(); id++) {
+            const node = graph.getNode(id);
+            if (node) {
+                nodeDataForSave[node.id] = node.data;
             }
-        });
+        }
+        await writeJsonArrayStream(path.join(versionPath, 'nodeData.json'), nodeDataForSave);
         await writeJsonArrayStream(path.join(versionPath, 'labels.json'), displayLabels);
 
         // Save Positions
@@ -571,4 +571,6 @@ async function convertData() {
 }
 
 convertData();
+
+
 

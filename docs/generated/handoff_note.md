@@ -1,27 +1,26 @@
 # Handoff Note
 
-- Task ID: fix-sidebar-license-metadata-missing
+- Task ID: repair-export-pipeline-regressions
 - Status: COMPLETED
 
 ## Summary
-Restored right-sidebar license metadata by fixing license resolution upstream in the node details view-model path. The sidebar now prefers user-facing license fields (`license:` tag or `license_name`) and only uses normalized fallback data when necessary, while keeping existing Download and Like rendering untouched.
+Repaired the export-driven data contract drift that was breaking three features at once: sidebar license display, conflict highlighting, and timeline filtering. Existing broken exports are now normalized at load time, and future exports are aligned back to the frontend's expected `nodeData` and `license` shapes.
 
 ## Changed Files
+- `src/galaxy/service/graph.js`
 - `src/galaxy/utils/resolveNodeLicense.js`
-- `src/galaxy/store/baseNodeViewModel.js`
-- `src/galaxy/nodeDetails/nodeDetailsStore.js`
+- `hf-data/convert_script.js`
 - `docs/generated/task_model.md`
 - `docs/generated/decision_log.md`
 - `docs/generated/handoff_note.md`
 
 ## Verification
 - `npm run check:vibe` -> PASS
+- Full export rerun and browser-side manual verification were not run in this environment.
 
 ## Rollback
-- Revert the changes in the three source files above to return to the prior license-resolution behavior.
+- Revert the changes in `src/galaxy/service/graph.js`, `src/galaxy/utils/resolveNodeLicense.js`, and `hf-data/convert_script.js` to return to the previous export/consumption behavior.
 
 ## Remaining Risks
-- Other modules still reading `nodeData.license` or raw `license:` tags directly may need the same display-oriented resolver if they should surface `license_name` instead of placeholders like `license:None`.
-
-
-
+- Existing exported datasets that were generated with the broken script should now load, but a fresh export is still recommended to restore the canonical on-disk format.
+- Any external tools that consumed the object-shaped `nodeData.json` written by the broken exporter would need to adjust back to the array contract after re-exporting.

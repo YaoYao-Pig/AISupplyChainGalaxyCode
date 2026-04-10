@@ -1,0 +1,71 @@
+{
+  "task": {
+    "id": "repair-export-pipeline-regressions",
+    "title": "Repair export pipeline regressions",
+    "goal": "Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI.",
+    "constraints": [
+      "Follow AGENTS.md and docs/VIBECODING instructions",
+      "Bootstrap through AgentKit before code changes"
+    ],
+    "success_criteria": [
+      "Existing broken exports load again through compatibility normalization",
+      "Future exports restore array-shaped nodeData and scalar license values",
+      "Required generated docs updated"
+    ],
+    "input_sources": [
+      "hf-data/dataTransfer/convert.py",
+      "hf-data/convert_script.js",
+      "src/galaxy/service/graph.js",
+      "src/galaxy/store/licenseComplianceStore.js",
+      "src/galaxy/store/timelineStore.js",
+      "src/galaxy/native/renderer.js"
+    ]
+  },
+  "state": {
+    "task_id": "repair-export-pipeline-regressions",
+    "status": "COMPLETED",
+    "current_phase": "verify",
+    "retries": 0,
+    "record_count": 2,
+    "evidence_count": 3,
+    "metadata": {
+      "identity": {
+        "name": "starter_agent",
+        "role": "pipeline_runtime"
+      },
+      "capabilities": [
+        "task_bootstrap",
+        "external_write"
+      ]
+    },
+    "summaries": [
+      {
+        "step_id": "repair-export-pipeline-regressions-step-1",
+        "content": "Task bootstrapped through AgentKit pipeline: Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI.",
+        "created_at": "2026-04-10T15:49:11+00:00"
+      },
+      {
+        "step_id": "repair-export-pipeline-regressions-step-2",
+        "content": "Restored the graph data contract by normalizing object-shaped nodeData and array licenses at load time, and by fixing future exports to emit array nodeData with scalar license fields.",
+        "created_at": "2026-04-10T16:05:00+00:00"
+      }
+    ],
+    "evidence_refs": [
+      {
+        "path": "src/galaxy/service/graph.js",
+        "lines": [8, 58, 129],
+        "note": "Load-time graph normalization now converts object-shaped nodeData into dense arrays and scalar node fields."
+      },
+      {
+        "path": "hf-data/convert_script.js",
+        "lines": [419, 508, 515],
+        "note": "Export script now writes scalar license fields and array-shaped nodeData.json again."
+      },
+      {
+        "path": "src/galaxy/utils/resolveNodeLicense.js",
+        "lines": [13, 24, 28],
+        "note": "Display-side resolver ignores placeholder license tags and prefers meaningful user-facing license fields."
+      }
+    ]
+  }
+}

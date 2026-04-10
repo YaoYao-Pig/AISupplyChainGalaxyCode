@@ -199,3 +199,22 @@
 - Step: 5
 - Decision: Treat placeholder license tags such as `license:None` as invalid display values and continue resolving from `license_name` / raw `license`.
 - Rationale: The Python export pipeline derives `license` from tags and writes `None` when no concrete license tag exists, while `license_name` can still contain the human-readable license text needed by the sidebar.
+
+
+## Decision Log Entry
+- Task ID: repair-export-pipeline-regressions
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI.
+
+## Decision Log Entry
+- Task ID: repair-export-pipeline-regressions
+- Step: 2
+- Decision: Add a frontend-side compatibility normalization layer in `graph.js` instead of relying only on a future re-export.
+- Rationale: The user already has broken exported data; normalizing at load time restores current datasets immediately while preserving compatibility with older correct exports.
+
+## Decision Log Entry
+- Task ID: repair-export-pipeline-regressions
+- Step: 3
+- Decision: Restore the export contract in `hf-data/convert_script.js` by writing scalar license fields and array-shaped `nodeData.json`.
+- Rationale: The regression came from data contract drift, not UI intent; fixing the exporter prevents the same timeline/conflict/license breakage from recurring on the next export.

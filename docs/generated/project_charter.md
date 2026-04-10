@@ -1,8 +1,8 @@
 # AISupplyChainGalaxyCode AgentKit Project Charter
 
-- Task ID: fix-sidebar-license-metadata-missing
-- Mission: Fix sidebar license metadata missing
-- Goal: Restore license and related metadata display in the right sidebar node details without breaking existing download/like rendering.
+- Task ID: repair-export-pipeline-regressions
+- Mission: Repair export pipeline regressions
+- Goal: Fix export-script-driven regressions affecting sidebar license display, conflict highlighting, and timeline behavior without breaking the existing graph UI.
 
 ## Scope
 Reusable runtime, configs, docs
