@@ -4,7 +4,7 @@
 - Status: COMPLETED
 
 ## Summary
-Restored right-sidebar license metadata by fixing license resolution upstream in the node details view-model path. The sidebar now falls back to normalized `fixed_license` data when raw `license` is absent, while keeping existing Download and Like rendering untouched.
+Restored right-sidebar license metadata by fixing license resolution upstream in the node details view-model path. The sidebar now prefers user-facing license fields (`license:` tag or `license_name`) and only uses normalized fallback data when necessary, while keeping existing Download and Like rendering untouched.
 
 ## Changed Files
 - `src/galaxy/utils/resolveNodeLicense.js`
@@ -21,4 +21,6 @@ Restored right-sidebar license metadata by fixing license resolution upstream in
 - Revert the changes in the three source files above to return to the prior license-resolution behavior.
 
 ## Remaining Risks
-- Other modules still reading `nodeData.license` directly may need the same fallback if upstream graph payloads have broadly shifted to `fixed_license`.
+- Other modules still reading `nodeData.license` directly may need the same display-oriented resolver if they should surface `license_name` instead of raw placeholders like `None`.
+
+

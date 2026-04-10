@@ -187,3 +187,9 @@
 - Step: 3
 - Decision: Preserve the existing precedence of `license:` tag and `nodeData.license`, and only fall back to `fixed_license` when those are missing.
 - Rationale: This restores missing data for newer payloads while minimizing behavior changes for graphs that already render the expected license value.
+
+## Decision Log Entry
+- Task ID: fix-sidebar-license-metadata-missing
+- Step: 4
+- Decision: Change the shared resolver to prefer `license_name` over normalized `fixed_license` for sidebar display.
+- Rationale: `fixed_license` is produced for compliance analysis and can legitimately collapse many nodes to placeholders like `None`; the sidebar should show the user-facing license text instead.
