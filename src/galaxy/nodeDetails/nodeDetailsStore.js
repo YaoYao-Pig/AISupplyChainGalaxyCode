@@ -4,6 +4,7 @@ import scene from '../store/sceneStore.js';
 import DegreeWindowViewModel from './degreeWindowViewModel.js';
 import getBaseNodeViewModel from '../store/baseNodeViewModel.js';
 import eventify from 'ngraph.events';
+import resolveNodeLicense from '../utils/resolveNodeLicense.js';
 
 const degreeWindowId = 'degree';
 
@@ -45,13 +46,18 @@ function nodeDetailsStore() {
   appEvents.highlightChain.on(chain => {
     if (!Array.isArray(chain)) return;
 
+    const graph = scene.getGraph();
+    if (!graph) return;
+
     const nodesToHighlight = chain
         .map(item => {
             const nodeId = scene.getNodeIdByModelId(item.model);
             if (nodeId === undefined) return null;
-            const nodeData = scene.getGraph().getNodeData(nodeId);
-            const licenseTag = (nodeData.tags || []).find(t => t.startsWith('license:'));
-            const license = licenseTag ? licenseTag.substring(8) : (nodeData.license || 'N/A');
+            const nodeData = graph.getNodeData(nodeId);
+            const compliance = typeof graph.getComplianceDetails === 'function'
+              ? graph.getComplianceDetails(nodeId)
+              : null;
+            const license = resolveNodeLicense(nodeData, compliance);
             return { id: nodeId, license: license };
         })
         .filter(node => node !== null);

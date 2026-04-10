@@ -168,3 +168,22 @@
 - Step: 3
 - Decision: 目录树默认展开，仅增加视觉层级，不引入新的折叠状态管理。
 - Rationale: 这轮目标是恢复文件结构感知，不是扩展新的交互状态；默认展开实现更稳，也避免额外状态影响移动端和深链选择行为。
+
+
+## Decision Log Entry
+- Task ID: fix-sidebar-license-metadata-missing
+- Step: 1
+- Decision: COMPLETED
+- Rationale: Task bootstrapped through AgentKit pipeline: Restore license and related metadata display in the right sidebar node details without breaking existing download/like rendering.
+
+## Decision Log Entry
+- Task ID: fix-sidebar-license-metadata-missing
+- Step: 2
+- Decision: Introduce a small shared license resolver and use it in the sidebar view-model path instead of patching `SidebarView.jsx` itself.
+- Rationale: The render layer was still intact; the regression was upstream in metadata resolution, so fixing the shared data path restores the license row without changing sidebar presentation behavior.
+
+## Decision Log Entry
+- Task ID: fix-sidebar-license-metadata-missing
+- Step: 3
+- Decision: Preserve the existing precedence of `license:` tag and `nodeData.license`, and only fall back to `fixed_license` when those are missing.
+- Rationale: This restores missing data for newer payloads while minimizing behavior changes for graphs that already render the expected license value.

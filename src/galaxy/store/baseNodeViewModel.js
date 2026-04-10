@@ -4,6 +4,7 @@ import getGraphSpecificInfo from './graphSepcific/graphSpecificInfo.js';
 import scene from './sceneStore.js';
 import formatNumber from '../utils/formatNumber.js';
 import { isLicenseCompatible } from './licenseUtils.js';
+import resolveNodeLicense from '../utils/resolveNodeLicense.js';
 
 export default getBaseNodeViewModel;
 
@@ -35,13 +36,11 @@ function getBaseNodeViewModel(nodeId) {
 
     const inheritanceChain = [];
     const visitedModels = new Set();
-    
-    const licenseTag = (nodeData.tags || []).find(t => typeof t === 'string' && t.startsWith(prefixes.license));
-    const licenseFromTag = licenseTag ? licenseTag.substring(prefixes.license.length) : null;
+    const resolvedLicense = resolveNodeLicense(nodeData, compliance);
     
     inheritanceChain.push({
         model: nodeInfo.name,
-        license: licenseFromTag || nodeData.license || 'N/A',
+        license: resolvedLicense,
         level: 0,
         isRoot: false
     });
@@ -63,8 +62,10 @@ function getBaseNodeViewModel(nodeId) {
             return;
         }
       
-        const parentLicenseTag = (parentData.tags || []).find(t => t.startsWith(prefixes.license));
-        const parentLicense = parentLicenseTag ? parentLicenseTag.substring(prefixes.license.length) : (parentData.license || 'N/A');
+        const parentCompliance = graphModel && typeof graphModel.getComplianceDetails === 'function'
+            ? graphModel.getComplianceDetails(parentNodeId)
+            : null;
+        const parentLicense = resolveNodeLicense(parentData, parentCompliance);
         const grandParentTags = (parentData.tags || []).filter(t => t.startsWith(prefixes.base_model));
 
         inheritanceChain.push({
@@ -82,7 +83,7 @@ function getBaseNodeViewModel(nodeId) {
     }
 
     const baseModelTags = (nodeData.tags || []).filter(t => t.startsWith(prefixes.base_model));
-    const currentLicenseForComparison = licenseFromTag || nodeData.license || 'N/A';
+    const currentLicenseForComparison = resolvedLicense;
     
     baseModelTags.forEach(tag => {
         const baseModelId = tag.substring(prefixes.base_model.length);
@@ -99,7 +100,7 @@ function getBaseNodeViewModel(nodeId) {
         inDegree: formatNumber(nodeInfo.in || 0),
         outDegree: formatNumber(nodeInfo.out || 0),
         author: nodeData.author,
-        license: licenseFromTag || nodeData.license,
+        license: resolvedLicense,
         downloads: formatNumber(nodeData.downloads || 0),
         likes: formatNumber(nodeData.likes || 0),
         tags: generalTags,

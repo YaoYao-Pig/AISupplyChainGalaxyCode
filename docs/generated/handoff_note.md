@@ -1,17 +1,24 @@
 # Handoff Note
 
-- Task ID: frontend-docs-file-tree-display
+- Task ID: fix-sidebar-license-metadata-missing
 - Status: COMPLETED
 
 ## Summary
-`DocsPage` now renders the sidebar as a section-scoped folder tree based on each markdown file path instead of a flat list. Search still filters documents, `#/docs?doc=` deep links still select the same document, and the right-side heading TOC remains unchanged.
+Restored right-sidebar license metadata by fixing license resolution upstream in the node details view-model path. The sidebar now falls back to normalized `fixed_license` data when raw `license` is absent, while keeping existing Download and Like rendering untouched.
 
-## Follow-ups
-- Smoke-test the `/docs` page in a browser to confirm the visual hierarchy feels right on desktop and mobile
-- If needed later, add collapsible folders; this task keeps the tree expanded to avoid adding new UI state
-- The legacy production build still has pre-existing toolchain issues unrelated to this change (`npm run build` uses Unix shell syntax, and the webpack stack also hits old dependency errors in `clean-css` and `marked`)
+## Changed Files
+- `src/galaxy/utils/resolveNodeLicense.js`
+- `src/galaxy/store/baseNodeViewModel.js`
+- `src/galaxy/nodeDetails/nodeDetailsStore.js`
+- `docs/generated/task_model.md`
+- `docs/generated/decision_log.md`
+- `docs/generated/handoff_note.md`
 
-## Existing Project Constraints
-- Preserve current React/WebGL business code under `src/galaxy/`
-- Bootstrap each new task through `tools/agentkit/run_task.py` before implementation
-- Keep popup behavior, stores, and services aligned with existing module boundaries
+## Verification
+- `npm run check:vibe` -> PASS
+
+## Rollback
+- Revert the changes in the three source files above to return to the prior license-resolution behavior.
+
+## Remaining Risks
+- Other modules still reading `nodeData.license` directly may need the same fallback if upstream graph payloads have broadly shifted to `fixed_license`.

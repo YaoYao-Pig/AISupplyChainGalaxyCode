@@ -1,8 +1,8 @@
 # AISupplyChainGalaxyCode AgentKit Project Charter
 
-- Task ID: frontend-docs-file-tree-display
-- Mission: Frontend docs file tree display
-- Goal: Make the project documentation frontend preserve and display per-file structure instead of a flattened list.
+- Task ID: fix-sidebar-license-metadata-missing
+- Mission: Fix sidebar license metadata missing
+- Goal: Restore license and related metadata display in the right sidebar node details without breaking existing download/like rendering.
 
 ## Scope
 Reusable runtime, configs, docs
