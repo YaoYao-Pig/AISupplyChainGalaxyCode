@@ -60,18 +60,21 @@ function runComplianceAnalysis(graph) {
     progressBar.start(graph.getNodesCount(), 0);
 
     // --- 0. 预计算传播图结构 (Pre-computation) ---
-    // 建立一个只包含 "传播边" 的轻量级邻接表，避免 BFS 时重复检查边类型
-    const propChildren = new Map(); // Parent -> [Children]
-    const propParents = new Map();  // Child -> [Parents]
+    // 数据里的边方向是「派生模型 -> 基础模型」(child -> parent)。
+    // 合规传播需要按「基础模型 -> 派生模型」方向扩散，所以这里显式翻转一次语义。
+    const propChildren = new Map(); // Parent/Base -> [Derived Children]
+    const propParents = new Map();  // Child/Derived -> [Base Parents]
 
     graph.forEachLink(link => {
         if (link.data && link.data.type && CONFIG.PROPAGATION_TYPES.has(link.data.type)) {
-            // Forward
-            if (!propChildren.has(link.fromId)) propChildren.set(link.fromId, []);
-            propChildren.get(link.fromId).push(link.toId);
-            // Backward
-            if (!propParents.has(link.toId)) propParents.set(link.toId, []);
-            propParents.get(link.toId).push(link.fromId);
+            const childId = link.fromId;
+            const parentId = link.toId;
+
+            if (!propChildren.has(parentId)) propChildren.set(parentId, []);
+            propChildren.get(parentId).push(childId);
+
+            if (!propParents.has(childId)) propParents.set(childId, []);
+            propParents.get(childId).push(parentId);
         }
     });
 
@@ -486,4 +489,11 @@ async function convertData() {
     }
 }
 
-convertData();
+if (require.main === module) {
+    convertData();
+}
+
+module.exports = {
+    runComplianceAnalysis,
+    convertData
+};
