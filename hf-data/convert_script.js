@@ -410,19 +410,27 @@ async function convertData() {
 
         console.log(`\n🕸️  Running layout (${CONFIG.LAYOUT_ITERATIONS} iterations)...`);
         const layout = createLayout(graph, { dimensions: 3, iterations: CONFIG.LAYOUT_ITERATIONS });
-        
-        // 布局进度条
-        const layoutBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-        layoutBar.start(CONFIG.LAYOUT_ITERATIONS, 0);
-        
-        // 分批执行布局以更新进度
-        const batchSize = 100;
-        for (let i = 0; i < CONFIG.LAYOUT_ITERATIONS; i += batchSize) {
-            const steps = Math.min(batchSize, CONFIG.LAYOUT_ITERATIONS - i);
-            for(let j=0; j<steps; j++) layout.step();
-            layoutBar.increment(steps);
+        if (!layout) {
+            throw new Error('Layout initialization failed: createLayout() returned an empty value.');
         }
-        layoutBar.stop();
+
+        // ngraph.offline.layout 2.x exposes run(); some older variants expose step().
+        if (typeof layout.run === 'function') {
+            layout.run();
+        } else if (typeof layout.step === 'function') {
+            const layoutBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+            layoutBar.start(CONFIG.LAYOUT_ITERATIONS, 0);
+
+            const batchSize = 100;
+            for (let i = 0; i < CONFIG.LAYOUT_ITERATIONS; i += batchSize) {
+                const steps = Math.min(batchSize, CONFIG.LAYOUT_ITERATIONS - i);
+                for (let j = 0; j < steps; j++) layout.step();
+                layoutBar.increment(steps);
+            }
+            layoutBar.stop();
+        } else {
+            throw new Error('Layout API mismatch: neither run() nor step() is available on the layout object.');
+        }
         
         // 执行合规分析
         runComplianceAnalysis(graph);
@@ -440,6 +448,9 @@ async function convertData() {
         // Save Positions
         const positionsArray = new Int32Array(graph.getNodesCount() * 3);
         const finalPositions = layout.getLayout();
+        if (!finalPositions) {
+            throw new Error('Layout completed but getLayout() returned no positions.');
+        }
         for (let id = 0; id < graph.getNodesCount(); id++) {
             const pos = finalPositions[id];
             if (pos) {
