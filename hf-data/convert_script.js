@@ -439,25 +439,20 @@ async function convertData() {
         relBar.stop();
         parseBar.stop();
 
-        console.log(`\n🕸️  Running layout (${CONFIG.LAYOUT_ITERATIONS} iterations)...`);
-        const layout = createLayout(graph, { dimensions: 3, iterations: CONFIG.LAYOUT_ITERATIONS });
+console.log(`\n🕸️  Running layout (${CONFIG.LAYOUT_ITERATIONS} iterations)...`);
+const layout = createLayout(graph, {
+    iterations: CONFIG.LAYOUT_ITERATIONS,
+    outDir: path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, CONFIG.VERSION_NAME, '__layout_cache__')
+});
 
-        const layoutBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-        layoutBar.start(CONFIG.LAYOUT_ITERATIONS, 0);
+// ngraph.offline.layout 的 API 是 run()，不是 step()
+layout.run(true);
 
-        const batchSize = 100;
-        for (let i = 0; i < CONFIG.LAYOUT_ITERATIONS; i += batchSize) {
-            const steps = Math.min(batchSize, CONFIG.LAYOUT_ITERATIONS - i);
-            for (let j = 0; j < steps; j++) layout.step();
-            layoutBar.increment(steps);
-        }
-        layoutBar.stop();
+runComplianceAnalysis(graph);
 
-        runComplianceAnalysis(graph);
-
-        console.log('\n💾 Saving binary data...');
-        const versionPath = path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, CONFIG.VERSION_NAME);
-        await fs.ensureDir(versionPath);
+console.log('\n💾 Saving binary data...');
+const versionPath = path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, CONFIG.VERSION_NAME);
+await fs.ensureDir(versionPath);
 
         // Save Node Data & Labels (streaming, avoid JSON.stringify huge object)
         console.log('   - writing nodeData.json (streaming)...');
