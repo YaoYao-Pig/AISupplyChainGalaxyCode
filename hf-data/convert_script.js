@@ -470,17 +470,22 @@ await fs.ensureDir(versionPath);
         await writeLargeJsonArray(path.join(versionPath, 'labels.json'), displayLabels);
 
         // Save Positions
-        const positionsArray = new Int32Array(graph.getNodesCount() * 3);
-        const finalPositions = layout.getLayout();
-        for (let id = 0; id < graph.getNodesCount(); id++) {
-            const pos = finalPositions[id];
-            if (pos) {
-                positionsArray[id * 3] = Math.round(pos.x);
-                positionsArray[id * 3 + 1] = Math.round(pos.y);
-                positionsArray[id * 3 + 2] = Math.round(pos.z);
-            }
-        }
-        await fs.writeFile(path.join(versionPath, 'positions.bin'), Buffer.from(positionsArray.buffer));
+const positionsArray = new Int32Array(graph.getNodesCount() * 3);
+const finalLayout = layout.getLayout();
+
+for (let id = 0; id < graph.getNodesCount(); id++) {
+    const pos = finalLayout.getNodePosition(id);
+    if (pos) {
+        positionsArray[id * 3] = Math.round(pos.x || 0);
+        positionsArray[id * 3 + 1] = Math.round(pos.y || 0);
+        positionsArray[id * 3 + 2] = Math.round(pos.z || 0);
+    }
+}
+
+await fs.writeFile(
+    path.join(versionPath, 'positions.bin'),
+    Buffer.from(positionsArray.buffer)
+);
 
         // Save Links (Visual Adjacency)
         const linksBufferData = [];
