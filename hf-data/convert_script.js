@@ -2,7 +2,7 @@ const createGraphNgraph = require('ngraph.graph');
 const createLayout = require('ngraph.offline.layout');
 const fs = require('fs-extra');
 const path = require('path');
-const cliProgress = require('cli-progress'); // 确保已安装: npm install cli-progress
+const cliProgress = require('cli-progress');
 const JSONStream = require('JSONStream');
 const through2 = require('through2');
 
@@ -12,25 +12,75 @@ const CONFIG = {
     OUTPUT_DIR: './galaxy_output_data',
     GRAPH_NAME: 'my_model_galaxy',
     VERSION_NAME: 'v1_updated_links',
-    LAYOUT_ITERATIONS: 19005,
-    PROPAGATION_TYPES: new Set(["FINETUNE", "MERGE", "QUANTIZED", "ADAPTER"]) // 使用 Set 提高查找速度
+
+    // 注意：
+    // ngraph.offline.layout 源码里循环条件是 step < iterations
+    // 如果你已经有 19000.bin，想继续跑到并保存 19005.bin，
+    // 这里设成 19006 更稳妥
+    LAYOUT_ITERATIONS: 19006,
+
+    // 显式写出来，便于和已有 19000.bin / 19005.bin 的保存节奏对齐
+    LAYOUT_SAVE_EACH: 5,
+
+    PROPAGATION_TYPES: new Set(["FINETUNE", "MERGE", "QUANTIZED", "ADAPTER"])
 };
 
-// --- 2. 业务规则常量 (使用 Set 提高性能) ---
+// --- 2. 业务规则常量 ---
 const RISK_LISTS = {
-    h_Mismatch: new Set(["apache-2.0", "None", "mit", "cc-by-nc-4.0", "cc-by-4.0", "cc-by-nc-sa-4.0", "cc-by-sa-4.0", "bsd-3-clause", "gpl-3.0", "unknown", "cc", "cc-by-nc-nd-4.0", "afl-3.0", "agpl-3.0", "cc0-1.0", "wtfpl", "cc-by-nc-2.0", "artistic-2.0", "unlicense", "cc-by-sa-3.0", "bsl-1.0", "gpl", "apple-ascl", "osl-3.0", "cc-by-nc-3.0", "cc-by-2.0", "gpl-2.0", "bsd", "ms-pl", "ecl-2.0", "bsd-3-clause-clear", "cc-by-3.0", "lgpl-3.0", "deepfloyd-if-license", "mpl-2.0", "pddl", "bsd-2-clause", "cc-by-nd-4.0", "cdla-permissive-2.0", "eupl-1.1", "cc-by-nc-sa-3.0", "etalab-2.0", "odc-by", "cc-by-2.5", "ofl-1.1", "odbl", "cc-by-nc-sa-2.0", "cdla-sharing-1.0", "lgpl-lr", "lgpl", "zlib"]),
+    h_Mismatch: new Set([
+        "apache-2.0", "None", "mit", "cc-by-nc-4.0", "cc-by-4.0", "cc-by-nc-sa-4.0",
+        "cc-by-sa-4.0", "bsd-3-clause", "gpl-3.0", "unknown", "cc", "cc-by-nc-nd-4.0",
+        "afl-3.0", "agpl-3.0", "cc0-1.0", "wtfpl", "cc-by-nc-2.0", "artistic-2.0",
+        "unlicense", "cc-by-sa-3.0", "bsl-1.0", "gpl", "apple-ascl", "osl-3.0",
+        "cc-by-nc-3.0", "cc-by-2.0", "gpl-2.0", "bsd", "ms-pl", "ecl-2.0",
+        "bsd-3-clause-clear", "cc-by-3.0", "lgpl-3.0", "deepfloyd-if-license", "mpl-2.0",
+        "pddl", "bsd-2-clause", "cc-by-nd-4.0", "cdla-permissive-2.0", "eupl-1.1",
+        "cc-by-nc-sa-3.0", "etalab-2.0", "odc-by", "cc-by-2.5", "ofl-1.1", "odbl",
+        "cc-by-nc-sa-2.0", "cdla-sharing-1.0", "lgpl-lr", "lgpl", "zlib"
+    ]),
 
-    g_Source: new Set(["creativeml-openrail-m", "llama2", "cc-by-nc-4.0", "gemma", "llama3", "openrail++", "llama3.1", "llama3.2", "openrail", "bigcode-openrail-m", "cc-by-nc-3.0", "bigscience-bloom-rail-1.0", "llama3.3", "bigscience-openrail-m", "cc-by-nc-2.0", "deepfloyd-if-license", "c-uda"]),
+    g_Source: new Set([
+        "creativeml-openrail-m", "llama2", "cc-by-nc-4.0", "gemma", "llama3", "openrail++",
+        "llama3.1", "llama3.2", "openrail", "bigcode-openrail-m", "cc-by-nc-3.0",
+        "bigscience-bloom-rail-1.0", "llama3.3", "bigscience-openrail-m", "cc-by-nc-2.0",
+        "deepfloyd-if-license", "c-uda"
+    ]),
 
-    f_Source: new Set(["cc-by-nc-sa-4.0", "cc-by-sa-4.0", "gpl-3.0", "agpl-3.0", "cc-by-sa-3.0", "gpl", "osl-3.0", "gpl-2.0", "ms-pl", "lgpl-3.0", "mpl-2.0", "eupl-1.1", "cc-by-nc-sa-3.0", "odbl", "cc-by-nc-sa-2.0", "cdla-sharing-1.0", "lgpl-lr", "lgpl", "epl-2.0", "epl-1.0", "lgpl-2.1"]),
+    f_Source: new Set([
+        "cc-by-nc-sa-4.0", "cc-by-sa-4.0", "gpl-3.0", "agpl-3.0", "cc-by-sa-3.0", "gpl",
+        "osl-3.0", "gpl-2.0", "ms-pl", "lgpl-3.0", "mpl-2.0", "eupl-1.1",
+        "cc-by-nc-sa-3.0", "odbl", "cc-by-nc-sa-2.0", "cdla-sharing-1.0", "lgpl-lr",
+        "lgpl", "epl-2.0", "epl-1.0", "lgpl-2.1"
+    ]),
 
     e_Source: new Set(["cc-by-nc-nd-4.0", "cc-by-nd-4.0"]),
 
-    d_Source: new Set(["cc-by-nc-4.0", "cc-by-4.0", "cc-by-nc-sa-4.0", "cc-by-sa-4.0", "cc", "cc-by-nc-2.0", "cc-by-sa-3.0", "cc-by-nc-3.0", "cc-by-2.0", "cc-by-3.0", "cc-by-nc-sa-3.0", "cc-by-2.5", "cc-by-nc-sa-2.0"]),
-    d_ConflictTarget: new Set(["other", "creativeml-openrail-m", "llama2", "gemma", "llama3", "openrail++", "llama3.1", "llama3.2", "openrail", "bigcode-openrail-m", "bigscience-bloom-rail-1.0", "llama3.3", "agpl-3.0", "bigscience-openrail-m", "gpl", "apple-ascl", "osl-3.0", "gpl-2.0", "lgpl-3.0", "deepfloyd-if-license", "mpl-2.0", "pddl", "eupl-1.1", "odbl", "cdla-sharing-1.0", "lgpl-lr", "lgpl", "epl-2.0", "epl-1.0", "lgpl-2.1"]),
+    d_Source: new Set([
+        "cc-by-nc-4.0", "cc-by-4.0", "cc-by-nc-sa-4.0", "cc-by-sa-4.0", "cc",
+        "cc-by-nc-2.0", "cc-by-sa-3.0", "cc-by-nc-3.0", "cc-by-2.0", "cc-by-3.0",
+        "cc-by-nc-sa-3.0", "cc-by-2.5", "cc-by-nc-sa-2.0"
+    ]),
+
+    d_ConflictTarget: new Set([
+        "other", "creativeml-openrail-m", "llama2", "gemma", "llama3", "openrail++",
+        "llama3.1", "llama3.2", "openrail", "bigcode-openrail-m", "bigscience-bloom-rail-1.0",
+        "llama3.3", "agpl-3.0", "bigscience-openrail-m", "gpl", "apple-ascl", "osl-3.0",
+        "gpl-2.0", "lgpl-3.0", "deepfloyd-if-license", "mpl-2.0", "pddl", "eupl-1.1",
+        "odbl", "cdla-sharing-1.0", "lgpl-lr", "lgpl", "epl-2.0", "epl-1.0", "lgpl-2.1"
+    ]),
 
     c_Source: new Set(["gpl-3.0", "agpl-3.0", "gpl"]),
-    c_ConflictParent: new Set(["other", "creativeml-openrail-m", "llama2", "cc-by-nc-4.0", "gemma", "llama3", "openrail++", "llama3.1", "llama3.2", "cc-by-nc-sa-4.0", "openrail", "bigcode-openrail-m", "bigscience-bloom-rail-1.0", "unknown", "cc", "cc-by-nc-nd-4.0", "llama3.3", "cc-by-nc-2.0", "cc-by-sa-3.0", "apple-ascl", "cc-by-nc-3.0", "cc-by-2.0", "deepfloyd-if-license", "pddl", "cc-by-nd-4.0", "cc-by-nc-sa-3.0", "etalab-2.0", "odc-by", "cc-by-2.5", "cc-by-nc-sa-2.0", "cdla-sharing-1.0", "lgpl-lr", "deepfloyd-if-license", "odbl", "osl-3.0", "ms-pl", "eupl-1.1", "afl-3.0"])
+
+    c_ConflictParent: new Set([
+        "other", "creativeml-openrail-m", "llama2", "cc-by-nc-4.0", "gemma", "llama3",
+        "openrail++", "llama3.1", "llama3.2", "cc-by-nc-sa-4.0", "openrail",
+        "bigcode-openrail-m", "bigscience-bloom-rail-1.0", "unknown", "cc",
+        "cc-by-nc-nd-4.0", "llama3.3", "cc-by-nc-2.0", "cc-by-sa-3.0", "apple-ascl",
+        "cc-by-nc-3.0", "cc-by-2.0", "deepfloyd-if-license", "pddl", "cc-by-nd-4.0",
+        "cc-by-nc-sa-3.0", "etalab-2.0", "odc-by", "cc-by-2.5", "cc-by-nc-sa-2.0",
+        "cdla-sharing-1.0", "lgpl-lr", "deepfloyd-if-license", "odbl", "osl-3.0",
+        "ms-pl", "eupl-1.1", "afl-3.0"
+    ])
 };
 
 const RISK_LEVELS = {
@@ -91,8 +141,10 @@ async function writeLargeJsonObjectByIterator(filePath, entriesIteratorFactory) 
 
         for (const [key, value] of entriesIteratorFactory()) {
             if (value === undefined) continue;
+
             if (!first) await writeChunk(ws, ',');
             first = false;
+
             await writeChunk(ws, JSON.stringify(String(key)));
             await writeChunk(ws, ':');
             await writeChunk(ws, JSON.stringify(value));
@@ -106,15 +158,17 @@ async function writeLargeJsonObjectByIterator(filePath, entriesIteratorFactory) 
     }
 }
 
-// --- 4. 合规性分析核心函数 (优化版) ---
+// --- 4. 合规性分析核心函数 ---
 function runComplianceAnalysis(graph) {
     console.log('🕵️ 开始合规性分析...');
-    const progressBar = new cliProgress.SingleBar({ format: 'Analysis |{bar}| {percentage}% || {value}/{total} Nodes' }, cliProgress.Presets.shades_classic);
+    const progressBar = new cliProgress.SingleBar(
+        { format: 'Analysis |{bar}| {percentage}% || {value}/{total} Nodes' },
+        cliProgress.Presets.shades_classic
+    );
     progressBar.start(graph.getNodesCount(), 0);
 
-    // --- 0. 预计算传播图结构 (Pre-computation) ---
-    // 数据里的边方向是「派生模型 -> 基础模型」(child -> parent)。
-    // 合规传播需要按「基础模型 -> 派生模型」方向扩散，所以这里显式翻转一次语义。
+    // 数据里的边方向是「派生模型 -> 基础模型」(child -> parent)
+    // 合规传播按「基础模型 -> 派生模型」方向扩散，所以这里翻转一次
     const propChildren = new Map(); // Parent/Base -> [Derived Children]
     const propParents = new Map();  // Child/Derived -> [Base Parents]
 
@@ -149,7 +203,7 @@ function runComplianceAnalysis(graph) {
         }
     }
 
-    // --- Step 1: 归一化 (Normalization) ---
+    // --- Step 1: 归一化 ---
     graph.forEachNode(node => {
         const data = node.data || {};
         const rawLicense = safeString(data.license);
@@ -175,7 +229,7 @@ function runComplianceAnalysis(graph) {
 
     console.log('   - Normalized licenses. Analyzing risks...');
 
-    // --- Step 2: 本地风险 (Mismatch) ---
+    // --- Step 2: 本地风险 ---
     graph.forEachNode(node => {
         const fl = node.data.fixed_license;
         if (RISK_LISTS.h_Mismatch.has(fl)) {
@@ -191,7 +245,7 @@ function runComplianceAnalysis(graph) {
         }
     });
 
-    // --- Step 3: 优化后的传播逻辑 (BFS using Pre-computed Map) ---
+    // --- Step 3: 传播逻辑 ---
     function checkDownstreamPropagation(sourceConditionFn, targetConditionFn, riskType, reasonFn) {
         const sources = [];
         graph.forEachNode(node => {
@@ -259,7 +313,7 @@ function runComplianceAnalysis(graph) {
         (srcLic, srcId) => `CC License (${srcLic}) from ${srcId} conflicts with downstream license.`
     );
 
-    // --- Step 5: FSF Conflict (Upstream Check) ---
+    // --- Step 5: FSF Conflict ---
     graph.forEachNode(node => {
         if (RISK_LISTS.c_Source.has(node.data.fixed_license)) {
             const parents = propParents.get(node.id);
@@ -287,7 +341,7 @@ function runComplianceAnalysis(graph) {
         }
     });
 
-    // --- Step 6: Llama Lineage (Optimized) ---
+    // --- Step 6: Llama Lineage ---
     function analyzeLineage(keyword, licenseKey, riskType) {
         const officialRootIds = new Set();
         graph.forEachNode(node => {
@@ -363,6 +417,7 @@ async function convertData() {
         hideCursor: true,
         format: ' {bar} | {filename} | {value} processed'
     }, cliProgress.Presets.shades_grey);
+
     const nodeBar = parseBar.create(0, 0, { filename: 'Nodes' });
     const relBar = parseBar.create(0, 0, { filename: 'Links' });
 
@@ -374,12 +429,13 @@ async function convertData() {
 
         console.log('📂 Reading input JSON streams...');
 
-        // Promise for Nodes
+        // 1) 读取 Nodes
         await new Promise((resolve, reject) => {
             const nodesStream = fs.createReadStream(CONFIG.INPUT_PATH, { encoding: 'utf8' });
             const parser = JSONStream.parse('nodes.*');
 
-            nodesStream.pipe(parser)
+            nodesStream
+                .pipe(parser)
                 .pipe(through2.obj((node, enc, cb) => {
                     if (node && node.id !== undefined && !nodeOriginalIdToInternalIdMap.has(node.id)) {
                         const iId = internalIdCounter++;
@@ -397,6 +453,7 @@ async function convertData() {
                             tags: node.properties?.tags,
                             createdAt: node.properties?.createdAt
                         });
+
                         nodeBar.increment();
                     }
                     cb();
@@ -406,12 +463,13 @@ async function convertData() {
         });
         nodeBar.stop();
 
-        // Promise for Relationships
+        // 2) 读取 Relationships
         await new Promise((resolve, reject) => {
             const relStream = fs.createReadStream(CONFIG.INPUT_PATH, { encoding: 'utf8' });
             const parser = JSONStream.parse('relationships.*');
 
-            relStream.pipe(parser)
+            relStream
+                .pipe(parser)
                 .pipe(through2.obj((rel, enc, cb) => {
                     if (rel && rel.start_node_id !== undefined && rel.end_node_id !== undefined) {
                         const s = nodeOriginalIdToInternalIdMap.get(rel.start_node_id);
@@ -427,6 +485,7 @@ async function convertData() {
                                 linkTypeMap[edgeType] = typeId;
                                 linkTypesArray[typeId] = edgeType;
                             }
+
                             linkDataForSave.push(s, t, typeId);
                             relBar.increment();
                         }
@@ -436,25 +495,33 @@ async function convertData() {
                 .on('error', reject)
                 .on('finish', resolve);
         });
+
         relBar.stop();
         parseBar.stop();
 
-console.log(`\n🕸️  Running layout (${CONFIG.LAYOUT_ITERATIONS} iterations)...`);
-const layout = createLayout(graph, {
-    iterations: CONFIG.LAYOUT_ITERATIONS,
-    outDir: path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, CONFIG.VERSION_NAME, '__layout_cache__')
-});
+        const versionPath = path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, CONFIG.VERSION_NAME);
+        await fs.ensureDir(versionPath);
 
-// ngraph.offline.layout 的 API 是 run()，不是 step()
-layout.run(true);
+        console.log(`\n🕸️  Running layout (${CONFIG.LAYOUT_ITERATIONS} iterations)...`);
+        console.log(`   - layout cache dir: ${versionPath}`);
+        console.log(`   - if ${versionPath} already has 19000.bin etc, it will resume from there`);
 
-runComplianceAnalysis(graph);
+        const layout = createLayout(graph, {
+            iterations: CONFIG.LAYOUT_ITERATIONS,
+            saveEach: CONFIG.LAYOUT_SAVE_EACH,
+            outDir: versionPath
+        });
 
-console.log('\n💾 Saving binary data...');
-const versionPath = path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, CONFIG.VERSION_NAME);
-await fs.ensureDir(versionPath);
+        // 关键：
+        // layout.run() = 正常运行/尝试续跑
+        // layout.run(true) = 覆盖已有迭代并重算
+        layout.run();
 
-        // Save Node Data & Labels (streaming, avoid JSON.stringify huge object)
+        runComplianceAnalysis(graph);
+
+        console.log('\n💾 Saving binary data...');
+
+        // Save Node Data & Labels (streaming)
         console.log('   - writing nodeData.json (streaming)...');
         await writeLargeJsonObjectByIterator(
             path.join(versionPath, 'nodeData.json'),
@@ -470,24 +537,28 @@ await fs.ensureDir(versionPath);
         await writeLargeJsonArray(path.join(versionPath, 'labels.json'), displayLabels);
 
         // Save Positions
-const positionsArray = new Int32Array(graph.getNodesCount() * 3);
-const finalLayout = layout.getLayout();
+        // 注意：ngraph.offline.layout 自己也会写 positions.bin
+        // 这里再写一次，是为了保持你原来的导出流程和格式显式可控
+        console.log('   - writing positions.bin ...');
+        const positionsArray = new Int32Array(graph.getNodesCount() * 3);
+        const finalLayout = layout.getLayout();
 
-for (let id = 0; id < graph.getNodesCount(); id++) {
-    const pos = finalLayout.getNodePosition(id);
-    if (pos) {
-        positionsArray[id * 3] = Math.round(pos.x || 0);
-        positionsArray[id * 3 + 1] = Math.round(pos.y || 0);
-        positionsArray[id * 3 + 2] = Math.round(pos.z || 0);
-    }
-}
+        for (let id = 0; id < graph.getNodesCount(); id++) {
+            const pos = finalLayout.getNodePosition(id);
+            if (pos) {
+                positionsArray[id * 3] = Math.round(pos.x || 0);
+                positionsArray[id * 3 + 1] = Math.round(pos.y || 0);
+                positionsArray[id * 3 + 2] = Math.round(pos.z || 0);
+            }
+        }
 
-await fs.writeFile(
-    path.join(versionPath, 'positions.bin'),
-    Buffer.from(positionsArray.buffer)
-);
+        await fs.writeFile(
+            path.join(versionPath, 'positions.bin'),
+            Buffer.from(positionsArray.buffer)
+        );
 
         // Save Links (Visual Adjacency)
+        console.log('   - writing links.bin ...');
         const linksBufferData = [];
         graph.forEachNode(node => {
             linksBufferData.push(-node.id - 1);
@@ -495,18 +566,26 @@ await fs.writeFile(
                 linksBufferData.push(linked.id + 1);
             }, true);
         });
-        await fs.writeFile(path.join(versionPath, 'links.bin'), Buffer.from(new Int32Array(linksBufferData).buffer));
+        await fs.writeFile(
+            path.join(versionPath, 'links.bin'),
+            Buffer.from(new Int32Array(linksBufferData).buffer)
+        );
 
         // Save Link Types
+        console.log('   - writing link_types.json / link_data.bin ...');
         await fs.writeJson(path.join(versionPath, 'link_types.json'), linkTypesArray);
-        await fs.writeFile(path.join(versionPath, 'link_data.bin'), Buffer.from(new Int32Array(linkDataForSave).buffer));
+        await fs.writeFile(
+            path.join(versionPath, 'link_data.bin'),
+            Buffer.from(new Int32Array(linkDataForSave).buffer)
+        );
 
-        // Manifest & Compliance
-        await fs.writeJson(path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, 'manifest.json'), {
-            all: [CONFIG.VERSION_NAME],
-            last: CONFIG.VERSION_NAME
-        });
+        // Manifest
+        await fs.writeJson(
+            path.join(CONFIG.OUTPUT_DIR, CONFIG.GRAPH_NAME, 'manifest.json'),
+            { all: [CONFIG.VERSION_NAME], last: CONFIG.VERSION_NAME }
+        );
 
+        // Compliance
         let problemCount = 0;
         graph.forEachNode(node => {
             if (node.data.compliance?.risks?.length > 0) {
