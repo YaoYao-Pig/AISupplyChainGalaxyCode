@@ -92,7 +92,21 @@ function createTimelineStore() {
         const graph = scene.getGraph();
         if (!graph) return;
 
-        const nodeData = graph.getRawData().nodeData;
+        const rawData = graph.getRawData ? graph.getRawData() : null;
+        const nodeData = rawData && Array.isArray(rawData.nodeData) ? rawData.nodeData : [];
+
+        if (playInterval) {
+            pause();
+        }
+
+        state.enabled = false;
+        state.minDate = '';
+        state.maxDate = '';
+        state.currentDate = '';
+        state.allDates = [];
+        state.totalSteps = 0;
+        state.currentIndex = 0;
+
         const dates = nodeData
             .map(node => node && node.createdAt ? new Date(node.createdAt) : null)
             .filter(date => date && !isNaN(date.getTime()))
@@ -114,6 +128,8 @@ function createTimelineStore() {
     
     // --- 新增函数 ---
     function toggleTimeline() {
+        if (!state.allDates.length) return;
+
         state.enabled = !state.enabled;
         
         // 如果是关闭时间线，则重置视图到显示所有节点的状态

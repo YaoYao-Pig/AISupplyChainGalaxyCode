@@ -4,8 +4,9 @@ import linkFinder from './edgeFinder.js';
 export default graph;
 
 function graph(rawGraphLoaderData) {
-  const {labels, outLinks, inLinks, positions, nodeData, linkTypes, linkData, complianceData} = rawGraphLoaderData;
+  const {labels, outLinks, inLinks, positions, nodeData: rawNodeData, linkTypes, linkData, complianceData} = rawGraphLoaderData;
   const empty = [];
+  const nodeData = normalizeNodeData(rawNodeData, labels);
 
   function findLinks(from, to) {
     return linkFinder(from, to, outLinks, inLinks, labels);
@@ -79,6 +80,35 @@ function graph(rawGraphLoaderData) {
   };
 
   return api;
+
+  function normalizeNodeData(rawNodeData, labels) {
+    if (Array.isArray(rawNodeData)) return rawNodeData;
+
+    var normalizedLength = Array.isArray(labels) ? labels.length : getNodeDataLength(rawNodeData);
+    var normalized = new Array(normalizedLength);
+    if (!rawNodeData || typeof rawNodeData !== 'object') return normalized;
+
+    Object.keys(rawNodeData).forEach(function(key) {
+      var index = parseInt(key, 10);
+      if (!isNaN(index) && index >= 0) {
+        normalized[index] = rawNodeData[key];
+      }
+    });
+
+    return normalized;
+  }
+
+  function getNodeDataLength(rawNodeData) {
+    if (!rawNodeData || typeof rawNodeData !== 'object') return 0;
+
+    var maxIndex = -1;
+    Object.keys(rawNodeData).forEach(function(key) {
+      var index = parseInt(key, 10);
+      if (!isNaN(index) && index > maxIndex) maxIndex = index;
+    });
+
+    return maxIndex + 1;
+  }
   
   function findByTag(tagToFind) {
     const results = [];

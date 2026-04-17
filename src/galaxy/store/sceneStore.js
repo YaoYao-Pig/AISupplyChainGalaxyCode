@@ -64,13 +64,16 @@ function sceneStore() {
 
       const ngraph = createNgraph();
       const rawData = graph.getRawData();
-      if (!rawData || !rawData.labels || !rawData.outLinks || !rawData.nodeData) {
+      if (!rawData || !Array.isArray(rawData.labels) || !Array.isArray(rawData.outLinks) || !Array.isArray(rawData.nodeData)) {
         return null;
       }
+
+      const nodeData = rawData.nodeData;
+      const positions = rawData.positions;
       
       const visibleNodeIds = new Set();
-      for (let i = 0; i < rawData.nodeData.length; i++) {
-        const node = rawData.nodeData[i];
+      for (let i = 0; i < nodeData.length; i++) {
+        const node = nodeData[i];
         // 如果没有日期限制(limitDate为null)，或者节点日期在限制之前
         if (!limitDate || (node && node.createdAt && new Date(node.createdAt) <= limitDate)) {
           visibleNodeIds.add(i);
@@ -93,7 +96,7 @@ function sceneStore() {
       const communityResult = findCommunities(ngraph);
       
       // *** 新增: 计算社区气泡数据 (质心) ***
-      const centroids = calculateCentroids(communityResult, visibleNodeIds, rawData.positions);
+      const centroids = calculateCentroids(communityResult, visibleNodeIds, positions);
 
       return {
         result: communityResult,
@@ -166,19 +169,26 @@ function sceneStore() {
   // *** 辅助函数：计算质心 ***
   function calculateCentroids(communityResult, nodeIds, positions) {
       const groups = new Map(); // communityId -> { count, xSum, ySum, zSum }
+      if (!communityResult || !nodeIds || !positions) return [];
 
       nodeIds.forEach(nodeId => {
           const commId = communityResult.getClass(nodeId);
           if (commId === undefined) return;
+
+          const offset = nodeId * 3;
+          const x = positions[offset];
+          const y = positions[offset + 1];
+          const z = positions[offset + 2];
+          if (!isFinite(x) || !isFinite(y) || !isFinite(z)) return;
 
           if (!groups.has(commId)) {
               groups.set(commId, { count: 0, xSum: 0, ySum: 0, zSum: 0, nodeIds: [] });
           }
           const g = groups.get(commId);
           g.count++;
-          g.xSum += positions[nodeId * 3];
-          g.ySum += positions[nodeId * 3 + 1];
-          g.zSum += positions[nodeId * 3 + 2];
+          g.xSum += x;
+          g.ySum += y;
+          g.zSum += z;
           // g.nodeIds.push(nodeId); // 可选：如果需要分析标签
       });
 
@@ -200,6 +210,20 @@ function sceneStore() {
       });
 
       return centroids;
+  }
+
+  function getCommunityCount(communityResult, nodeIds) {
+    if (!communityResult || !nodeIds) return 0;
+
+    const communityIds = new Set();
+    nodeIds.forEach(nodeId => {
+      const communityId = communityResult.getClass(nodeId);
+      if (communityId !== undefined && communityId !== null) {
+        communityIds.add(communityId);
+      }
+    });
+
+    return communityIds.size;
   }
 
   appEvents.downloadGraphRequested.on(downloadGraph);
@@ -251,9 +275,12 @@ function sceneStore() {
     setTimeout(() => {
         // 复用 calculateCommunitiesForDate 逻辑，传 null 表示无限制
         const result = api.calculateCommunitiesForDate(null);
-        if (result) {
+        if (result && result.result) {
             communities = result;
-            console.log(`Global community detection complete. Found ${communities.result.count} communities.`);
+            console.log(`Global community detection complete. Found ${getCommunityCount(communities.result, communities.nodeIds)} communities.`);
+        } else {
+            communities = result || null;
+            console.warn('Global community detection completed, but no communities were available.');
         }
     }, 0);
 
